@@ -493,9 +493,27 @@ async def websocket_update(websocket: WebSocket):
 # ── Static frontend ───────────────────────────────────────────────────────────
 
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
-if os.path.exists(FRONTEND_DIST):
-    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
+FRONTEND_ASSETS = os.path.join(FRONTEND_DIST, "assets")
+FRONTEND_INDEX = os.path.join(FRONTEND_DIST, "index.html")
 
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
+if os.path.isdir(FRONTEND_ASSETS):
+    app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
+
+_BUILDING_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Mixmate</title>
+<style>body{background:#000;color:#fff;font-family:system-ui;display:flex;align-items:center;
+justify-content:center;height:100vh;flex-direction:column;gap:16px;margin:0}
+button{background:#fff;color:#000;border:none;padding:12px 24px;border-radius:12px;font-size:16px;cursor:pointer}
+</style></head><body>
+<img src="/logo.png" style="width:200px;opacity:.9" onerror="this.style.display='none'">
+<p style="color:rgba(255,255,255,.6);font-size:14px">Interface wordt gebouwd...</p>
+<button onclick="setTimeout(()=>location.reload(),1000)">Opnieuw proberen</button>
+</body></html>"""
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    from fastapi.responses import HTMLResponse
+    if os.path.isfile(FRONTEND_INDEX):
+        return FileResponse(FRONTEND_INDEX)
+    return HTMLResponse(_BUILDING_HTML)
