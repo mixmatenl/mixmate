@@ -514,6 +514,16 @@ button{background:#fff;color:#000;border:none;padding:12px 24px;border-radius:12
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
     from fastapi.responses import HTMLResponse
+    # Serveer losse bestanden uit dist/ (logo.png, favicon, etc.)
+    if full_path:
+        candidate = os.path.join(FRONTEND_DIST, full_path)
+        if os.path.isfile(candidate):
+            return FileResponse(candidate)
+        # Fallback: zoek in public/ map (voor dev zonder build)
+        public = os.path.join(os.path.dirname(__file__), "..", "frontend", "public", full_path)
+        if os.path.isfile(public):
+            return FileResponse(public)
+    # SPA index.html
     if os.path.isfile(FRONTEND_INDEX):
         return FileResponse(FRONTEND_INDEX)
     return HTMLResponse(_BUILDING_HTML)
