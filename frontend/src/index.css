@@ -23,40 +23,108 @@ html, body, #root {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Scrollbalk verbergen — touch scroll zoals op telefoon */
+/* Scrollbalk verbergen */
 * {
-  scrollbar-width: none;       /* Firefox */
-  -ms-overflow-style: none;    /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-*::-webkit-scrollbar {
-  display: none;               /* Chrome/Safari/WebKit */
-}
+*::-webkit-scrollbar { display: none; }
 
-/* Smooth momentum scroll op alle scroll-containers */
+/* Smooth momentum scroll */
 .overflow-y-auto,
 .overflow-y-scroll {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+.overflow-y-auto *, .overflow-y-scroll * { touch-action: pan-y; }
+.overflow-y-auto button, .overflow-y-auto a,
+.overflow-y-auto input, .overflow-y-auto select,
+.overflow-y-auto textarea { touch-action: manipulation; }
 
-/* Alles binnen een scroll-container mag de veegbeweging niet blokkeren */
-.overflow-y-auto *,
-.overflow-y-scroll * {
-  touch-action: pan-y;
-}
-
-/* Knoppen en interactieve elementen mogen ook gewoon geklikt worden */
-.overflow-y-auto button,
-.overflow-y-auto a,
-.overflow-y-auto input,
-.overflow-y-auto select,
-.overflow-y-auto textarea {
-  touch-action: manipulation;
-}
-
-
-/* Fix select dropdown options on dark background */
+/* Select dropdown dark */
 select option {
   background: #1a1a1a;
   color: #ffffff;
+}
+
+/* ── Pagina fade-transitie ───────────────────────────────────────────── */
+.page-enter {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-exit {
+  opacity: 1;
+}
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ── Ambient dashboard achtergrond ──────────────────────────────────── */
+@keyframes ambientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.ambient-bg {
+  background: linear-gradient(135deg, #f0f0f0, #ebebeb, #f5f5f5, #ededed);
+  background-size: 400% 400%;
+  animation: ambientShift 18s ease infinite;
+}
+
+/* ── Zwarte knop glow bij press ─────────────────────────────────────── */
+.btn-dark {
+  background: #111;
+  color: #fff;
+  transition: box-shadow 0.15s ease, transform 0.12s ease, background 0.15s ease;
+}
+.btn-dark:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15), 0 0 20px rgba(0,0,0,0.3);
+  background: #222;
+}
+
+/* ── Kaart press-effect ─────────────────────────────────────────────── */
+.card-pressable {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.card-pressable:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ── Skeleton shimmer ───────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f2f2f2 50%, #e8e8e8 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+/* ── Pour progress pulse ────────────────────────────────────────────── */
+@keyframes pourPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(17,17,17,0.2); }
+  50%       { box-shadow: 0 0 0 6px rgba(17,17,17,0); }
+}
+.pour-pulse {
+  animation: pourPulse 1.8s ease-in-out infinite;
+}
+
+/* ── Done celebration ring ───────────────────────────────────────────── */
+@keyframes ringExpand {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.done-ring {
+  animation: ringExpand 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

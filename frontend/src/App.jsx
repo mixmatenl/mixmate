@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Login from './pages/Login'
 import Backoffice from './pages/Backoffice'
 import Layout from './pages/Layout'
@@ -12,6 +12,47 @@ import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 import { DragScrollProvider } from './components/DragScroll'
 
 const SESSION_KEY = 'mixmate_auth'
+
+/* ── Pagina fade wrapper ─────────────────────────────────────────────── */
+function PageTransition({ children, routeKey }) {
+  const [visible, setVisible] = useState(false)
+  const prev = useRef(null)
+
+  useEffect(() => {
+    if (prev.current === routeKey) return
+    prev.current = routeKey
+    setVisible(false)
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    return () => cancelAnimationFrame(raf)
+  }, [routeKey])
+
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(7px)',
+      transition: visible
+        ? 'opacity 0.32s ease, transform 0.32s cubic-bezier(0.22,1,0.36,1)'
+        : 'none',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+function AnimatedRoutes({ onStandby }) {
+  const location = useLocation()
+  return (
+    <PageTransition routeKey={location.pathname}>
+      <Routes location={location}>
+        <Route path="/" element={<Dashboard onStandby={onStandby} />} />
+        <Route path="/instellingen/*" element={<Instellingen />} />
+        <Route path="/rapporten" element={<Rapporten />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </PageTransition>
+  )
+}
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(() =>
@@ -49,12 +90,7 @@ export default function App() {
     appContent = (
       <VirtualKeyboardProvider>
         <Layout onLogout={logout} onStandby={() => setStandby(true)}>
-          <Routes>
-            <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
-            <Route path="/instellingen/*" element={<Instellingen />} />
-            <Route path="/rapporten" element={<Rapporten />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AnimatedRoutes onStandby={() => setStandby(true)} />
         </Layout>
       </VirtualKeyboardProvider>
     )
@@ -62,15 +98,8 @@ export default function App() {
 
   return (
     <DragScrollProvider>
-      {/* App altijd gerenderd — standby legt er een overlay overheen */}
       {appContent}
-
-      {/* Standby overlay — schuift omhoog bij ingang, omlaag bij onthulling */}
-      {standby && (
-        <StandbyScreen
-          onWake={() => setStandby(false)}
-        />
-      )}
+      {standby && <StandbyScreen onWake={() => setStandby(false)} />}
     </DragScrollProvider>
   )
 }
