@@ -106,7 +106,9 @@ export default function AppUpdate() {
           <div className="flex-1">
             <p className="text-gray-900 font-bold text-lg">MIXMATE OS</p>
             <p className="text-gray-500 text-sm">
-              {versionInfo ? `Versie ${versionInfo.version ?? versionInfo.commit}` : 'Versie laden…'}
+              {versionInfo
+                ? `v${versionInfo.version && versionInfo.version !== '?' ? versionInfo.version : '—'}`
+                : 'Versie laden…'}
             </p>
             {versionInfo?.date && <p className="text-gray-400 text-xs mt-0.5">{versionInfo.date}</p>}
           </div>

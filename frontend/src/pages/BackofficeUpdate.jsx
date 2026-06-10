@@ -2,6 +2,48 @@ import React, { useState, useEffect, useRef } from 'react'
 
 const STATUS = { IDLE: 'idle', CHECKING: 'checking', UPDATING: 'updating', DONE: 'done', ERROR: 'error' }
 
+function ChangelogSection({ changelog }) {
+  if (!changelog?.length) return null
+  return (
+    <div className="bg-white/5 border border-white/15 rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-white/10">
+        <p className="text-white/70 text-sm font-semibold">Wat is er nieuw?</p>
+      </div>
+      <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
+        {changelog.map((entry, i) => (
+          <div key={i} className="px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white/80 bg-white/10 px-2 py-0.5 rounded-full font-mono">
+                v{entry.version}
+              </span>
+              {entry.date && <span className="text-white/35 text-xs">{entry.date}</span>}
+            </div>
+            {Object.entries(entry.sections).map(([section, items]) => items.length > 0 && (
+              <div key={section}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+                  section === 'Nieuw'     ? 'text-green-400' :
+                  section === 'Verbeterd' ? 'text-blue-400'  :
+                  section === 'Gefixt'    ? 'text-amber-400' :
+                  'text-white/40'
+                }`}>
+                  {section === 'Nieuw' ? '✦ ' : section === 'Verbeterd' ? '↑ ' : section === 'Gefixt' ? '✓ ' : ''}{section}
+                </p>
+                <ul className="space-y-0.5">
+                  {items.map((item, j) => (
+                    <li key={j} className="text-white/55 text-xs flex items-start gap-1.5">
+                      <span className="text-white/25 shrink-0">—</span>{item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function VersionBadge({ info }) {
   if (!info) return null
   return (
@@ -9,8 +51,10 @@ function VersionBadge({ info }) {
       <div className="flex items-center gap-3">
         <div className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0" />
         <div>
-          <span className="text-white/80 text-sm font-medium">MIXMATE OS</span>
-          <span className="text-white font-mono text-sm font-bold">{info.version ?? info.commit}</span>
+          <span className="text-white/80 text-sm font-medium">MIXMATE OS&nbsp;</span>
+          <span className="text-white font-mono text-sm font-bold">
+            {info.version && info.version !== '?' ? `v${info.version}` : info.commit ?? '—'}
+          </span>
         </div>
         {info.date && <span className="text-white/55 text-xs ml-auto">{info.date}</span>}
       </div>
@@ -25,6 +69,7 @@ export default function BackofficeUpdate() {
   const [status, setStatus] = useState(STATUS.IDLE)
   const [versionInfo, setVersionInfo] = useState(null)
   const [updatesAvailable, setUpdatesAvailable] = useState(null)
+  const [changelog, setChangelog] = useState([])
   const [logs, setLogs] = useState([])
   const [currentStep, setCurrentStep] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -48,6 +93,7 @@ export default function BackofficeUpdate() {
       .then(r => r.json())
       .then(d => {
         setUpdatesAvailable(d.updates_available)
+        if (d.changelog) setChangelog(d.changelog)
         setStatus(STATUS.IDLE)
       })
       .catch(() => setStatus(STATUS.IDLE))
@@ -115,12 +161,15 @@ export default function BackofficeUpdate() {
 
       {/* Update beschikbaar banner */}
       {updatesAvailable === true && status === STATUS.IDLE && (
-        <div className="bg-blue-500/15 border border-blue-400/30 rounded-xl px-4 py-3 flex items-center gap-3">
-          <svg className="w-5 h-5 text-blue-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-          </svg>
-          <p className="text-blue-200 text-sm font-medium">Nieuwe versie beschikbaar</p>
-        </div>
+        <>
+          <div className="bg-blue-500/15 border border-blue-400/30 rounded-xl px-4 py-3 flex items-center gap-3">
+            <svg className="w-5 h-5 text-blue-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+            </svg>
+            <p className="text-blue-200 text-sm font-medium">Nieuwe versie beschikbaar</p>
+          </div>
+          <ChangelogSection changelog={changelog} />
+        </>
       )}
       {updatesAvailable === false && status === STATUS.IDLE && (
         <div className="bg-green-500/15 border border-green-400/30 rounded-xl px-4 py-3 flex items-center gap-3">
