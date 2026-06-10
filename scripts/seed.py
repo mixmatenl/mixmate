@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Mixmate seed script — voegt testdata toe via de API.
-Gebruik: python3 scripts/seed.py [--host http://localhost:8000]
+Gebruik: python3 scripts/seed.py [http://localhost:8000]
 """
 import sys
 import json
@@ -9,33 +9,55 @@ import urllib.request
 import urllib.error
 
 HOST = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
+ERRORS = []
 
 def post(path, data):
     body = json.dumps(data).encode()
     req = urllib.request.Request(
-        f"{HOST}{path}",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+        f"{HOST}{path}", data=body,
+        headers={"Content-Type": "application/json"}, method="POST",
     )
     try:
         with urllib.request.urlopen(req) as r:
             result = json.loads(r.read())
-            print(f"  ✓ {path} → {result.get('name') or result.get('id') or result}")
+            name = result.get("name") or result.get("id") or "ok"
+            print(f"  ✓ {name}")
             return result
     except urllib.error.HTTPError as e:
-        print(f"  ✗ {path} → HTTP {e.code}: {e.read().decode()}")
+        msg = f"HTTP {e.code} op {path}: {e.read().decode()}"
+        print(f"  ✗ FOUT: {msg}")
+        ERRORS.append(msg)
+        return None
+    except Exception as e:
+        msg = f"Verbindingsfout op {path}: {e}"
+        print(f"  ✗ FOUT: {msg}")
+        ERRORS.append(msg)
         return None
 
 def get(path):
-    with urllib.request.urlopen(f"{HOST}{path}") as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(f"{HOST}{path}") as r:
+            return json.loads(r.read())
+    except Exception as e:
+        print(f"  ✗ GET {path} mislukt: {e}")
+        return []
 
+# ── Check bestaande data ───────────────────────────────────────────────────
 print(f"\n🍹 Mixmate seed — {HOST}\n")
+print("📋 Bestaande data controleren...")
+existing_recipes = get("/api/recipes")
+existing_glasses = get("/api/glasses")
+existing_cats = get("/api/categories")
+existing_ings = get("/api/ingredients")
+print(f"  Gevonden: {len(existing_recipes)} recepten, {len(existing_glasses)} glazen, "
+      f"{len(existing_cats)} categorieën, {len(existing_ings)} ingrediënten")
+
+if existing_recipes:
+    print(f"  ⚠️  Er zijn al {len(existing_recipes)} recepten — script voegt nieuwe toe bovenop bestaande data.")
 
 # ── 1. Glazen ──────────────────────────────────────────────────────────────
-print("📦 Glazen...")
-glasses = [
+print("\n📦 Glazen aanmaken...")
+glasses_to_add = [
     {"name": "Shot",         "volume_ml": 40,  "sort_order": 1},
     {"name": "Tumbler S",    "volume_ml": 200, "sort_order": 2},
     {"name": "Tumbler L",    "volume_ml": 300, "sort_order": 3},
@@ -43,59 +65,55 @@ glasses = [
     {"name": "Highball",     "volume_ml": 350, "sort_order": 5},
     {"name": "Longdrink",    "volume_ml": 400, "sort_order": 6},
 ]
-glass_ids = {}
-for g in glasses:
-    r = post("/api/glasses", g)
-    if r:
-        glass_ids[g["name"]] = r["id"]
+# Gebruik bestaande als ze al bestaan
+glass_ids = {g["name"]: g["id"] for g in existing_glasses}
+for g in glasses_to_add:
+    if g["name"] not in glass_ids:
+        r = post("/api/glasses", g)
+        if r:
+            glass_ids[r["name"]] = r["id"]
+    else:
+        print(f"  → {g['name']} bestaat al (id={glass_ids[g['name']]})")
 
 # ── 2. Categorieën ─────────────────────────────────────────────────────────
-print("\n📂 Categorieën...")
-categories = [
+print("\n📂 Categorieën aanmaken...")
+cats_to_add = [
     {"name": "Klassiekers",  "sort_order": 1},
     {"name": "Tropisch",     "sort_order": 2},
     {"name": "Fris & Licht", "sort_order": 3},
     {"name": "Shots",        "sort_order": 4},
 ]
-cat_ids = {}
-for c in categories:
-    r = post("/api/categories", c)
-    if r:
-        cat_ids[c["name"]] = r["id"]
+cat_ids = {c["name"]: c["id"] for c in existing_cats}
+for c in cats_to_add:
+    if c["name"] not in cat_ids:
+        r = post("/api/categories", c)
+        if r:
+            cat_ids[r["name"]] = r["id"]
+    else:
+        print(f"  → {c['name']} bestaat al (id={cat_ids[c['name']]})")
 
 # ── 3. Ingrediënten ────────────────────────────────────────────────────────
-print("\n🧪 Ingrediënten...")
-ingredients_data = [
-    # Sterke drank
-    {"name": "Vodka",             "unit": "ml"},
-    {"name": "Witte rum",         "unit": "ml"},
-    {"name": "Donkere rum",       "unit": "ml"},
-    {"name": "Gin",               "unit": "ml"},
-    {"name": "Tequila",           "unit": "ml"},
-    {"name": "Triple sec",        "unit": "ml"},
-    {"name": "Blauwe curacao",    "unit": "ml"},
-    # Mixers
-    {"name": "Sinaasappelsap",    "unit": "ml"},
-    {"name": "Ananassap",         "unit": "ml"},
-    {"name": "Cranberrysap",      "unit": "ml"},
-    {"name": "Limoensap",         "unit": "ml"},
-    {"name": "Citroenlimonade",   "unit": "ml"},
-    {"name": "Cola",              "unit": "ml"},
-    {"name": "Sprite",            "unit": "ml"},
-    {"name": "Tonic",             "unit": "ml"},
-    # Syrups
-    {"name": "Grenadine",         "unit": "ml"},
-    {"name": "Suikerstroop",      "unit": "ml"},
-    {"name": "Kokoscrème",        "unit": "ml"},
+print("\n🧪 Ingrediënten aanmaken...")
+ings_to_add = [
+    "Vodka", "Witte rum", "Donkere rum", "Gin", "Tequila",
+    "Triple sec", "Blauwe curacao",
+    "Sinaasappelsap", "Ananassap", "Cranberrysap", "Limoensap",
+    "Citroenlimonade", "Cola", "Sprite", "Tonic",
+    "Grenadine", "Suikerstroop", "Kokoscrème",
 ]
-ing_ids = {}
-for i in ingredients_data:
-    r = post("/api/ingredients", i)
-    if r:
-        ing_ids[i["name"]] = r["id"]
+ing_ids = {i["name"]: i["id"] for i in existing_ings}
+for name in ings_to_add:
+    if name not in ing_ids:
+        r = post("/api/ingredients", {"name": name, "unit": "ml"})
+        if r:
+            ing_ids[r["name"]] = r["id"]
+    else:
+        print(f"  → {name} bestaat al (id={ing_ids[name]})")
 
 # ── 4. Pompen ──────────────────────────────────────────────────────────────
-print("\n⚙️  Pompen...")
+print("\n⚙️  Pompen aanmaken...")
+existing_pumps = get("/api/pumps")
+existing_slots = {p["slot"] for p in existing_pumps}
 pump_assignments = [
     (1,  4,  "Vodka"),
     (2,  5,  "Witte rum"),
@@ -111,29 +129,40 @@ pump_assignments = [
     (12, 22, "Kokoscrème"),
 ]
 for slot, gpio, ingredient in pump_assignments:
+    if slot in existing_slots:
+        print(f"  → Slot {slot} bestaat al")
+        continue
+    if ingredient not in ing_ids:
+        print(f"  ✗ Ingrediënt '{ingredient}' niet gevonden, pomp {slot} overgeslagen")
+        continue
     post("/api/pumps", {
-        "slot": slot,
-        "gpio_pin": gpio,
-        "pump_type": "peristaltic",
-        "ml_per_second": 1.5,
-        "enabled": True,
-        "ingredient_id": ing_ids.get(ingredient),
+        "slot": slot, "gpio_pin": gpio,
+        "pump_type": "peristaltic", "ml_per_second": 1.5,
+        "enabled": True, "ingredient_id": ing_ids[ingredient],
     })
 
 # ── 5. Recepten ────────────────────────────────────────────────────────────
-print("\n🍸 Recepten...")
+print("\n🍸 Recepten aanmaken...")
 
 def recipe(name, category, glass, description, steps):
-    """Maak een recept aan met ingrediënten."""
+    missing_ings = [ing for ing, _ in steps if ing not in ing_ids]
+    if missing_ings:
+        print(f"  ✗ '{name}' overgeslagen — ontbrekende ingrediënten: {missing_ings}")
+        return
+    cat_id = cat_ids.get(category)
+    glass_id = glass_ids.get(glass)
+    if not cat_id:
+        print(f"  ✗ '{name}' overgeslagen — categorie '{category}' niet gevonden")
+        return
     post("/api/recipes", {
         "name": name,
         "description": description,
-        "category_id": cat_ids.get(category),
-        "glass_id": glass_ids.get(glass),
+        "category_id": cat_id,
+        "glass_id": glass_id,
+        "image_url": "",
         "ingredients": [
             {"ingredient_id": ing_ids[ing], "amount_ml": ml, "order": i + 1}
             for i, (ing, ml) in enumerate(steps)
-            if ing in ing_ids
         ],
     })
 
@@ -201,4 +230,13 @@ recipe("Blue Bomber", "Shots", "Shot",
     "Zoete blauwe shot",
     [("Vodka", 20), ("Blauwe curacao", 20)])
 
-print("\n✅ Klaar! Ververs de app om de testdata te zien.\n")
+# ── Samenvatting ───────────────────────────────────────────────────────────
+print("\n" + "─" * 40)
+if ERRORS:
+    print(f"⚠️  Klaar met {len(ERRORS)} fout(en):")
+    for e in ERRORS:
+        print(f"   • {e}")
+else:
+    final = get("/api/recipes")
+    print(f"✅ Klaar! {len(final)} recepten in de database.")
+    print("   Ververs de app om alles te zien.\n")
