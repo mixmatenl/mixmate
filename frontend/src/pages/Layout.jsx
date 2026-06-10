@@ -9,7 +9,7 @@ const NAV = [
 
 export default function Layout({ children, onLogout, onStandby }) {
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex flex-col">
+    <div className="h-screen bg-[#F2F2F2] flex flex-col overflow-hidden">
       {/* Top bar */}
       <header className="bg-[#111111] h-16 flex items-center px-8 gap-12 shrink-0 z-30 shadow-lg">
         <span className="text-white font-bold tracking-[0.25em] text-lg select-none">MIXMATE</span>
@@ -42,9 +42,9 @@ export default function Layout({ children, onLogout, onStandby }) {
 /* Sidebar used by Dashboard */
 export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
   return (
-    <aside className="w-52 bg-[#1E1E1E] flex flex-col shrink-0 h-full">
+    <aside className="w-52 bg-[#1E1E1E] flex flex-col shrink-0 h-full select-none">
       {/* Categorieën — scrollbaar als er veel zijn */}
-      <div className="flex-1 overflow-y-auto px-6 pt-8 pb-4 min-h-0">
+      <div className="flex-1 overflow-y-auto px-6 pt-8 pb-4 min-h-0" style={{ touchAction: 'pan-y' }}>
         <p className="text-white/40 text-xs font-semibold tracking-[0.2em] uppercase mb-5">Categorie</p>
         <ul className="space-y-1">
           {categories.map(cat => (

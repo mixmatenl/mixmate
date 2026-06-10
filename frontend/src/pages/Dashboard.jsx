@@ -302,7 +302,7 @@ export default function Dashboard({ onStandby }) {
         onLogout={handleLogout}
         onStandby={onStandby}
       />
-      <main className="flex-1 overflow-y-auto px-8 py-8">
+      <main className="flex-1 overflow-y-auto px-8 py-8 select-none" style={{ touchAction: 'pan-y' }}>
         {loading ? (
           <div className="flex justify-center pt-20">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
