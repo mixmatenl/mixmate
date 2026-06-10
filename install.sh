@@ -54,9 +54,12 @@ apt-get update -qq
 log "Basis dependencies installeren..."
 apt-get install -y -qq git python3 python3-pip python3-venv python3-full curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
 
+# python3.X-venv (vereist op Debian trixie / bookworm)
+PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+try_install "python${PYVER}-venv"
+
 # ── Optionele packages (overslaan als niet beschikbaar) ───
 log "Optionele packages installeren..."
-try_install libatlas-base-dev
 try_install unclutter
 
 # ── Chromium ─────────────────────────────────
