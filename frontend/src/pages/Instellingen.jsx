@@ -6,6 +6,7 @@ import AdminIngredients from './AdminIngredients'
 import AdminCategories from './AdminCategories'
 import AdminGlasses from './AdminGlasses'
 import PumpCalibrationWizard from './PumpCalibrationWizard'
+import AppUpdate from './AppUpdate'
 
 const TABS = [
   { to: '/instellingen/pompen', label: 'Pompen' },
@@ -14,6 +15,7 @@ const TABS = [
   { to: '/instellingen/ingredienten', label: 'Ingrediënten' },
   { to: '/instellingen/categorieen', label: 'Categorieën' },
   { to: '/instellingen/recepten', label: 'Recepten' },
+  { to: '/instellingen/update', label: 'Update' },
 ]
 
 export default function Instellingen() {
@@ -40,6 +42,7 @@ export default function Instellingen() {
             <Route path="ingredienten" element={<AdminIngredients />} />
             <Route path="categorieen" element={<AdminCategories />} />
             <Route path="recepten" element={<AdminRecipes />} />
+            <Route path="update" element={<AppUpdate />} />
             <Route path="" element={<AdminPumpsSimple />} />
           </Routes>
         </div>
