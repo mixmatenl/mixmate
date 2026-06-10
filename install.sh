@@ -90,12 +90,22 @@ else
   sudo -u $USER git clone "$REPO" "$INSTALL_DIR" || fail "Kan repository niet downloaden. Controleer de internetverbinding."
 fi
 
-# ── Python dependencies ───────────────────────
-log "Python dependencies installeren..."
-pip3 install --quiet --break-system-packages -r "$INSTALL_DIR/backend/requirements.txt" \
-  || pip3 install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
+# ── Python venv + dependencies ────────────────
+log "Python omgeving instellen..."
+# Installeer het versie-specifieke venv package (vereist op Debian trixie)
+PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+apt-get install -y -qq "python${PYVER}-venv" || apt-get install -y -qq python3-venv python3-full
+
+# Maak venv aan als root, chown daarna naar pi
+rm -rf "$INSTALL_DIR/.venv"
+python3 -m venv "$INSTALL_DIR/.venv" || fail "Kan Python venv niet aanmaken (python${PYVER}-venv geïnstalleerd?)"
+chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
+
+# Installeer packages in de venv
+sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
+sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
   || fail "Kan Python packages niet installeren"
-UVICORN_BIN="$(which uvicorn || echo uvicorn)"
+UVICORN_BIN="$INSTALL_DIR/.venv/bin/uvicorn"
 
 # ── Frontend bouwen ───────────────────────────
 log "Frontend installeren en bouwen (dit duurt even)..."
