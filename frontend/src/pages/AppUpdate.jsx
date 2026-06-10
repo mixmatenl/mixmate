@@ -48,7 +48,7 @@ export default function AppUpdate() {
       .then(d => {
         setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE)
         if (d.changelog) setChangelog(d.changelog)
-        setCompatible(d.compatible !== false)
+        setCompatible(d.compatible === true)
         setCompatMsg(d.compat_message || null)
       })
       .catch(() => setStatus(STATUS.IDLE))

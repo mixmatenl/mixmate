@@ -634,44 +634,42 @@ async def system_check_updates():
     # Compatibiliteitscheck: mag dit model de nieuwste versie installeren?
     # Logica: compat.json bevat restricties per minor-versie (x.y).
     # Een bugfix (x.y.Z) erft de beperking van zijn minor-lijn (x.y).
-    # Dus als 2.1 geblokkeerd is voor MATE.1, geldt dat voor alle 2.1.x versies.
     compatible = True
     compat_msg = None
-    if has_updates and changelog:
-        target_version = changelog[0].get("version", "")
+    if has_updates:
         machine_model = _get_machine_model()
-        try:
-            compat_path = Path(__file__).parent.parent / "compat.json"
-            if compat_path.exists():
-                import json as _json
-                from packaging.version import Version
-                compat = _json.loads(compat_path.read_text()).get("versions", {})
-                tv = Version(target_version)
-                # Zoek de meest specifieke toepasselijke compat-regel:
-                # eerst exacte versie, dan minor-lijn (x.y), dan major (x)
-                def minor_key(v): return f"{Version(v).major}.{Version(v).minor}"
-                def major_key(v): return str(Version(v).major)
-                target_minor = f"{tv.major}.{tv.minor}"
-                target_major = str(tv.major)
-                allowed = None
-                blocking_version = None
-                for cv, models in compat.items():
-                    cv_parsed = Version(cv)
-                    cv_minor = f"{cv_parsed.major}.{cv_parsed.minor}"
-                    # Exacte match of zelfde minor-lijn
-                    if cv == target_version or cv_minor == target_minor:
-                        allowed = models
-                        blocking_version = cv
-                        break
-                if allowed is not None and machine_model not in allowed:
-                    compatible = False
-                    compat_msg = (
-                        f"Versie {target_version} is niet beschikbaar voor "
-                        f"{machine_model or 'onbekend model'}. "
-                        f"Neem contact op met MIXMATE."
-                    )
-        except Exception:
-            pass
+        # Geen model ingesteld → update blokkeren tot model geconfigureerd is
+        if not machine_model:
+            compatible = False
+            compat_msg = "Stel eerst het machine model in via Backoffice → Machine voordat je een update installeert."
+        elif changelog:
+            target_version = changelog[0].get("version", "")
+            try:
+                compat_path = Path(__file__).parent.parent / "compat.json"
+                if compat_path.exists():
+                    import json as _json
+                    from packaging.version import Version
+                    compat = _json.loads(compat_path.read_text()).get("versions", {})
+                    tv = Version(target_version)
+                    target_minor = f"{tv.major}.{tv.minor}"
+                    allowed = None
+                    for cv, models in compat.items():
+                        try:
+                            cv_parsed = Version(cv)
+                            cv_minor = f"{cv_parsed.major}.{cv_parsed.minor}"
+                        except Exception:
+                            continue
+                        if cv == target_version or cv_minor == target_minor:
+                            allowed = models
+                            break
+                    if allowed is not None and machine_model not in allowed:
+                        compatible = False
+                        compat_msg = (
+                            f"Versie {target_version} is niet beschikbaar voor "
+                            f"{machine_model}. Neem contact op met MIXMATE."
+                        )
+            except Exception:
+                pass
     return {
         "updates_available": has_updates,
         "changelog": changelog,

@@ -96,7 +96,7 @@ export default function BackofficeUpdate() {
       .then(d => {
         setUpdatesAvailable(d.updates_available)
         if (d.changelog) setChangelog(d.changelog)
-        setCompatible(d.compatible !== false)
+        setCompatible(d.compatible === true)
         setCompatMsg(d.compat_message || null)
         setStatus(STATUS.IDLE)
       })
