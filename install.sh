@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # ─────────────────────────────────────────────
 #  MIXMATE OS — Installer
@@ -20,6 +19,17 @@ log()  { echo -e "${GREEN}[MIXMATE]${NC} $1"; }
 warn() { echo -e "${YELLOW}[MIXMATE]${NC} $1"; }
 fail() { echo -e "${RED}[MIXMATE] FOUT:${NC} $1"; exit 1; }
 
+# Installeer een package, sla over als niet beschikbaar
+try_install() {
+  for pkg in "$@"; do
+    if apt-cache show "$pkg" &>/dev/null; then
+      apt-get install -y -qq "$pkg" && log "$pkg geïnstalleerd" || warn "$pkg installatie mislukt — doorgaan"
+    else
+      warn "$pkg niet beschikbaar op dit systeem — overgeslagen"
+    fi
+  done
+}
+
 echo ""
 echo "  ███╗   ███╗██╗██╗  ██╗███╗   ███╗ █████╗ ████████╗███████╗"
 echo "  ████╗ ████║██║╚██╗██╔╝████╗ ████║██╔══██╗╚══██╔══╝██╔════╝"
@@ -36,51 +46,63 @@ if [ "$EUID" -ne 0 ]; then
   fail "Voer de installer uit als root:\n  curl -sSL https://raw.githubusercontent.com/mixmatenl/mixmate/main/install.sh | sudo bash"
 fi
 
-# ── Systeem dependencies ──────────────────────
-log "Systeem bijwerken en dependencies installeren..."
+# ── Systeem updaten ───────────────────────────
+log "Pakketlijsten bijwerken..."
 apt-get update -qq
-apt-get install -y -qq \
-  git python3 python3-pip python3-venv \
-  libatlas-base-dev unclutter
 
-# Chromium (naam verschilt per OS versie)
+# ── Verplichte packages ───────────────────────
+log "Basis dependencies installeren..."
+apt-get install -y -qq git python3 python3-pip python3-venv curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
+
+# ── Optionele packages (overslaan als niet beschikbaar) ───
+log "Optionele packages installeren..."
+try_install libatlas-base-dev
+try_install unclutter
+
+# ── Chromium ─────────────────────────────────
+log "Chromium installeren..."
 if apt-cache show chromium &>/dev/null; then
   apt-get install -y -qq chromium
+  CHROMIUM_BIN="chromium"
 elif apt-cache show chromium-browser &>/dev/null; then
   apt-get install -y -qq chromium-browser
+  CHROMIUM_BIN="chromium-browser"
 else
-  warn "Chromium niet gevonden via apt — sla browserinstallatie over."
+  warn "Chromium niet gevonden — browserinstallatie overgeslagen"
+  CHROMIUM_BIN="chromium"
 fi
 
 # ── Node.js ───────────────────────────────────
-if ! command -v node &>/dev/null || [[ $(node -v | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
+if ! command -v node &>/dev/null || [[ $(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
   log "Node.js 20 installeren..."
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>/dev/null
-  apt-get install -y -qq nodejs
+  apt-get install -y -qq nodejs || fail "Kan Node.js niet installeren"
 fi
 log "Node.js $(node -v) — npm $(npm -v)"
 
 # ── Repo clonen of updaten ────────────────────
 if [ -d "$INSTALL_DIR/.git" ]; then
-  log "Bestaande installatie gevonden — updaten naar nieuwste versie..."
+  log "Bestaande installatie gevonden — updaten..."
   sudo -u $USER git -C "$INSTALL_DIR" fetch origin main
   sudo -u $USER git -C "$INSTALL_DIR" checkout main
   sudo -u $USER git -C "$INSTALL_DIR" reset --hard origin/main
 else
   log "Repository downloaden..."
-  sudo -u $USER git clone "$REPO" "$INSTALL_DIR"
+  sudo -u $USER git clone "$REPO" "$INSTALL_DIR" || fail "Kan repository niet downloaden. Controleer de internetverbinding."
 fi
 
 # ── Python venv + dependencies ────────────────
 log "Python omgeving instellen..."
 sudo -u $USER python3 -m venv "$INSTALL_DIR/.venv"
 sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt"
+sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" || fail "Kan Python packages niet installeren"
 
 # ── Frontend bouwen ───────────────────────────
 log "Frontend installeren en bouwen (dit duurt even)..."
-sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" ci --silent
-sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" run build
+# Verwijder oude node_modules/dist om rechten-problemen te voorkomen
+rm -rf "$INSTALL_DIR/frontend/node_modules" "$INSTALL_DIR/frontend/dist"
+sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" ci --silent || fail "npm ci mislukt"
+sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" run build || fail "Frontend build mislukt"
 
 # ── Systemd service ───────────────────────────
 log "Systemd service instellen..."
@@ -110,10 +132,6 @@ log "Chromium kiosk autostart instellen..."
 AUTOSTART_DIR="/home/${USER}/.config/autostart"
 mkdir -p "$AUTOSTART_DIR"
 
-# Detecteer chromium binary naam
-CHROMIUM_BIN="chromium"
-command -v chromium &>/dev/null || CHROMIUM_BIN="chromium-browser"
-
 cat > "${AUTOSTART_DIR}/mixmate.desktop" <<EOF
 [Desktop Entry]
 Type=Application
@@ -130,7 +148,6 @@ for AUTOSTART_FILE in \
   "/etc/xdg/lxsession/rpd-x/autostart"; do
   if [ -f "$AUTOSTART_FILE" ] && ! grep -q "unclutter" "$AUTOSTART_FILE"; then
     echo "@unclutter -idle 0" >> "$AUTOSTART_FILE"
-    log "Cursor verbergen ingesteld in $AUTOSTART_FILE"
   fi
 done
 
@@ -146,11 +163,8 @@ echo ""
 log "Versie : v${VERSION}"
 log "Adres  : http://localhost:8000"
 echo ""
-warn "Volgende stap: stel het machine model in via Backoffice → Machine"
+warn "Vergeet niet: stel het machine model in via Backoffice → Machine"
 echo ""
-read -p "  Nu herstarten? (aanbevolen) [j/n]: " REBOOT
-if [[ "$REBOOT" =~ ^[Jj]$ ]]; then
-  log "Pi herstart over 3 seconden..."
-  sleep 3
-  reboot
-fi
+log "Pi herstart over 5 seconden..."
+sleep 5
+reboot
