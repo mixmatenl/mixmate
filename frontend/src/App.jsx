@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Instellingen from './pages/Instellingen'
 import Rapporten from './pages/Rapporten'
 import SplashScreen from './pages/SplashScreen'
+import StandbyScreen from './pages/StandbyScreen'
 
 const SESSION_KEY = 'mixmate_auth'
 
@@ -14,6 +15,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(() =>
     !sessionStorage.getItem('mixmate_splash_shown')
   )
+  const [standby, setStandby] = useState(false)
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
@@ -24,6 +26,8 @@ export default function App() {
       setShowSplash(false)
     }} />
   )
+
+  if (standby) return <StandbyScreen onWake={() => setStandby(false)} />
 
   if (view === 'backoffice') return <Backoffice onClose={() => setView('login')} />
   if (view === 'login') return (
@@ -36,9 +40,9 @@ export default function App() {
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
   return (
-    <Layout onLogout={logout}>
+    <Layout onLogout={logout} onStandby={() => setStandby(true)}>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
         <Route path="/instellingen/*" element={<Instellingen />} />
         <Route path="/rapporten" element={<Rapporten />} />
         <Route path="*" element={<Navigate to="/" replace />} />

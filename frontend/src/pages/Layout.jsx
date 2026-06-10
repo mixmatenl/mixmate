@@ -7,7 +7,7 @@ const NAV = [
   { to: '/rapporten', label: 'RAPPORTEN' },
 ]
 
-export default function Layout({ children, onLogout }) {
+export default function Layout({ children, onLogout, onStandby }) {
   return (
     <div className="min-h-screen bg-[#F2F2F2] flex flex-col">
       {/* Top bar */}
@@ -40,7 +40,7 @@ export default function Layout({ children, onLogout }) {
 }
 
 /* Sidebar used by Dashboard */
-export function Sidebar({ categories, active, onSelect, onLogout }) {
+export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
   return (
     <aside className="w-52 bg-[#1E1E1E] flex flex-col shrink-0">
       <div className="px-6 pt-8 pb-4">
@@ -62,7 +62,17 @@ export function Sidebar({ categories, active, onSelect, onLogout }) {
           ))}
         </ul>
       </div>
-      <div className="mt-auto px-6 pb-8">
+      <div className="mt-auto px-6 pb-8 space-y-3">
+        <button
+          onClick={onStandby}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/5 text-sm transition-all"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 2v6"/>
+            <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
+          </svg>
+          Stand-by
+        </button>
         <button
           onClick={onLogout}
           className="text-white/25 hover:text-white/60 text-sm transition-colors"

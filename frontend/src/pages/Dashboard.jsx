@@ -269,7 +269,7 @@ function CocktailCard({ recipe, onMake }) {
 }
 
 /* ── Dashboard ───────────────────────────────────────────────────────────── */
-export default function Dashboard() {
+export default function Dashboard({ onStandby }) {
   const [recipes, setRecipes] = useState([])
   const [categories, setCategories] = useState([])
   const [glasses, setGlasses] = useState([])
@@ -300,6 +300,7 @@ export default function Dashboard() {
         active={activeCategory}
         onSelect={setActiveCategory}
         onLogout={handleLogout}
+        onStandby={onStandby}
       />
       <main className="flex-1 overflow-y-auto px-8 py-8">
         {loading ? (

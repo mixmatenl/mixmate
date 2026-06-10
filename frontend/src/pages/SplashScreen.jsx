@@ -4,8 +4,8 @@ export default function SplashScreen({ onDone }) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    const t1 = setTimeout(() => setVisible(false), 2500)
-    const t2 = setTimeout(() => onDone(), 3000)
+    const t1 = setTimeout(() => setVisible(false), 10000)
+    const t2 = setTimeout(() => onDone(), 10500)
     return () => [t1, t2].forEach(clearTimeout)
   }, [])
 
