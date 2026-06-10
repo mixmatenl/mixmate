@@ -24,19 +24,20 @@ export default function App() {
 
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
-  let content
-  if (showSplash) {
-    content = <SplashScreen onDone={() => { sessionStorage.setItem('mixmate_splash_shown', '1'); setShowSplash(false) }} />
-  } else if (standby) {
-    content = <StandbyScreen onWake={() => {
-      setStandby(false)
-      // Herlaad de pagina op de achtergrond zodat data vers is
-      setTimeout(() => window.location.reload(), 50)
-    }} />
-  } else if (view === 'backoffice') {
-    content = <VirtualKeyboardProvider><Backoffice onClose={() => setView('login')} /></VirtualKeyboardProvider>
+  if (showSplash) return (
+    <DragScrollProvider>
+      <SplashScreen onDone={() => {
+        sessionStorage.setItem('mixmate_splash_shown', '1')
+        setShowSplash(false)
+      }} />
+    </DragScrollProvider>
+  )
+
+  let appContent
+  if (view === 'backoffice') {
+    appContent = <VirtualKeyboardProvider><Backoffice onClose={() => setView('login')} /></VirtualKeyboardProvider>
   } else if (view === 'login') {
-    content = (
+    appContent = (
       <VirtualKeyboardProvider>
         <Login
           onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setView('app') }}
@@ -45,7 +46,7 @@ export default function App() {
       </VirtualKeyboardProvider>
     )
   } else {
-    content = (
+    appContent = (
       <VirtualKeyboardProvider>
         <Layout onLogout={logout} onStandby={() => setStandby(true)}>
           <Routes>
@@ -59,5 +60,17 @@ export default function App() {
     )
   }
 
-  return <DragScrollProvider>{content}</DragScrollProvider>
+  return (
+    <DragScrollProvider>
+      {/* App altijd gerenderd — standby legt er een overlay overheen */}
+      {appContent}
+
+      {/* Standby overlay — schuift omhoog bij ingang, omlaag bij onthulling */}
+      {standby && (
+        <StandbyScreen
+          onWake={() => setStandby(false)}
+        />
+      )}
+    </DragScrollProvider>
+  )
 }

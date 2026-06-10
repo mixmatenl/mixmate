@@ -1,137 +1,131 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
-const PHASE = { STANDBY: 'standby', WAKING: 'waking', DONE: 'done' }
-
-// Hoe lang het opstarten duurt (ms)
-const WAKE_DURATION = 5000
+/*
+  Fasen:
+  ENTERING   — zwart paneel schuift omhoog van onderaf (0.9s)
+  STANDBY    — logo + aan-knop zichtbaar
+  WAKING     — logo schaalt groot op en vervaagt (2s)
+  REVEALING  — zwart paneel zakt omlaag en onthult de app (1.1s)
+*/
+const P = { ENTERING: 0, STANDBY: 1, WAKING: 2, REVEALING: 3 }
 
 export default function StandbyScreen({ onWake }) {
-  const [phase, setPhase] = useState(PHASE.STANDBY)
-  const [progress, setProgress] = useState(0)    // 0–100 voor de balk
-  const [fadeOut, setFadeOut] = useState(false)
+  const [phase, setPhase] = useState(P.ENTERING)
+  const calledWake = useRef(false)
 
-  // Progress balk animatie
+  // Na inkomst-animatie: standby-modus
   useEffect(() => {
-    if (phase !== PHASE.WAKING) return
-
-    const start = performance.now()
-    let raf
-
-    function tick(now) {
-      const elapsed = now - start
-      const pct = Math.min((elapsed / WAKE_DURATION) * 100, 100)
-      setProgress(pct)
-
-      if (pct < 100) {
-        raf = requestAnimationFrame(tick)
-      } else {
-        // Klaar — kort pauzeren, dan uitfaden
-        setTimeout(() => {
-          setPhase(PHASE.DONE)
-          setTimeout(() => onWake(), 800)
-        }, 400)
-      }
-    }
-
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    if (phase !== P.ENTERING) return
+    const t = setTimeout(() => setPhase(P.STANDBY), 900)
+    return () => clearTimeout(t)
   }, [phase])
 
-  const isWaking = phase === PHASE.WAKING
-  const isDone   = phase === PHASE.DONE
+  // Na logo-zoom: paneel omlaag laten zakken
+  useEffect(() => {
+    if (phase !== P.WAKING) return
+    const t = setTimeout(() => setPhase(P.REVEALING), 2000)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  // Na reveal: onWake aanroepen
+  useEffect(() => {
+    if (phase !== P.REVEALING) return
+    const t = setTimeout(() => {
+      if (!calledWake.current) {
+        calledWake.current = true
+        onWake()
+      }
+    }, 1200)
+    return () => clearTimeout(t)
+  }, [phase])
+
+  const panelY =
+    phase === P.ENTERING  ? '0%'    :  // volledig in beeld
+    phase === P.STANDBY   ? '0%'    :  // stil
+    phase === P.WAKING    ? '0%'    :  // nog in beeld tijdens logo-zoom
+    '100%'                             // REVEALING: zakt weg
+
+  const panelEntrance = phase === P.ENTERING ? 'translateY(100%)' : 'translateY(0%)'
+
+  // Logo zoom + fade tijdens WAKING
+  const logoScale   = phase === P.WAKING ? 2.8 : 1
+  const logoOpacity = phase === P.WAKING ? 0   : (phase === P.ENTERING ? 0 : 1)
+
+  // Knop: verschijnt pas als STANDBY, verdwijnt bij WAKING
+  const btnOpacity  = phase === P.STANDBY ? 1 : 0
+  const btnPointer  = phase === P.STANDBY ? 'auto' : 'none'
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#000', zIndex: 9998,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      opacity: isDone ? 0 : 1,
-      transition: isDone ? 'opacity 0.8s ease' : 'none',
+      position: 'fixed', inset: 0, zIndex: 9998,
+      pointerEvents: phase === P.REVEALING ? 'none' : 'auto',
     }}>
+      {/* Zwart paneel */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: '#000',
+        transform: phase === P.ENTERING
+          ? panelEntrance
+          : `translateY(${panelY})`,
+        transition: phase === P.ENTERING
+          ? 'transform 0.9s cubic-bezier(0.22, 1, 0.36, 1)'
+          : phase === P.REVEALING
+          ? 'transform 1.1s cubic-bezier(0.76, 0, 0.24, 1)'
+          : 'none',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: '56px',
+        overflow: 'hidden',
+      }}>
 
-      {/* Logo — wordt iets groter tijdens opstarten */}
-      <img
-        src="/logo.png"
-        alt="Mixmate"
-        style={{
-          width: '50%',
-          maxWidth: '320px',
-          objectFit: 'contain',
-          opacity: isWaking ? 1 : 0.9,
-          transform: isWaking ? 'scale(1.04)' : 'scale(1)',
-          transition: 'transform 5s cubic-bezier(0.22,1,0.36,1), opacity 0.8s ease',
-          marginBottom: '64px',
-        }}
-      />
-
-      {/* Standby: aan-knop */}
-      {phase === PHASE.STANDBY && (
-        <button
-          onClick={() => setPhase(PHASE.WAKING)}
+        {/* Logo */}
+        <img
+          src="/logo.png"
+          alt="Mixmate"
           style={{
-            width: '72px', height: '72px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.18)',
+            width: '48%',
+            maxWidth: '300px',
+            objectFit: 'contain',
+            transform: `scale(${logoScale})`,
+            opacity: logoOpacity,
+            transition: phase === P.WAKING
+              ? 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.6s ease-in 0.3s'
+              : phase === P.ENTERING
+              ? 'opacity 0.5s ease 0.6s'
+              : 'none',
+            willChange: 'transform, opacity',
+          }}
+        />
+
+        {/* Aan-knop */}
+        <button
+          onClick={() => setPhase(P.WAKING)}
+          style={{
+            width: '76px', height: '76px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.16)',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.2s',
+            opacity: btnOpacity,
+            pointerEvents: btnPointer,
+            transition: 'opacity 0.4s ease',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.16)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+          onMouseEnter={e => { if (phase === P.STANDBY) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
         >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-            stroke="rgba(255,255,255,0.75)" strokeWidth="2" strokeLinecap="round">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round">
             <path d="M12 2v6"/>
             <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
           </svg>
         </button>
-      )}
 
-      {/* Opstarten: progress balk + label */}
-      {isWaking && (
+        {/* Subtiele grain-textuur overlay voor diepte */}
         <div style={{
-          width: '220px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
-          animation: 'fadeIn 0.5s ease forwards',
-        }}>
-          {/* Smalle progress balk */}
-          <div style={{
-            width: '100%', height: '2px',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${progress}%`,
-              background: progress === 100
-                ? 'rgba(255,255,255,0.9)'
-                : 'rgba(255,255,255,0.6)',
-              borderRadius: '2px',
-              transition: 'background 0.3s ease',
-              boxShadow: '0 0 8px rgba(255,255,255,0.4)',
-            }} />
-          </div>
-
-          {/* Label */}
-          <span style={{
-            color: 'rgba(255,255,255,0.4)',
-            fontSize: '11px',
-            letterSpacing: '3px',
-            textTransform: 'uppercase',
-            fontFamily: 'system-ui, sans-serif',
-            fontWeight: '400',
-          }}>
-            {progress === 100 ? 'Gereed' : 'Opstarten'}
-          </span>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.03) 0%, transparent 70%)',
+        }} />
+      </div>
     </div>
   )
 }
