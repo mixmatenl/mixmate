@@ -8,6 +8,7 @@ import Instellingen from './pages/Instellingen'
 import Rapporten from './pages/Rapporten'
 import SplashScreen from './pages/SplashScreen'
 import StandbyScreen from './pages/StandbyScreen'
+import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 
 const SESSION_KEY = 'mixmate_auth'
 
@@ -29,24 +30,32 @@ export default function App() {
 
   if (standby) return <StandbyScreen onWake={() => setStandby(false)} />
 
-  if (view === 'backoffice') return <Backoffice onClose={() => setView('login')} />
+  if (view === 'backoffice') return (
+    <VirtualKeyboardProvider>
+      <Backoffice onClose={() => setView('login')} />
+    </VirtualKeyboardProvider>
+  )
   if (view === 'login') return (
-    <Login
-      onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setView('app') }}
-      onBackoffice={() => setView('backoffice')}
-    />
+    <VirtualKeyboardProvider>
+      <Login
+        onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setView('app') }}
+        onBackoffice={() => setView('backoffice')}
+      />
+    </VirtualKeyboardProvider>
   )
 
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
   return (
-    <Layout onLogout={logout} onStandby={() => setStandby(true)}>
-      <Routes>
-        <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
-        <Route path="/instellingen/*" element={<Instellingen />} />
-        <Route path="/rapporten" element={<Rapporten />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <VirtualKeyboardProvider>
+      <Layout onLogout={logout} onStandby={() => setStandby(true)}>
+        <Routes>
+          <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
+          <Route path="/instellingen/*" element={<Instellingen />} />
+          <Route path="/rapporten" element={<Rapporten />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </VirtualKeyboardProvider>
   )
 }

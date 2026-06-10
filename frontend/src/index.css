@@ -26,3 +26,9 @@ html, body, #root {
   background: #424242;
   border-radius: 2px;
 }
+
+/* Fix select dropdown options on dark background */
+select option {
+  background: #1a1a1a;
+  color: #ffffff;
+}

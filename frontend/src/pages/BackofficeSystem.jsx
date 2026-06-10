@@ -10,18 +10,18 @@ function ConfirmButton({ label, description, icon, danger, onConfirm }) {
   }
 
   if (done) return (
-    <div className="bg-white/8 border border-white/15 rounded-2xl px-5 py-4 flex items-center gap-3">
-      <span className="text-white/65 text-sm font-medium">Bezig…</span>
+    <div className="bg-white/10 border border-white/20 rounded-2xl px-5 py-4 flex items-center gap-3">
+      <span className="text-white/60 text-sm font-medium">Bezig…</span>
     </div>
   )
 
   return (
-    <div className="bg-white/8 border border-white/15 rounded-2xl px-5 py-4 space-y-3">
+    <div className="bg-white/10 border border-white/20 rounded-2xl px-5 py-4 space-y-3">
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
         <div>
           <p className="text-white text-base font-semibold">{label}</p>
-          <p className="text-white/65 text-sm mt-0.5">{description}</p>
+          <p className="text-white/60 text-sm mt-0.5">{description}</p>
         </div>
       </div>
       {!confirming ? (
@@ -30,7 +30,7 @@ function ConfirmButton({ label, description, icon, danger, onConfirm }) {
           className={`w-full py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] ${
             danger
               ? 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 hover:text-red-200'
-              : 'bg-white/12 text-white border border-white/20 hover:bg-white/20'
+              : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
           }`}
         >
           {label}
@@ -41,7 +41,7 @@ function ConfirmButton({ label, description, icon, danger, onConfirm }) {
           <div className="flex gap-2">
             <button
               onClick={() => setConfirming(false)}
-              className="flex-1 py-3 rounded-xl border border-white/20 text-white/65 text-sm font-medium hover:border-white/35 hover:text-white/85 transition-all"
+              className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 text-sm font-medium hover:border-white/40 hover:text-white/80 transition-all"
             >
               Annuleer
             </button>

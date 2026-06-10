@@ -5,14 +5,14 @@ const STATUS = { IDLE: 'idle', CHECKING: 'checking', UPDATING: 'updating', DONE:
 function VersionBadge({ info }) {
   if (!info) return null
   return (
-    <div className="bg-white/8 border border-white/15 rounded-xl p-4 space-y-2">
+    <div className="bg-white/10 border border-white/20 rounded-xl p-4 space-y-2">
       <div className="flex items-center gap-3">
         <div className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0" />
         <div>
           <span className="text-white/80 text-sm font-medium">Versie </span>
           <span className="text-white font-mono text-sm font-bold">{info.commit}</span>
         </div>
-        {info.date && <span className="text-white/55 text-sm ml-auto">{info.date}</span>}
+        {info.date && <span className="text-white/60 text-sm ml-auto">{info.date}</span>}
       </div>
       {info.message && <p className="text-white/60 text-sm pl-5">{info.message}</p>}
     </div>
@@ -95,14 +95,14 @@ export default function BackofficeUpdate() {
         {status === STATUS.IDLE && (
           <button
             onClick={checkUpdates}
-            className="text-sm text-white/65 hover:text-white font-medium transition-colors border border-white/20 hover:border-white/40 px-4 py-2 rounded-lg"
+            className="text-sm text-white/60 hover:text-white font-medium transition-colors border border-white/20 hover:border-white/40 px-4 py-2 rounded-lg"
           >
             Controleer op updates
           </button>
         )}
         {status === STATUS.CHECKING && (
-          <span className="text-sm text-white/65 flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-white/25 border-t-white/70 rounded-full animate-spin inline-block" />
+          <span className="text-sm text-white/60 flex items-center gap-2">
+            <span className="w-4 h-4 border-2 border-white/20 border-t-white/70 rounded-full animate-spin inline-block" />
             Controleren…
           </span>
         )}
@@ -131,15 +131,15 @@ export default function BackofficeUpdate() {
 
       {/* Wat doet een update */}
       {status === STATUS.IDLE && logs.length === 0 && (
-        <div className="bg-white/8 border border-white/15 rounded-xl px-4 py-4 space-y-2">
-          <p className="text-white/75 text-sm font-semibold mb-3">Een update voert het volgende uit:</p>
+        <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4 space-y-2">
+          <p className="text-white/70 text-sm font-semibold mb-3">Een update voert het volgende uit:</p>
           {[
             'git pull — nieuwste code ophalen',
             'pip install — Python dependencies bijwerken',
             'npm build — frontend opnieuw bouwen',
             'systemctl restart — service herstarten',
           ].map((s, i) => (
-            <div key={i} className="flex items-center gap-2.5 text-white/65 text-sm">
+            <div key={i} className="flex items-center gap-2.5 text-white/60 text-sm">
               <span className="text-white/40 font-mono text-xs w-4 shrink-0">{i + 1}.</span> {s}
             </div>
           ))}
@@ -148,7 +148,7 @@ export default function BackofficeUpdate() {
 
       {/* Live log output */}
       {logs.length > 0 && (
-        <div className="bg-black/50 border border-white/15 rounded-xl overflow-hidden">
+        <div className="bg-black/50 border border-white/20 rounded-xl overflow-hidden">
           <div className="px-4 py-2.5 border-b border-white/10 flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full ${isUpdating ? 'bg-amber-400 animate-pulse' : status === STATUS.DONE ? 'bg-green-400' : 'bg-red-400'}`} />
             <span className="text-white/70 text-sm font-medium">
@@ -158,7 +158,7 @@ export default function BackofficeUpdate() {
           <div className="h-64 overflow-y-auto p-3 font-mono text-xs space-y-0.5">
             {logs.map((log, i) => (
               <div key={i} className={
-                log.type === 'step' ? 'text-white/85 font-semibold mt-2 first:mt-0' :
+                log.type === 'step' ? 'text-white/80 font-semibold mt-2 first:mt-0' :
                 log.type === 'done' ? 'text-green-400 mt-2 font-semibold' :
                 log.type === 'error' ? 'text-red-400 font-medium' :
                 'text-white/50'
@@ -185,9 +185,9 @@ export default function BackofficeUpdate() {
       {isUpdating && (
         <button
           disabled
-          className="w-full py-4 rounded-xl bg-white/12 text-white/55 text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-xl bg-white/10 text-white/60 text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2"
         >
-          <span className="w-4 h-4 border-2 border-white/25 border-t-white/70 rounded-full animate-spin" />
+          <span className="w-4 h-4 border-2 border-white/20 border-t-white/70 rounded-full animate-spin" />
           Update bezig…
         </button>
       )}
@@ -196,7 +196,7 @@ export default function BackofficeUpdate() {
         <div className="flex gap-3">
           <button
             onClick={() => { setStatus(STATUS.IDLE); setLogs([]); setUpdatesAvailable(null) }}
-            className="flex-1 py-3 rounded-xl border border-white/20 text-white/65 text-sm font-medium hover:border-white/35 hover:text-white/85 transition-all"
+            className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 text-sm font-medium hover:border-white/40 hover:text-white/80 transition-all"
           >
             Sluiten
           </button>
