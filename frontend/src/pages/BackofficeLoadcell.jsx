@@ -25,30 +25,30 @@ function LoadcellPins() {
   }
 
   const GPIO_PINS = [4,5,6,12,13,16,17,18,19,20,21,22,23,24,25,26,27]
-  const sel = "w-full border border-white/10 rounded-lg px-3 py-2 bg-white/5 text-white text-sm focus:outline-none focus:border-white/30 cursor-pointer"
+  const sel = "w-full border border-white/25 rounded-lg px-3 py-2.5 bg-white/8 text-white text-sm focus:outline-none focus:border-white/45 cursor-pointer"
 
   return (
-    <div className="space-y-4 mb-8 pb-8 border-b border-white/10">
-      <h3 className="text-white/60 text-xs tracking-widest uppercase">HX711 GPIO Pins</h3>
+    <div className="space-y-4 mb-8 pb-8 border-b border-white/15">
+      <h3 className="text-white font-bold text-lg">HX711 GPIO Pins</h3>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-white/30 text-xs mb-1 block">DOUT pin</label>
+          <label className="text-white/75 text-sm mb-2 block font-medium">DOUT pin</label>
           <select value={form.dout} onChange={e => { setForm(f => ({ ...f, dout: e.target.value })); setSaved(false) }} className={sel}>
             {GPIO_PINS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-white/30 text-xs mb-1 block">SCK pin</label>
+          <label className="text-white/75 text-sm mb-2 block font-medium">SCK pin</label>
           <select value={form.sck} onChange={e => { setForm(f => ({ ...f, sck: e.target.value })); setSaved(false) }} className={sel}>
             {GPIO_PINS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>
       {saved && (
-        <p className="text-amber-400 text-xs">Opgeslagen. Herstart de service om de nieuwe pins te activeren.</p>
+        <p className="text-amber-300 text-sm font-medium">✓ Opgeslagen — herstart de service om de nieuwe pins te activeren.</p>
       )}
       <button onClick={save}
-        className="px-4 py-2 bg-white text-black text-sm font-semibold rounded-lg hover:bg-white/90 transition-all">
+        className="px-5 py-2.5 bg-white text-black text-sm font-bold rounded-lg hover:bg-white/90 transition-all">
         Pins opslaan
       </button>
     </div>
@@ -65,13 +65,11 @@ export default function BackofficeLoadcell() {
   const [error, setError] = useState('')
   const pollRef = useRef(null)
 
-  // Load current scale factor on mount
   useEffect(() => {
     fetch('/api/weight/scale-factor').then(r => r.json()).then(d => setSavedScale(d.scale_factor)).catch(() => {})
     return () => clearInterval(pollRef.current)
   }, [])
 
-  // Poll weight when in PLACE or CALIBRATE step
   useEffect(() => {
     clearInterval(pollRef.current)
     if (step === STEP.PLACE || step === STEP.CALIBRATE) {
@@ -123,10 +121,10 @@ export default function BackofficeLoadcell() {
     <div className="space-y-6 max-w-md">
       <LoadcellPins />
       <div className="flex items-center justify-between">
-        <h3 className="text-white/60 text-xs tracking-widest uppercase">Loadcell kalibratie</h3>
+        <h3 className="text-white font-bold text-lg">Loadcell kalibratie</h3>
         {savedScale && (
-          <span className="text-white/25 text-xs font-mono">
-            Huidige schaalfactor: {savedScale}
+          <span className="text-white/60 text-sm font-mono bg-white/8 px-3 py-1 rounded-lg border border-white/15">
+            factor: {savedScale}
           </span>
         )}
       </div>
@@ -140,26 +138,26 @@ export default function BackofficeLoadcell() {
           { id: STEP.DONE, label: '4. Klaar' },
         ].map((s, i, arr) => (
           <React.Fragment key={s.id}>
-            <div className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+            <div className={`text-sm px-3 py-1.5 rounded-full font-medium transition-colors ${
               step === s.id
-                ? 'bg-white text-black font-semibold'
+                ? 'bg-white text-black font-bold'
                 : [STEP.PLACE, STEP.CALIBRATE, STEP.DONE].indexOf(step) > [STEP.TARE, STEP.PLACE, STEP.CALIBRATE, STEP.DONE].indexOf(s.id)
-                  ? 'bg-white/20 text-white/60'
-                  : 'bg-white/5 text-white/20'
+                  ? 'bg-white/20 text-white/80'
+                  : 'bg-white/8 text-white/45'
             }`}>
               {s.label}
             </div>
-            {i < arr.length - 1 && <div className="flex-1 h-px bg-white/10" />}
+            {i < arr.length - 1 && <div className="flex-1 h-px bg-white/15" />}
           </React.Fragment>
         ))}
       </div>
 
       {/* Live gewicht display */}
       {weight !== null && step !== STEP.DONE && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-          <p className="text-white/30 text-xs mb-1 tracking-widest uppercase">Huidig gewicht</p>
+        <div className="bg-white/8 border border-white/15 rounded-2xl p-5 text-center">
+          <p className="text-white/65 text-sm mb-2 tracking-widest uppercase font-medium">Huidig gewicht</p>
           <p className="text-5xl font-bold text-white tabular-nums">
-            {weight.toFixed(1)}<span className="text-2xl text-white/40 ml-1">g</span>
+            {weight.toFixed(1)}<span className="text-2xl text-white/55 ml-1">g</span>
           </p>
         </div>
       )}
@@ -167,17 +165,17 @@ export default function BackofficeLoadcell() {
       {/* Stap 1: Tara */}
       {step === STEP.TARE && (
         <div className="space-y-4">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2">
-            <p className="text-white/70 text-sm font-medium">Stap 1 — Schaal leegmaken</p>
-            <p className="text-white/35 text-sm leading-relaxed">
+          <div className="bg-white/8 border border-white/15 rounded-2xl p-5 space-y-2">
+            <p className="text-white font-semibold text-base">Stap 1 — Schaal leegmaken</p>
+            <p className="text-white/70 text-sm leading-relaxed">
               Zorg dat de weegschaal volledig leeg is. Druk dan op "Tara" om het nulpunt in te stellen.
             </p>
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
           <button
             onClick={handleTare}
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-40 transition-all active:scale-[0.98]"
+            className="w-full py-4 rounded-xl bg-white text-black text-sm font-bold hover:bg-white/90 disabled:opacity-40 transition-all active:scale-[0.98]"
           >
             {loading ? 'Bezig…' : 'Tara — schaal is leeg'}
           </button>
@@ -187,9 +185,9 @@ export default function BackofficeLoadcell() {
       {/* Stap 2: Gewicht plaatsen */}
       {step === STEP.PLACE && (
         <div className="space-y-4">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2">
-            <p className="text-white/70 text-sm font-medium">Stap 2 — Bekend gewicht plaatsen</p>
-            <p className="text-white/35 text-sm leading-relaxed">
+          <div className="bg-white/8 border border-white/15 rounded-2xl p-5 space-y-2">
+            <p className="text-white font-semibold text-base">Stap 2 — Bekend gewicht plaatsen</p>
+            <p className="text-white/70 text-sm leading-relaxed">
               Leg een voorwerp met een exact bekend gewicht op de schaal. Vul hieronder het gewicht in grammen in.
             </p>
           </div>
@@ -200,10 +198,10 @@ export default function BackofficeLoadcell() {
                 <button
                   key={w}
                   onClick={() => setKnownWeight(String(w))}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                     knownWeight === String(w)
                       ? 'bg-white text-black border-white'
-                      : 'bg-white/5 text-white/40 border-white/10 hover:border-white/30 hover:text-white/70'
+                      : 'bg-white/8 text-white/70 border-white/20 hover:border-white/40 hover:text-white'
                   }`}
                 >
                   {w}g
@@ -216,16 +214,16 @@ export default function BackofficeLoadcell() {
                 value={knownWeight}
                 onChange={e => setKnownWeight(e.target.value)}
                 placeholder="Eigen gewicht in gram"
-                className="flex-1 border border-white/10 rounded-xl px-4 py-2.5 bg-white/5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-white/30"
+                className="flex-1 border border-white/25 rounded-xl px-4 py-3 bg-white/8 text-white text-sm placeholder-white/35 focus:outline-none focus:border-white/50"
               />
-              <span className="flex items-center text-white/30 text-sm pr-1">g</span>
+              <span className="flex items-center text-white/65 text-sm font-medium pr-1">g</span>
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
 
           <div className="flex gap-3">
-            <button onClick={reset} className="px-5 py-3 rounded-xl border border-white/10 text-white/30 text-sm hover:border-white/20 hover:text-white/50 transition-all">
+            <button onClick={reset} className="px-5 py-3 rounded-xl border border-white/20 text-white/65 text-sm font-medium hover:border-white/35 hover:text-white/85 transition-all">
               Opnieuw
             </button>
             <button
@@ -242,16 +240,16 @@ export default function BackofficeLoadcell() {
       {/* Stap 3: Kalibreer */}
       {step === STEP.CALIBRATE && (
         <div className="space-y-4">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2">
-            <p className="text-white/70 text-sm font-medium">Stap 3 — Kalibreren</p>
-            <p className="text-white/35 text-sm leading-relaxed">
-              Het gewicht van <span className="text-white font-semibold">{knownWeight}g</span> staat op de schaal.
+          <div className="bg-white/8 border border-white/15 rounded-2xl p-5 space-y-2">
+            <p className="text-white font-semibold text-base">Stap 3 — Kalibreren</p>
+            <p className="text-white/70 text-sm leading-relaxed">
+              Het gewicht van <span className="text-white font-bold">{knownWeight}g</span> staat op de schaal.
               Druk op kalibreer — de schaalfactor wordt berekend en opgeslagen.
             </p>
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
           <div className="flex gap-3">
-            <button onClick={() => setStep(STEP.PLACE)} className="px-5 py-3 rounded-xl border border-white/10 text-white/30 text-sm hover:border-white/20 hover:text-white/50 transition-all">
+            <button onClick={() => setStep(STEP.PLACE)} className="px-5 py-3 rounded-xl border border-white/20 text-white/65 text-sm font-medium hover:border-white/35 hover:text-white/85 transition-all">
               Terug
             </button>
             <button
@@ -268,34 +266,34 @@ export default function BackofficeLoadcell() {
       {/* Stap 4: Klaar */}
       {step === STEP.DONE && (
         <div className="space-y-4">
-          <div className="bg-white/[0.06] border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="bg-white/8 border border-white/15 rounded-2xl p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">Kalibratie geslaagd</p>
-                <p className="text-white/40 text-xs">Opgeslagen in configuratie</p>
+                <p className="text-white font-bold text-base">Kalibratie geslaagd</p>
+                <p className="text-white/60 text-sm">Opgeslagen in configuratie</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-white/30 text-xs mb-1">Ingevoerd gewicht</p>
-                <p className="text-white font-bold text-lg">{knownWeight}g</p>
+              <div className="bg-white/8 rounded-xl p-3 text-center border border-white/10">
+                <p className="text-white/60 text-xs mb-1 font-medium uppercase tracking-wide">Ingevoerd gewicht</p>
+                <p className="text-white font-bold text-xl">{knownWeight}g</p>
               </div>
-              <div className="bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-white/30 text-xs mb-1">Gemeten na kalibratie</p>
-                <p className="text-white font-bold text-lg">{weight !== null ? `${weight}g` : '—'}</p>
+              <div className="bg-white/8 rounded-xl p-3 text-center border border-white/10">
+                <p className="text-white/60 text-xs mb-1 font-medium uppercase tracking-wide">Gemeten na kalibratie</p>
+                <p className="text-white font-bold text-xl">{weight !== null ? `${weight}g` : '—'}</p>
               </div>
-              <div className="col-span-2 bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-white/30 text-xs mb-1">Nieuwe schaalfactor</p>
-                <p className="text-white/80 font-mono text-sm">{scaleFactor}</p>
+              <div className="col-span-2 bg-white/8 rounded-xl p-3 text-center border border-white/10">
+                <p className="text-white/60 text-xs mb-1 font-medium uppercase tracking-wide">Nieuwe schaalfactor</p>
+                <p className="text-white/90 font-mono text-base">{scaleFactor}</p>
               </div>
             </div>
           </div>
-          <button onClick={reset} className="w-full py-3 rounded-xl border border-white/10 text-white/40 text-sm font-medium hover:border-white/20 hover:text-white/60 transition-all">
+          <button onClick={reset} className="w-full py-3 rounded-xl border border-white/20 text-white/65 text-sm font-medium hover:border-white/35 hover:text-white/85 transition-all">
             Opnieuw kalibreren
           </button>
         </div>
