@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Backoffice from './pages/Backoffice'
 import Layout from './pages/Layout'
@@ -13,23 +13,12 @@ import { DragScrollProvider } from './components/DragScroll'
 
 const SESSION_KEY = 'mixmate_auth'
 
-/* ── Pagina fade wrapper ─────────────────────────────────────────────── */
-// Elke route-wissel geeft een nieuwe key → component remount → CSS animatie speelt
-function FadePage({ children }) {
-  return (
-    <div className="page-fade" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-      {children}
-    </div>
-  )
-}
-
 function AnimatedRoutes({ onStandby }) {
-  const location = useLocation()
   return (
-    <Routes location={location}>
-      <Route path="/" element={<FadePage key="dashboard"><Dashboard onStandby={onStandby} /></FadePage>} />
-      <Route path="/instellingen/*" element={<FadePage key="instellingen"><Instellingen /></FadePage>} />
-      <Route path="/rapporten" element={<FadePage key="rapporten"><Rapporten /></FadePage>} />
+    <Routes>
+      <Route path="/" element={<Dashboard onStandby={onStandby} />} />
+      <Route path="/instellingen/*" element={<Instellingen />} />
+      <Route path="/rapporten" element={<Rapporten />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
