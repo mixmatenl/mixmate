@@ -43,6 +43,13 @@ export const api = {
   createRecipe: (data) => request('POST', '/recipes', data),
   updateRecipe: (id, data) => request('PATCH', `/recipes/${id}`, data),
   deleteRecipe: (id) => request('DELETE', `/recipes/${id}`),
+  uploadRecipeImage: async (id, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${BASE}/recipes/${id}/image`, { method: 'POST', body: form })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  },
 
   // Glasses
   getGlasses: () => request('GET', '/glasses'),

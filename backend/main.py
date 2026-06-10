@@ -1,9 +1,10 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -322,6 +323,23 @@ def delete_recipe(recipe_id: int, session: Session = Depends(get_session)):
     session.delete(recipe); session.commit()
     return {"ok": True}
 
+@app.post("/api/recipes/{recipe_id}/image")
+async def upload_recipe_image(recipe_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
+    recipe = session.get(Recipe, recipe_id)
+    if not recipe: raise HTTPException(404)
+    uploads_dir = Path(__file__).parent.parent / "uploads"
+    uploads_dir.mkdir(exist_ok=True)
+    suffix = Path(file.filename).suffix.lower() if file.filename else ".jpg"
+    if suffix not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+        suffix = ".jpg"
+    filename = f"recipe_{recipe_id}{suffix}"
+    dest = uploads_dir / filename
+    content = await file.read()
+    dest.write_bytes(content)
+    recipe.image_url = f"/uploads/{filename}"
+    session.add(recipe); session.commit()
+    return {"image_url": recipe.image_url}
+
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────
 
@@ -495,6 +513,11 @@ async def websocket_update(websocket: WebSocket):
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 FRONTEND_ASSETS = os.path.join(FRONTEND_DIST, "assets")
 FRONTEND_INDEX = os.path.join(FRONTEND_DIST, "index.html")
+
+# Uploads map (recept foto's) — wordt aangemaakt als hij nog niet bestaat
+UPLOADS_DIR = Path(__file__).parent.parent / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 if os.path.isdir(FRONTEND_ASSETS):
     app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
