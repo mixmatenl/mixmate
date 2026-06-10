@@ -505,6 +505,55 @@ async def websocket_pour(websocket: WebSocket, recipe_id: int, scale: float = 1.
         cancel_pour()
 
 
+# ── Machine model ─────────────────────────────────────────────────────────────
+
+MACHINE_MODELS = {
+    "MATE.1":     {"has_co2": False, "has_valves": False, "tier": 1},
+    "MATE.1 CO2": {"has_co2": True,  "has_valves": True,  "tier": 2},
+    "MATE.1 PRO": {"has_co2": True,  "has_valves": True,  "tier": 3},
+}
+
+def _get_machine_model() -> str:
+    return os.environ.get("MACHINE_MODEL", "")
+
+def _set_machine_model(model: str):
+    """Sla machine model op in .env en os.environ."""
+    os.environ["MACHINE_MODEL"] = model
+    env_path = Path(__file__).parent.parent / ".env"
+    lines = []
+    replaced = False
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if line.startswith("MACHINE_MODEL="):
+                lines.append(f"MACHINE_MODEL={model}")
+                replaced = True
+            else:
+                lines.append(line)
+    if not replaced:
+        lines.append(f"MACHINE_MODEL={model}")
+    env_path.write_text("\n".join(lines) + "\n")
+
+@app.get("/api/system/machine")
+def get_machine():
+    model = _get_machine_model()
+    caps = MACHINE_MODELS.get(model, {"has_co2": False, "has_valves": False, "tier": 0})
+    return {
+        "model": model,
+        "configured": bool(model),
+        "models_available": list(MACHINE_MODELS.keys()),
+        **caps,
+    }
+
+@app.post("/api/system/machine")
+def set_machine(body: dict):
+    model = str(body.get("model", "")).strip()
+    if model not in MACHINE_MODELS:
+        raise HTTPException(400, f"Onbekend model. Kies uit: {list(MACHINE_MODELS.keys())}")
+    _set_machine_model(model)
+    caps = MACHINE_MODELS[model]
+    return {"ok": True, "model": model, **caps}
+
+
 # ── Calibration ───────────────────────────────────────────────────────────────
 
 @app.websocket("/ws/calibrate/{pump_id}")
@@ -582,7 +631,30 @@ async def system_version():
 @app.get("/api/system/check-updates")
 async def system_check_updates():
     has_updates, changelog = await check_updates_available()
-    return {"updates_available": has_updates, "changelog": changelog}
+    # Compatibiliteitscheck: mag dit model de nieuwste versie installeren?
+    compatible = True
+    compat_msg = None
+    if has_updates and changelog:
+        target_version = changelog[0].get("version", "")
+        machine_model = _get_machine_model()
+        try:
+            compat_path = Path(__file__).parent.parent / "compat.json"
+            if compat_path.exists():
+                import json as _json
+                compat = _json.loads(compat_path.read_text()).get("versions", {})
+                if target_version in compat:
+                    allowed = compat[target_version]
+                    if machine_model not in allowed:
+                        compatible = False
+                        compat_msg = f"Versie {target_version} is niet beschikbaar voor {machine_model or 'onbekend model'}."
+        except Exception:
+            pass
+    return {
+        "updates_available": has_updates,
+        "changelog": changelog,
+        "compatible": compatible,
+        "compat_message": compat_msg,
+    }
 
 @app.websocket("/ws/system/update")
 async def websocket_update(websocket: WebSocket):

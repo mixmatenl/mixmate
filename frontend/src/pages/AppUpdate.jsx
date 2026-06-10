@@ -23,6 +23,8 @@ export default function AppUpdate() {
   const [status, setStatus] = useState(STATUS.IDLE)
   const [versionInfo, setVersionInfo] = useState(null)
   const [changelog, setChangelog] = useState([])
+  const [compatible, setCompatible] = useState(true)
+  const [compatMsg, setCompatMsg] = useState(null)
   const [currentStepIdx, setCurrentStepIdx] = useState(-1)
   const [completedSteps, setCompletedSteps] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -43,7 +45,12 @@ export default function AppUpdate() {
     setStatus(STATUS.CHECKING)
     fetch('/api/system/check-updates')
       .then(r => r.json())
-      .then(d => { setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE); if (d.changelog) setChangelog(d.changelog) })
+      .then(d => {
+        setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE)
+        if (d.changelog) setChangelog(d.changelog)
+        setCompatible(d.compatible !== false)
+        setCompatMsg(d.compat_message || null)
+      })
       .catch(() => setStatus(STATUS.IDLE))
   }
 
@@ -199,14 +206,27 @@ export default function AppUpdate() {
             </div>
           )}
 
-          {/* Install knop */}
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-4">
-            <div>
-              <p className="text-blue-900 font-semibold text-sm">Update beschikbaar</p>
-              <p className="text-blue-600 text-xs mt-1">De update duurt ongeveer 2 minuten. De machine herstart automatisch.</p>
+          {/* Compatibiliteitswaarschuwing */}
+          {!compatible && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+              <span className="text-red-500 text-lg shrink-0">⚠</span>
+              <div>
+                <p className="text-red-800 font-semibold text-sm">Niet compatibel met dit model</p>
+                <p className="text-red-600 text-xs mt-1">{compatMsg || 'Deze update is niet beschikbaar voor het huidige machine model.'}</p>
+              </div>
             </div>
-            <button onClick={startUpdate}
-              className="w-full py-3 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-all active:scale-[0.98]">
+          )}
+
+          {/* Install knop */}
+          <div className={`rounded-2xl p-5 space-y-4 ${compatible ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50 border border-gray-200'}`}>
+            <div>
+              <p className={`font-semibold text-sm ${compatible ? 'text-blue-900' : 'text-gray-500'}`}>Update beschikbaar</p>
+              <p className={`text-xs mt-1 ${compatible ? 'text-blue-600' : 'text-gray-400'}`}>
+                {compatible ? 'De update duurt ongeveer 2 minuten. De machine herstart automatisch.' : 'Neem contact op met MIXMATE voor meer informatie.'}
+              </p>
+            </div>
+            <button onClick={startUpdate} disabled={!compatible}
+              className="w-full py-3 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all active:scale-[0.98]">
               Nu installeren
             </button>
           </div>

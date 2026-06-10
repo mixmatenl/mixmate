@@ -1,5 +1,11 @@
 # MIXMATE OS — Changelog
 
+## [2.1.0] - 2026-06-10
+### Nieuw
+- Machine model instelling in backoffice (MATE.1 / MATE.1 CO₂ / MATE.1 PRO)
+- Versie-compatibiliteit: updates die niet geschikt zijn voor het model worden geblokkeerd
+- CO₂ en valve-functies worden automatisch zichtbaar op geschikte modellen
+
 ## [2.0.0] - 2026-06-10
 ### Nieuw
 - Volledig nieuw design voor dashboard, login en standby-scherm

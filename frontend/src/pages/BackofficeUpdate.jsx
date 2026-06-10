@@ -70,6 +70,8 @@ export default function BackofficeUpdate() {
   const [versionInfo, setVersionInfo] = useState(null)
   const [updatesAvailable, setUpdatesAvailable] = useState(null)
   const [changelog, setChangelog] = useState([])
+  const [compatible, setCompatible] = useState(true)
+  const [compatMsg, setCompatMsg] = useState(null)
   const [logs, setLogs] = useState([])
   const [currentStep, setCurrentStep] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -94,6 +96,8 @@ export default function BackofficeUpdate() {
       .then(d => {
         setUpdatesAvailable(d.updates_available)
         if (d.changelog) setChangelog(d.changelog)
+        setCompatible(d.compatible !== false)
+        setCompatMsg(d.compat_message || null)
         setStatus(STATUS.IDLE)
       })
       .catch(() => setStatus(STATUS.IDLE))
@@ -169,6 +173,15 @@ export default function BackofficeUpdate() {
             <p className="text-blue-200 text-sm font-medium">Nieuwe versie beschikbaar</p>
           </div>
           <ChangelogSection changelog={changelog} />
+          {!compatible && (
+            <div className="bg-red-500/15 border border-red-400/30 rounded-xl px-4 py-3 flex items-start gap-3">
+              <span className="text-red-400 shrink-0 mt-0.5">⚠</span>
+              <div>
+                <p className="text-red-300 text-sm font-semibold">Niet compatibel met dit model</p>
+                <p className="text-red-400/80 text-xs mt-0.5">{compatMsg || 'Neem contact op met MIXMATE.'}</p>
+              </div>
+            </div>
+          )}
         </>
       )}
       {updatesAvailable === false && status === STATUS.IDLE && (
@@ -227,7 +240,8 @@ export default function BackofficeUpdate() {
       {(status === STATUS.IDLE || status === STATUS.ERROR) && (
         <button
           onClick={startUpdate}
-          className="w-full py-4 rounded-xl bg-white text-black text-sm font-bold hover:bg-white/90 transition-all active:scale-[0.98]"
+          disabled={updatesAvailable === true && !compatible}
+          className="w-full py-4 rounded-xl bg-white text-black text-sm font-bold hover:bg-white/90 disabled:bg-white/20 disabled:text-white/30 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
         >
           {status === STATUS.ERROR ? 'Opnieuw proberen' : 'Update uitvoeren'}
         </button>

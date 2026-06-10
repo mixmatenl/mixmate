@@ -5,6 +5,7 @@ import BackofficeLoadcell from './BackofficeLoadcell'
 import BackofficeUpdate from './BackofficeUpdate'
 import BackofficeSystem from './BackofficeSystem'
 import BackofficeHistory from './BackofficeHistory'
+import BackofficeMachine from './BackofficeMachine'
 
 const PIN_LENGTH = 4
 const BO_SESSION = 'mixmate_bo_auth'
@@ -259,6 +260,7 @@ export default function Backoffice({ onClose }) {
   if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} />
 
   const TABS = [
+    { id:'machine', label:'Machine' },
     { id:'pin', label:'PIN beheer' },
     { id:'pumps', label:'GPIO Pompen' },
     { id:'loadcell', label:'Weegschaal' },
@@ -291,6 +293,7 @@ export default function Backoffice({ onClose }) {
         </div>
       </header>
       <div className="flex-1 px-8 py-8 max-w-2xl">
+        {tab === 'machine' && <BackofficeMachine />}
         {tab === 'pin' && <PinManager />}
         {tab === 'pumps' && <PumpsManager ingredients={ingredients} />}
         {tab === 'loadcell' && <BackofficeLoadcell />}

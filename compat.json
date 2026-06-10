@@ -1,0 +1,6 @@
+{
+  "comment": "Per versie: welke machine-modellen mogen deze versie installeren. Ontbrekende versies = alle modellen toegestaan.",
+  "versions": {
+    "2.0.0": ["MATE.1", "MATE.1 CO2", "MATE.1 PRO"]
+  }
+}

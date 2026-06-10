@@ -75,6 +75,10 @@ export const api = {
   getPours: (limit = 50) => request('GET', `/pours?limit=${limit}`),
   createPour: (data) => request('POST', '/pours', data),
   getPourStats: () => request('GET', '/pours/stats'),
+
+  // Machine model
+  getMachineInfo: () => request('GET', '/system/machine'),
+  setMachineModel: (model) => request('POST', '/system/machine', { model }),
 }
 
 export function createPourSocket(recipeId, scale, onMessage) {
