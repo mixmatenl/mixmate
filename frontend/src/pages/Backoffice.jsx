@@ -4,6 +4,7 @@ import AdminCalibrate from './AdminCalibrate'
 import BackofficeLoadcell from './BackofficeLoadcell'
 import BackofficeUpdate from './BackofficeUpdate'
 import BackofficeSystem from './BackofficeSystem'
+import BackofficeHistory from './BackofficeHistory'
 
 const PIN_LENGTH = 4
 const BO_SESSION = 'mixmate_bo_auth'
@@ -261,6 +262,7 @@ export default function Backoffice({ onClose }) {
     { id:'pin', label:'PIN beheer' },
     { id:'pumps', label:'GPIO Pompen' },
     { id:'loadcell', label:'Weegschaal' },
+    { id:'history', label:'Geschiedenis' },
     { id:'update', label:'Updates' },
     { id:'system', label:'Systeem' },
   ]
@@ -292,6 +294,7 @@ export default function Backoffice({ onClose }) {
         {tab === 'pin' && <PinManager />}
         {tab === 'pumps' && <PumpsManager ingredients={ingredients} />}
         {tab === 'loadcell' && <BackofficeLoadcell />}
+        {tab === 'history' && <BackofficeHistory />}
         {tab === 'update' && <BackofficeUpdate />}
         {tab === 'system' && <BackofficeSystem />}
       </div>

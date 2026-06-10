@@ -33,17 +33,19 @@ export default function Login({ onLogin, onBackoffice }) {
   const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
   return (
-    <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center relative">
+    <div className="min-h-screen flex flex-col items-center justify-center relative" style={{ background: 'var(--bg)' }}>
       <div className="mb-12 text-center">
-        <span className="text-white font-bold tracking-[0.3em] text-2xl">MIXMATE</span>
-        <p className="text-white/30 text-sm mt-2 tracking-wide">Voer uw PIN in</p>
+        <span className="font-bold tracking-[0.3em] text-2xl" style={{ color: 'var(--accent)' }}>MIXMATE</span>
+        <p className="text-sm mt-2 tracking-wide" style={{ color: 'var(--text-secondary)' }}>Voer uw PIN in</p>
       </div>
 
       <div className={`flex gap-5 mb-10 ${shake ? 'animate-shake' : ''}`}>
         {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-          <div key={i} className={`w-3.5 h-3.5 rounded-full transition-all duration-150 ${
-            i < input.length ? 'bg-white scale-110' : 'bg-white/15'
-          }`} />
+          <div key={i} className="w-3.5 h-3.5 rounded-full transition-all duration-150"
+            style={{
+              background: i < input.length ? 'var(--accent)' : 'var(--border)',
+              transform: i < input.length ? 'scale(1.1)' : 'scale(1)',
+            }} />
         ))}
       </div>
 
@@ -57,9 +59,9 @@ export default function Login({ onLogin, onBackoffice }) {
               height: '68px', borderRadius: '14px', fontSize: '22px', fontWeight: '500',
               transition: 'all 0.12s',
               visibility: d === '' ? 'hidden' : 'visible',
-              background: d === '⌫' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)',
-              color: d === '⌫' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.9)',
-              border: '1px solid rgba(255,255,255,0.07)',
+              background: d === '⌫' ? 'transparent' : 'var(--bg-card)',
+              color: d === '⌫' ? 'var(--text-secondary)' : 'var(--text)',
+              border: '1px solid var(--border)',
               cursor: d === '' ? 'default' : 'pointer',
             }}
           >
@@ -74,7 +76,7 @@ export default function Login({ onLogin, onBackoffice }) {
         className="absolute bottom-6 left-6 w-6 h-6 rounded-full flex items-center justify-center opacity-20 hover:opacity-60 transition-opacity"
         title="Backoffice"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2" className="w-4 h-4">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
         </svg>

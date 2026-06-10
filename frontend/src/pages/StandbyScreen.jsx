@@ -6,7 +6,12 @@ const WAKE_MS    = 12000  // totale opstarttijd
 const FADE_START = 8000   // ms na start waking dat het logo begint te vervagen
 const FADE_DUR   = 3500   // ms dat de fade duurt
 
-export default function StandbyScreen({ onWake }) {
+export default function StandbyScreen({ onWake, theme }) {
+  const isLight = theme === 'light'
+  const panelBg   = isLight ? '#ffffff' : '#000'
+  // In licht thema gebruiken we donkere tinten voor contrast op wit
+  const fg        = isLight ? '0,0,0' : '255,255,255'
+  const accentCol = 'var(--accent)'
   const [phase,      setPhase]      = useState(P.ENTRY)
   const [mounted,    setMounted]    = useState(false)  // triggt de instap-animatie
   const [logoFading, setLogoFading] = useState(false)  // triggt de logo-fade tijdens waking
@@ -105,7 +110,7 @@ export default function StandbyScreen({ onWake }) {
     <div style={{ position: 'fixed', inset: 0, zIndex: 9998, pointerEvents: isRevealing ? 'none' : 'auto' }}>
       <div style={{
         position: 'absolute', inset: 0,
-        background: '#000',
+        background: panelBg,
         transform: `translateY(${panelY})`,
         transition: panelTransition,
         display: 'flex', flexDirection: 'column',
@@ -117,7 +122,7 @@ export default function StandbyScreen({ onWake }) {
         {/* Zachte glow */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.04) 0%, transparent 60%)',
+          background: `radial-gradient(ellipse at 50% 40%, rgba(${fg},0.04) 0%, transparent 60%)`,
         }} />
 
         {/* Logo */}
@@ -138,19 +143,19 @@ export default function StandbyScreen({ onWake }) {
           onClick={() => btnVisible && setPhase(P.WAKING)}
           style={{
             width: '80px', height: '80px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.16)',
+            background: `rgba(${fg},0.07)`,
+            border: `1px solid rgba(${fg},0.16)`,
             cursor: btnVisible ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             opacity: btnVisible ? 1 : 0,
             pointerEvents: btnVisible ? 'auto' : 'none',
             transition: 'opacity 0.7s ease',
           }}
-          onMouseEnter={e => { if (btnVisible) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+          onMouseEnter={e => { if (btnVisible) e.currentTarget.style.background = `rgba(${fg},0.15)` }}
+          onMouseLeave={e => e.currentTarget.style.background = `rgba(${fg},0.07)`}
         >
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-            stroke="rgba(255,255,255,0.65)" strokeWidth="1.8" strokeLinecap="round">
+            stroke={accentCol} strokeWidth="1.8" strokeLinecap="round">
             <path d="M12 2v6"/>
             <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
           </svg>
@@ -166,15 +171,15 @@ export default function StandbyScreen({ onWake }) {
           transition: 'opacity 0.8s ease',
           pointerEvents: 'none',
         }}>
-          <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.08)', borderRadius: '1px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '2px', background: `rgba(${fg},0.08)`, borderRadius: '1px', overflow: 'hidden' }}>
             <div style={{
               height: '100%', width: `${progress}%`,
-              background: 'rgba(255,255,255,0.5)', borderRadius: '1px',
-              boxShadow: '0 0 8px rgba(255,255,255,0.25)',
+              background: accentCol, borderRadius: '1px',
+              boxShadow: `0 0 8px rgba(${fg},0.25)`,
             }} />
           </div>
           <span style={{
-            color: 'rgba(255,255,255,0.25)', fontSize: '10px',
+            color: `rgba(${fg},0.25)`, fontSize: '10px',
             letterSpacing: '3.5px', textTransform: 'uppercase',
             fontFamily: 'system-ui, sans-serif',
           }}>

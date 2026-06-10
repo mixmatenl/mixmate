@@ -1,5 +1,18 @@
 # MIXMATE OS — Changelog
 
+## [2.0.0] - 2026-06-10
+### Nieuw
+- Volledig nieuw design voor dashboard, login en standby-scherm
+- Twee thema's: donker (warm goud accent) en licht — instelbaar via de zon/maan-knop in de sidebar, keuze wordt onthouden
+- Favorieten: tik op het hartje op een cocktailkaart; favorieten verschijnen bovenaan de sidebar
+- Gietgeschiedenis: elk gemaakt drankje wordt geregistreerd
+- Nieuwe backoffice-tab "Geschiedenis" met statistieken (totaal, vandaag, populairst), een top 5-grafiek en een lijst met recente gietsels
+- Zoekbalk in het dashboard die real-time filtert op naam én ingrediënt
+
+### Verbeterd
+- Grotere, beeldvullende cocktailkaarten met naam over de foto en een statusbadge
+- Sidebar met MIXMATE-logo en accentkleur voor de actieve categorie
+
 ## [1.2.2] - 2026-06-10
 ### Verbeterd
 - Update-pagina toont nu alleen de release notes van de versie die je installeert

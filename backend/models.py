@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -53,6 +54,19 @@ class Recipe(SQLModel, table=True):
     glass_id: Optional[int] = Field(default=None, foreign_key="glass.id")
     glass_rel: Optional[Glass] = Relationship(back_populates="recipes")
     enabled: bool = True
+
+
+class Favorite(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    recipe_id: int = Field(foreign_key="recipe.id", index=True)
+
+
+class Pour(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    recipe_id: Optional[int] = Field(default=None, foreign_key="recipe.id")
+    recipe_name: str = ""
+    poured_at: datetime = Field(default_factory=datetime.utcnow)
+    scale: float = 1.0
 
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
@@ -177,3 +191,16 @@ class RecipeRead(SQLModel):
     ingredients: List[RecipeIngredientRead] = []
     fully_automatic: bool = False
     partially_available: bool = False
+
+
+class PourCreate(SQLModel):
+    recipe_id: Optional[int] = None
+    recipe_name: str = ""
+    scale: float = 1.0
+
+class PourRead(SQLModel):
+    id: int
+    recipe_id: Optional[int]
+    recipe_name: str
+    poured_at: datetime
+    scale: float
