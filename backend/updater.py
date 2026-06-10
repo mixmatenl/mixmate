@@ -37,20 +37,6 @@ def _find_npm():
 NPM = _find_npm()
 
 
-async def _run_proc(cmd, cwd=None):
-    """Run a subprocess, yield output lines, return exit code."""
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT,
-        cwd=str(cwd or APP_DIR),
-        env={**os.environ, "HOME": str(Path.home()), "PATH": os.environ.get("PATH", "") + ":/usr/bin:/usr/local/bin"},
-    )
-    async for raw in proc.stdout:
-        yield raw.decode(errors="replace").rstrip()
-    await proc.wait()
-    return proc.returncode
-
 
 async def get_version_info() -> dict:
     """Return current git commit info."""
