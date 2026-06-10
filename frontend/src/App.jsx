@@ -28,7 +28,11 @@ export default function App() {
   if (showSplash) {
     content = <SplashScreen onDone={() => { sessionStorage.setItem('mixmate_splash_shown', '1'); setShowSplash(false) }} />
   } else if (standby) {
-    content = <StandbyScreen onWake={() => setStandby(false)} />
+    content = <StandbyScreen onWake={() => {
+      setStandby(false)
+      // Herlaad de pagina op de achtergrond zodat data vers is
+      setTimeout(() => window.location.reload(), 50)
+    }} />
   } else if (view === 'backoffice') {
     content = <VirtualKeyboardProvider><Backoffice onClose={() => setView('login')} /></VirtualKeyboardProvider>
   } else if (view === 'login') {
