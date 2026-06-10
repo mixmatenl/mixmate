@@ -632,6 +632,9 @@ async def system_version():
 async def system_check_updates():
     has_updates, changelog = await check_updates_available()
     # Compatibiliteitscheck: mag dit model de nieuwste versie installeren?
+    # Logica: compat.json bevat restricties per minor-versie (x.y).
+    # Een bugfix (x.y.Z) erft de beperking van zijn minor-lijn (x.y).
+    # Dus als 2.1 geblokkeerd is voor MATE.1, geldt dat voor alle 2.1.x versies.
     compatible = True
     compat_msg = None
     if has_updates and changelog:
@@ -641,12 +644,32 @@ async def system_check_updates():
             compat_path = Path(__file__).parent.parent / "compat.json"
             if compat_path.exists():
                 import json as _json
+                from packaging.version import Version
                 compat = _json.loads(compat_path.read_text()).get("versions", {})
-                if target_version in compat:
-                    allowed = compat[target_version]
-                    if machine_model not in allowed:
-                        compatible = False
-                        compat_msg = f"Versie {target_version} is niet beschikbaar voor {machine_model or 'onbekend model'}."
+                tv = Version(target_version)
+                # Zoek de meest specifieke toepasselijke compat-regel:
+                # eerst exacte versie, dan minor-lijn (x.y), dan major (x)
+                def minor_key(v): return f"{Version(v).major}.{Version(v).minor}"
+                def major_key(v): return str(Version(v).major)
+                target_minor = f"{tv.major}.{tv.minor}"
+                target_major = str(tv.major)
+                allowed = None
+                blocking_version = None
+                for cv, models in compat.items():
+                    cv_parsed = Version(cv)
+                    cv_minor = f"{cv_parsed.major}.{cv_parsed.minor}"
+                    # Exacte match of zelfde minor-lijn
+                    if cv == target_version or cv_minor == target_minor:
+                        allowed = models
+                        blocking_version = cv
+                        break
+                if allowed is not None and machine_model not in allowed:
+                    compatible = False
+                    compat_msg = (
+                        f"Versie {target_version} is niet beschikbaar voor "
+                        f"{machine_model or 'onbekend model'}. "
+                        f"Neem contact op met MIXMATE."
+                    )
         except Exception:
             pass
     return {
