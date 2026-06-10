@@ -74,8 +74,9 @@ export default function AppUpdate() {
         setCompletedSteps([0, 1, 2, 3, 4])
         setCurrentStepIdx(-1)
         setStatus(STATUS.DONE)
-        setLogs(l => [...l, { type: 'done', text: 'Update voltooid!' }])
-        fetch('/api/system/version').then(r => r.json()).then(setVersionInfo).catch(() => {})
+        setLogs(l => [...l, { type: 'done', text: 'Update klaar! Pagina herlaadt automatisch…' }])
+        // Wacht 5 seconden zodat de service kan herstarten, herlaad dan automatisch
+        setTimeout(() => window.location.reload(), 5000)
       } else if (msg.type === 'error') {
         setStatus(STATUS.ERROR)
         setErrorMsg(msg.message)
@@ -256,11 +257,11 @@ export default function AppUpdate() {
           </div>
           <div>
             <p className="text-gray-800 font-semibold">Update voltooid</p>
-            <p className="text-gray-400 text-sm mt-1">Mixmate is bijgewerkt naar de nieuwste versie</p>
+            <p className="text-gray-400 text-sm mt-1">Machine herstart… pagina laadt automatisch opnieuw.</p>
           </div>
           <button onClick={() => window.location.reload()}
             className="w-full py-3.5 rounded-2xl bg-[#111] text-white text-sm font-bold hover:bg-[#333] transition-all">
-            Opnieuw laden
+            Nu herladen
           </button>
         </div>
       )}

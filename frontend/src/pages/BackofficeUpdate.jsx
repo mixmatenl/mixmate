@@ -59,7 +59,7 @@ export default function BackofficeUpdate() {
 
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const host = window.location.hostname
-    const port = import.meta.env.DEV ? '8000' : (window.location.port || '80')
+    const port = import.meta.env.DEV ? '8000' : (window.location.port || '8000')
     const ws = new WebSocket(`${proto}://${host}:${port}/ws/system/update`)
     wsRef.current = ws
 
@@ -72,8 +72,8 @@ export default function BackofficeUpdate() {
         setLogs(l => [...l, { type: 'log', text: msg.line }])
       } else if (msg.type === 'done') {
         setStatus(STATUS.DONE)
-        setLogs(l => [...l, { type: 'done', text: 'Update voltooid!' }])
-        fetch('/api/system/version').then(r => r.json()).then(setVersionInfo).catch(() => {})
+        setLogs(l => [...l, { type: 'done', text: 'Update klaar! Pagina herlaadt over 5 seconden…' }])
+        setTimeout(() => window.location.reload(), 5000)
       } else if (msg.type === 'error') {
         setStatus(STATUS.ERROR)
         setErrorMsg(msg.message)

@@ -169,21 +169,21 @@ async def run_update():
                 }
                 return
 
-        # Herstart service
+        # Stuur "done" EERST zodat de browser het ontvangt,
+        # dan herstart de service na een korte vertraging.
         yield {"type": "step", "label": "Service herstarten"}
-        restart = await asyncio.create_subprocess_exec(
-            "sudo", "systemctl", "restart", "mixmate",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-        )
-        out, _ = await restart.communicate()
-        if restart.returncode == 0:
-            yield {"type": "log", "line": "✓ Service herstart via systemd"}
-        else:
-            out_text = out.decode(errors="replace").strip() if out else ""
-            yield {"type": "log", "line": f"Systemd: {out_text or 'niet beschikbaar'}"}
-
+        yield {"type": "log", "line": "Update klaar — machine herstart over 3 seconden…"}
         yield {"type": "done"}
+
+        # Wacht 3 seconden zodat de WebSocket verbinding netjes gesloten kan worden,
+        # dan herstart de service als achtergrondtaak.
+        async def _delayed_restart():
+            await asyncio.sleep(3)
+            await asyncio.create_subprocess_exec(
+                "sudo", "systemctl", "restart", "mixmate"
+            )
+
+        asyncio.create_task(_delayed_restart())
 
     except Exception as e:
         yield {"type": "error", "message": str(e)}

@@ -473,8 +473,13 @@ async def websocket_update(websocket: WebSocket):
     await websocket.accept()
     try:
         async for event in run_update():
-            await websocket.send_json(event)
+            try:
+                await websocket.send_json(event)
+            except Exception:
+                break
             if event["type"] in ("done", "error"):
+                # Geef de browser even tijd om het bericht te verwerken
+                await asyncio.sleep(0.5)
                 break
     except WebSocketDisconnect:
         pass
