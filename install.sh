@@ -92,28 +92,10 @@ fi
 
 # ── Python dependencies ───────────────────────
 log "Python dependencies installeren..."
-# Probeer eerst venv (schoner), fallback naar system pip (Debian trixie)
-PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
-apt-get install -y -qq "python${PYVER}-venv" 2>/dev/null || true
-
-rm -rf "$INSTALL_DIR/.venv"
-if python3 -m venv "$INSTALL_DIR/.venv" 2>/dev/null && [ -f "$INSTALL_DIR/.venv/bin/pip" ]; then
-  log "Venv aangemaakt (Python ${PYVER})"
-  chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
-  sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
-  sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
-    || fail "Kan Python packages niet installeren"
-  PYTHON_BIN="$INSTALL_DIR/.venv/bin/python3"
-  UVICORN_BIN="$INSTALL_DIR/.venv/bin/uvicorn"
-else
-  warn "Venv niet beschikbaar — system pip gebruiken"
-  rm -rf "$INSTALL_DIR/.venv"
-  pip3 install --quiet --break-system-packages -r "$INSTALL_DIR/backend/requirements.txt" \
-    || pip3 install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
-    || fail "Kan Python packages niet installeren"
-  PYTHON_BIN="$(which python3)"
-  UVICORN_BIN="$(which uvicorn)"
-fi
+pip3 install --quiet --break-system-packages -r "$INSTALL_DIR/backend/requirements.txt" \
+  || pip3 install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
+  || fail "Kan Python packages niet installeren"
+UVICORN_BIN="$(which uvicorn || echo uvicorn)"
 
 # ── Frontend bouwen ───────────────────────────
 log "Frontend installeren en bouwen (dit duurt even)..."
