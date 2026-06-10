@@ -2,7 +2,6 @@
   "comment": "Compatibiliteit per minor-versie (x.y). Bugfixes (x.y.Z) erven automatisch de beperking van hun minor-lijn. Ontbrekende versies = alle modellen toegestaan.",
   "versions": {
     "2.0": ["MATE.1", "MATE.1 CO2", "MATE.1 PRO"],
-    "2.1": ["MATE.1", "MATE.1 CO2", "MATE.1 PRO"],
-    "3.0": ["MATE.1 CO2", "MATE.1 PRO"]
+    "2.1": ["MATE.1", "MATE.1 CO2", "MATE.1 PRO"]
   }
 }
