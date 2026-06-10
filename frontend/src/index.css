@@ -5,6 +5,13 @@
 * {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html, body, #root {
@@ -47,15 +54,6 @@ html, body, #root {
   touch-action: manipulation;
 }
 
-/* Voorkom tekst-selectie tijdens scrollen, maar laat invoervelden gewoon werken */
-.select-none {
-  -webkit-user-select: none;
-  user-select: none;
-}
-input, textarea, [contenteditable] {
-  -webkit-user-select: text;
-  user-select: text;
-}
 
 /* Fix select dropdown options on dark background */
 select option {

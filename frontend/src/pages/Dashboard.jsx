@@ -1,55 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { api, createPourSocket } from '../api'
 import { Sidebar } from './Layout'
-
-/* ── Drag-to-scroll hook (voor Pi touchscreen dat muisevents stuurt) ──── */
-function useDragScroll() {
-  const ref = useRef(null)
-  const dragging = useRef(false)
-  const startY = useRef(0)
-  const startScroll = useRef(0)
-  const moved = useRef(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    function onDown(e) {
-      dragging.current = true
-      moved.current = false
-      startY.current = e.clientY
-      startScroll.current = el.scrollTop
-    }
-
-    function onMove(e) {
-      if (!dragging.current) return
-      const dy = e.clientY - startY.current
-      if (Math.abs(dy) > 5) {
-        moved.current = true
-        el.scrollTop = startScroll.current - dy
-        e.preventDefault()
-      }
-    }
-
-    function onUp() {
-      dragging.current = false
-    }
-
-    el.addEventListener('mousedown', onDown)
-    el.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-
-    return () => {
-      el.removeEventListener('mousedown', onDown)
-      el.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-  }, [])
-
-  // Geeft terug: ref voor de container + check of het een drag was (geen klik)
-  const wasDrag = useCallback(() => moved.current, [])
-  return { ref, wasDrag }
-}
 
 const GRADIENTS = [
   'linear-gradient(135deg,#1a1a2e,#0f3460)',
@@ -278,7 +229,7 @@ function PourModal({ recipe, glasses, onClose }) {
 }
 
 /* ── Cocktail card ───────────────────────────────────────────────────────── */
-function CocktailCard({ recipe, onMake, wasDrag }) {
+function CocktailCard({ recipe, onMake }) {
   const canMake = recipe.partially_available
 
   return (
@@ -305,7 +256,7 @@ function CocktailCard({ recipe, onMake, wasDrag }) {
         {recipe.description && <p className="text-gray-400 text-xs mb-3 leading-relaxed">{recipe.description}</p>}
         <div className="mt-auto pt-3">
           <button
-            onClick={() => { if (!wasDrag()) onMake(recipe) }}
+            onClick={() => { if (!window.__dragScrollDidScroll?.()) onMake(recipe) }}
             disabled={!canMake}
             className="w-full py-3 rounded-2xl bg-[#2a2a2a] text-white text-sm font-semibold hover:bg-[#1a1a1a] disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
           >
@@ -325,7 +276,6 @@ export default function Dashboard({ onStandby }) {
   const [activeCategory, setActiveCategory] = useState('all')
   const [making, setMaking] = useState(null)
   const [loading, setLoading] = useState(true)
-  const { ref: scrollRef, wasDrag } = useDragScroll()
 
   function handleLogout() { sessionStorage.removeItem('mixmate_auth'); window.location.reload() }
 
@@ -352,7 +302,7 @@ export default function Dashboard({ onStandby }) {
         onLogout={handleLogout}
         onStandby={onStandby}
       />
-      <main ref={scrollRef} className="flex-1 overflow-y-auto px-8 py-8 select-none" style={{ cursor: 'default' }}>
+      <main className="flex-1 overflow-y-auto px-8 py-8">
         {loading ? (
           <div className="flex justify-center pt-20">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
@@ -364,7 +314,7 @@ export default function Dashboard({ onStandby }) {
           </div>
         ) : (
           <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-            {filtered.map(r => <CocktailCard key={r.id} recipe={r} onMake={setMaking} wasDrag={wasDrag} />)}
+            {filtered.map(r => <CocktailCard key={r.id} recipe={r} onMake={setMaking} />)}
           </div>
         )}
       </main>

@@ -9,6 +9,7 @@ import Rapporten from './pages/Rapporten'
 import SplashScreen from './pages/SplashScreen'
 import StandbyScreen from './pages/StandbyScreen'
 import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
+import { DragScrollProvider } from './components/DragScroll'
 
 const SESSION_KEY = 'mixmate_auth'
 
@@ -21,41 +22,38 @@ export default function App() {
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
 
-  if (showSplash) return (
-    <SplashScreen onDone={() => {
-      sessionStorage.setItem('mixmate_splash_shown', '1')
-      setShowSplash(false)
-    }} />
-  )
-
-  if (standby) return <StandbyScreen onWake={() => setStandby(false)} />
-
-  if (view === 'backoffice') return (
-    <VirtualKeyboardProvider>
-      <Backoffice onClose={() => setView('login')} />
-    </VirtualKeyboardProvider>
-  )
-  if (view === 'login') return (
-    <VirtualKeyboardProvider>
-      <Login
-        onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setView('app') }}
-        onBackoffice={() => setView('backoffice')}
-      />
-    </VirtualKeyboardProvider>
-  )
-
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
-  return (
-    <VirtualKeyboardProvider>
-      <Layout onLogout={logout} onStandby={() => setStandby(true)}>
-        <Routes>
-          <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
-          <Route path="/instellingen/*" element={<Instellingen />} />
-          <Route path="/rapporten" element={<Rapporten />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </VirtualKeyboardProvider>
-  )
+  let content
+  if (showSplash) {
+    content = <SplashScreen onDone={() => { sessionStorage.setItem('mixmate_splash_shown', '1'); setShowSplash(false) }} />
+  } else if (standby) {
+    content = <StandbyScreen onWake={() => setStandby(false)} />
+  } else if (view === 'backoffice') {
+    content = <VirtualKeyboardProvider><Backoffice onClose={() => setView('login')} /></VirtualKeyboardProvider>
+  } else if (view === 'login') {
+    content = (
+      <VirtualKeyboardProvider>
+        <Login
+          onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setView('app') }}
+          onBackoffice={() => setView('backoffice')}
+        />
+      </VirtualKeyboardProvider>
+    )
+  } else {
+    content = (
+      <VirtualKeyboardProvider>
+        <Layout onLogout={logout} onStandby={() => setStandby(true)}>
+          <Routes>
+            <Route path="/" element={<Dashboard onStandby={() => setStandby(true)} />} />
+            <Route path="/instellingen/*" element={<Instellingen />} />
+            <Route path="/rapporten" element={<Rapporten />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </VirtualKeyboardProvider>
+    )
+  }
+
+  return <DragScrollProvider>{content}</DragScrollProvider>
 }
