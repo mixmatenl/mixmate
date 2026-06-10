@@ -6,12 +6,23 @@ import Layout from './pages/Layout'
 import Dashboard from './pages/Dashboard'
 import Instellingen from './pages/Instellingen'
 import Rapporten from './pages/Rapporten'
+import SplashScreen from './pages/SplashScreen'
 
 const SESSION_KEY = 'mixmate_auth'
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(() =>
+    !sessionStorage.getItem('mixmate_splash_shown')
+  )
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
+  )
+
+  if (showSplash) return (
+    <SplashScreen onDone={() => {
+      sessionStorage.setItem('mixmate_splash_shown', '1')
+      setShowSplash(false)
+    }} />
   )
 
   if (view === 'backoffice') return <Backoffice onClose={() => setView('login')} />
