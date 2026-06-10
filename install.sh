@@ -52,7 +52,7 @@ apt-get update -qq
 
 # ── Verplichte packages ───────────────────────
 log "Basis dependencies installeren..."
-apt-get install -y -qq git python3 python3-pip python3-venv curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
+apt-get install -y -qq git python3 python3-pip python3-venv python3-full curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
 
 # ── Optionele packages (overslaan als niet beschikbaar) ───
 log "Optionele packages installeren..."
@@ -93,7 +93,13 @@ fi
 
 # ── Python venv + dependencies ────────────────
 log "Python omgeving instellen..."
-sudo -u $USER python3 -m venv "$INSTALL_DIR/.venv"
+rm -rf "$INSTALL_DIR/.venv"
+sudo -u $USER python3 -m venv "$INSTALL_DIR/.venv" \
+  || sudo -u $USER python3 -m venv --system-site-packages "$INSTALL_DIR/.venv" \
+  || fail "Kan Python venv niet aanmaken"
+
+[ -f "$INSTALL_DIR/.venv/bin/pip" ] || fail "venv aangemaakt maar pip ontbreekt — probeer opnieuw"
+
 sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
 sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" || fail "Kan Python packages niet installeren"
 
