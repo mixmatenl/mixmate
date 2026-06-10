@@ -60,7 +60,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col">
       {/* Header */}
       <header className="px-8 pt-10 pb-6">
-        <span className="text-white font-bold tracking-[0.3em] text-xl">MIXMATE</span>
+        <span className="text-white font-bold tracking-[0.3em] text-xl">MIMATE OS</span>
       </header>
 
       {/* Content */}

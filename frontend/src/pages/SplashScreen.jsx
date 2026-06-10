@@ -32,7 +32,7 @@ export default function SplashScreen({ onDone }) {
 
       <img
         src="/logo.png"
-        alt="Mixmate"
+        alt="MIMATE OS"
         style={{
           width: '52%', maxWidth: '340px', objectFit: 'contain',
           opacity: logoVisible ? 1 : 0,
