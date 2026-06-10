@@ -65,6 +65,16 @@ export const api = {
 
   // Pour
   cancelPour: () => request('POST', '/pour/cancel'),
+
+  // Favorites
+  getFavorites: () => request('GET', '/favorites'),
+  addFavorite: (recipeId) => request('POST', `/favorites/${recipeId}`),
+  removeFavorite: (recipeId) => request('DELETE', `/favorites/${recipeId}`),
+
+  // Pour history
+  getPours: (limit = 50) => request('GET', `/pours?limit=${limit}`),
+  createPour: (data) => request('POST', '/pours', data),
+  getPourStats: () => request('GET', '/pours/stats'),
 }
 
 export function createPourSocket(recipeId, scale, onMessage) {

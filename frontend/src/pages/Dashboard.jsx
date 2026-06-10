@@ -18,14 +18,8 @@ function gradientFor(name) {
 /* ── Skeleton card ───────────────────────────────────────────────────── */
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 flex flex-col">
-      <div className="h-44 skeleton" />
-      <div className="p-5 space-y-3 flex-1">
-        <div className="skeleton h-4 w-3/4" />
-        <div className="skeleton h-3 w-full" />
-        <div className="skeleton h-3 w-1/2" />
-        <div className="skeleton h-10 w-full mt-4 rounded-2xl" />
-      </div>
+    <div className="rounded-3xl overflow-hidden flex flex-col" style={{ aspectRatio: '3/4', background: 'var(--bg-card)' }}>
+      <div className="flex-1 skeleton" />
     </div>
   )
 }
@@ -51,13 +45,23 @@ function PourModal({ recipe, glasses, onClose }) {
   const [progress, setProgress] = useState(null)
   const [showDoneRing, setShowDoneRing] = useState(false)
   const wsRef = useRef(null)
+  const pourLogged = useRef(false)
+
+  // Registreer een gietsel in de geschiedenis (één keer per modal-sessie)
+  function logPour() {
+    if (pourLogged.current) return
+    pourLogged.current = true
+    api.createPour({ recipe_id: recipe.id, recipe_name: recipe.name, scale }).catch(() => {})
+  }
+
+  function finishDone() { setStatus(PS.DONE); setShowDoneRing(true); logPour() }
 
   function startPour() {
-    if (!hasAuto) { setStatus(PS.DONE); setShowDoneRing(true); return }
+    if (!hasAuto) { finishDone(); return }
     setStatus(PS.POURING)
     const ws = createPourSocket(recipe.id, scale !== 1.0 ? scale : 1.0, msg => {
       if (msg.type === 'progress') setProgress(msg)
-      else if (msg.type === 'done') { setStatus(PS.DONE); setShowDoneRing(true) }
+      else if (msg.type === 'done') { finishDone() }
       else if (msg.type === 'error') { setStatus(PS.ERROR); setProgress(p => ({...p, error: msg.message})) }
     })
     wsRef.current = ws
@@ -185,7 +189,7 @@ function PourModal({ recipe, glasses, onClose }) {
               }
               <div className="flex gap-3">
                 <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium hover:border-gray-300 active:scale-[0.97] transition-all">Annuleer</button>
-                <button onClick={hasAuto ? startPour : () => { setStatus(PS.DONE); setShowDoneRing(true) }}
+                <button onClick={hasAuto ? startPour : finishDone}
                   className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
                   {hasAuto ? '🍸 Maken' : 'Klaar!'}
                 </button>
@@ -281,111 +285,224 @@ function PourModal({ recipe, glasses, onClose }) {
   )
 }
 
+/* ── Heart toggle ────────────────────────────────────────────────────── */
+function HeartButton({ active, onToggle }) {
+  const [popping, setPopping] = useState(false)
+  function handle(e) {
+    e.stopPropagation()
+    if (window.__dragScrollDidScroll?.()) return
+    setPopping(true)
+    setTimeout(() => setPopping(false), 360)
+    onToggle()
+  }
+  return (
+    <button
+      onClick={handle}
+      className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors ${popping ? 'heart-pop' : ''}`}
+      style={{ background: 'rgba(0,0,0,0.3)' }}
+      aria-label="Favoriet"
+    >
+      <span className="text-lg leading-none" style={{ color: active ? '#ff5a7a' : 'rgba(255,255,255,0.85)' }}>
+        {active ? '♥' : '♡'}
+      </span>
+    </button>
+  )
+}
+
 /* ── Cocktail card ───────────────────────────────────────────────────── */
-function CocktailCard({ recipe, onMake }) {
+function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
   const canMake = recipe.partially_available
+  const statusLabel = recipe.fully_automatic ? 'Automatisch' : (canMake ? 'Deels' : 'Niet')
 
   return (
     <div
       onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
-      className={`card-pressable bg-white rounded-3xl overflow-hidden border border-gray-100 flex flex-col ${!canMake ? 'opacity-40' : ''}`}
+      className={`card-pressable relative rounded-3xl overflow-hidden flex flex-col ${!canMake ? 'opacity-40' : ''}`}
+      style={{ aspectRatio: '3/4', background: 'var(--bg-card)', border: '1px solid var(--border)' }}
     >
-      {/* Foto / gradient */}
-      <div className="h-44 relative overflow-hidden bg-gray-100 shrink-0">
-        {recipe.image_url
-          ? <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
-          : <div className="w-full h-full" style={{ background: gradientFor(recipe.name) }} />
-        }
-        {canMake && !recipe.fully_automatic && (
-          <div className="absolute top-3 right-3 bg-amber-400/90 backdrop-blur-sm text-amber-900 text-xs font-bold px-2.5 py-1 rounded-full tracking-wide">
-            Deels handmatig
-          </div>
-        )}
-        {!canMake && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-[2px]">
-            <span className="text-xs font-bold text-gray-400 tracking-[0.2em] uppercase">Niet beschikbaar</span>
-          </div>
-        )}
-      </div>
+      {/* Foto / gradient vult de kaart */}
+      {recipe.image_url
+        ? <img src={recipe.image_url} alt={recipe.name} className="absolute inset-0 w-full h-full object-cover" />
+        : <div className="absolute inset-0" style={{ background: gradientFor(recipe.name) }} />
+      }
 
-      {/* Info */}
-      <div className="p-5 flex flex-col flex-1">
+      {/* Gradient onderaan voor leesbaarheid */}
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.25) 45%, transparent 70%)'
+      }} />
+
+      {/* Hartje */}
+      <HeartButton active={isFavorite} onToggle={() => onToggleFavorite(recipe.id)} />
+
+      {!canMake && (
+        <div className="absolute inset-0 flex items-center justify-center backdrop-blur-[2px]" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <span className="text-xs font-bold text-white/70 tracking-[0.2em] uppercase">Niet beschikbaar</span>
+        </div>
+      )}
+
+      {/* Naam onderaan over de foto */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
         {recipe.category_name && (
-          <p className="text-gray-400 text-[10px] font-semibold tracking-[0.22em] uppercase mb-1">
+          <p className="text-white/55 text-[10px] font-semibold tracking-[0.22em] uppercase mb-1">
             {recipe.category_name}
           </p>
         )}
-        <h3 className="font-bold text-[#111] text-base tracking-tight leading-tight mb-1">
+        <h3 className="font-bold text-white text-base tracking-tight leading-tight">
           {recipe.name.toUpperCase()}
         </h3>
-        {recipe.description && (
-          <p className="text-gray-400 text-xs mb-3 leading-relaxed line-clamp-2">{recipe.description}</p>
-        )}
-        <div className="mt-auto pt-3">
-          <div className={`w-full py-3 rounded-2xl text-center text-sm font-bold tracking-[0.08em] ${
-            canMake ? 'bg-[#111] text-white' : 'bg-gray-100 text-gray-300'
-          }`}>
-            MAKEN
-          </div>
-        </div>
       </div>
+
+      {/* Status badge rechtsonder */}
+      {canMake && (
+        <div className="absolute bottom-4 right-4 z-10 text-[10px] font-bold px-2 py-1 rounded-full tracking-wide"
+          style={{
+            background: recipe.fully_automatic ? 'rgba(255,255,255,0.18)' : 'rgba(245,158,11,0.85)',
+            color: recipe.fully_automatic ? '#fff' : '#451a03',
+            backdropFilter: 'blur(4px)',
+          }}>
+          {statusLabel}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Search bar ──────────────────────────────────────────────────────── */
+function SearchBar({ value, onChange }) {
+  return (
+    <div className="relative mb-6">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" />
+        </svg>
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Zoek op naam of ingrediënt…"
+        className="w-full rounded-2xl pl-11 pr-11 py-3 text-sm focus:outline-none"
+        style={{
+          background: 'var(--input-bg)',
+          border: '1px solid var(--border)',
+          color: 'var(--text)',
+        }}
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-sm transition-colors"
+          style={{ color: 'var(--text-secondary)', background: 'var(--accent-bg)' }}
+          aria-label="Wissen"
+        >✕</button>
+      )}
     </div>
   )
 }
 
 /* ── Dashboard ───────────────────────────────────────────────────────── */
-export default function Dashboard({ onStandby }) {
+export default function Dashboard({ onStandby, theme, onThemeChange }) {
   const [recipes,    setRecipes]    = useState([])
   const [categories, setCategories] = useState([])
   const [glasses,    setGlasses]    = useState([])
+  const [favorites,  setFavorites]  = useState([])   // array van recipe_ids
   const [activeCategory, setActiveCategory] = useState('all')
+  const [search,  setSearch]  = useState('')
   const [making,  setMaking]  = useState(null)
   const [loading, setLoading] = useState(true)
 
   function handleLogout() { sessionStorage.removeItem('mixmate_auth'); window.location.reload() }
 
   useEffect(() => {
-    Promise.all([api.getRecipes(), api.getCategories(), api.getGlasses()])
-      .then(([r, c, g]) => { setRecipes(r); setCategories(c); setGlasses(g) })
+    Promise.all([api.getRecipes(), api.getCategories(), api.getGlasses(), api.getFavorites()])
+      .then(([r, c, g, f]) => { setRecipes(r); setCategories(c); setGlasses(g); setFavorites(f) })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
 
-  const allCats = [{ id: 'all', name: 'Alles' }, ...categories]
-  // eslint-disable-next-line eqeqeq — category_id is number, activeCategory kan string of number zijn
-  const filtered = recipes.filter(r => r.enabled !== false && (
-    activeCategory === 'all' || r.category_id == activeCategory
-  ))
+  const favSet = new Set(favorites)
+
+  function toggleFavorite(recipeId) {
+    const isFav = favSet.has(recipeId)
+    // Optimistische update
+    setFavorites(prev => isFav ? prev.filter(id => id !== recipeId) : [...prev, recipeId])
+    const call = isFav ? api.removeFavorite(recipeId) : api.addFavorite(recipeId)
+    call.catch(() => {
+      // Terugdraaien bij fout
+      setFavorites(prev => isFav ? [...prev, recipeId] : prev.filter(id => id !== recipeId))
+    })
+  }
+
+  // Sidebar categorieën — Favorieten bovenaan als er favorieten zijn
+  const sidebarCats = [
+    ...(favorites.length > 0 ? [{ value: 'favorites', label: 'Favorieten', icon: '♥' }] : []),
+    { value: 'all', label: 'Alles' },
+    ...categories.map(c => ({ value: c.id, label: c.name })),
+  ]
+
+  const term = search.trim().toLowerCase()
+  const searching = term.length > 0
+
+  const filtered = recipes.filter(r => {
+    if (r.enabled === false) return false
+
+    // Bij actieve zoekterm: categorie-filter uitgeschakeld, zoek door alles
+    if (searching) {
+      const inName = r.name.toLowerCase().includes(term)
+      const inIngredients = (r.ingredients || []).some(
+        i => i.ingredient_name.toLowerCase().includes(term)
+      )
+      return inName || inIngredients
+    }
+
+    if (activeCategory === 'favorites') return favSet.has(r.id)
+    if (activeCategory === 'all') return true
+    // eslint-disable-next-line eqeqeq — category_id is number, activeCategory kan string of number zijn
+    return r.category_id == activeCategory
+  })
 
   return (
     <>
       {making && <PourModal recipe={making} glasses={glasses} onClose={() => setMaking(null)} />}
 
       <Sidebar
-        categories={allCats.map(c => ({ value: c.id, label: c.name }))}
-        active={activeCategory}
-        onSelect={setActiveCategory}
+        categories={sidebarCats}
+        active={searching ? null : activeCategory}
+        onSelect={(v) => { setSearch(''); setActiveCategory(v) }}
         onLogout={handleLogout}
         onStandby={onStandby}
+        theme={theme}
+        onThemeChange={onThemeChange}
       />
 
-      <main className="flex-1 overflow-y-auto ambient-bg">
-        {/* Subtiele grain overlay */}
+      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
         <div className="min-h-full px-8 py-8">
+          <SearchBar value={search} onChange={setSearch} />
+
           {loading ? (
             <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-3">
+            <div className="flex flex-col items-center justify-center h-64 gap-3" style={{ color: 'var(--text-secondary)' }}>
               <p className="text-4xl opacity-30">🍹</p>
-              <p className="text-base font-semibold text-gray-500">Geen cocktails gevonden</p>
-              <p className="text-sm">Voeg recepten toe via <span className="text-gray-600 font-medium">Instellingen</span></p>
+              <p className="text-base font-semibold" style={{ color: 'var(--text)' }}>
+                {searching ? 'Geen resultaten' : 'Geen cocktails gevonden'}
+              </p>
+              {!searching && (
+                <p className="text-sm">Voeg recepten toe via <span className="font-medium" style={{ color: 'var(--text)' }}>Instellingen</span></p>
+              )}
             </div>
           ) : (
             <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
               {filtered.map(r => (
-                <CocktailCard key={r.id} recipe={r} onMake={setMaking} />
+                <CocktailCard
+                  key={r.id}
+                  recipe={r}
+                  onMake={setMaking}
+                  isFavorite={favSet.has(r.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
               ))}
             </div>
           )}

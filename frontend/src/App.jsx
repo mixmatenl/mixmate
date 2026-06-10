@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { getTheme, applyTheme } from './theme'
 import Login from './pages/Login'
 import Backoffice from './pages/Backoffice'
 import Layout from './pages/Layout'
@@ -13,10 +14,10 @@ import { DragScrollProvider } from './components/DragScroll'
 
 const SESSION_KEY = 'mixmate_auth'
 
-function AnimatedRoutes({ onStandby }) {
+function AnimatedRoutes({ onStandby, theme, onThemeChange }) {
   return (
     <Routes>
-      <Route path="/" element={<Dashboard onStandby={onStandby} />} />
+      <Route path="/" element={<Dashboard onStandby={onStandby} theme={theme} onThemeChange={onThemeChange} />} />
       <Route path="/instellingen/*" element={<Instellingen />} />
       <Route path="/rapporten" element={<Rapporten />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -32,6 +33,12 @@ export default function App() {
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
+  const [theme, setTheme] = useState(getTheme)
+
+  // Pas het gekozen thema toe op <html> bij mount
+  useEffect(() => { applyTheme(theme) }, [])
+
+  function changeTheme(next) { setTheme(applyTheme(next)) }
 
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
@@ -59,8 +66,10 @@ export default function App() {
   } else {
     appContent = (
       <VirtualKeyboardProvider>
-        <Layout onLogout={logout} onStandby={() => setStandby(true)}>
-          <AnimatedRoutes onStandby={() => setStandby(true)} />
+        <Layout onLogout={logout} onStandby={() => setStandby(true)}
+          theme={theme} onThemeChange={changeTheme}>
+          <AnimatedRoutes onStandby={() => setStandby(true)}
+            theme={theme} onThemeChange={changeTheme} />
         </Layout>
       </VirtualKeyboardProvider>
     )
@@ -69,7 +78,7 @@ export default function App() {
   return (
     <DragScrollProvider>
       {appContent}
-      {standby && <StandbyScreen onWake={() => setStandby(false)} />}
+      {standby && <StandbyScreen onWake={() => setStandby(false)} theme={theme} />}
     </DragScrollProvider>
   )
 }

@@ -18,7 +18,10 @@ from .models import (
     Pump, PumpCreate, PumpRead, PumpUpdate, PumpSimple,
     Recipe, RecipeCreate, RecipeRead, RecipeUpdate,
     RecipeIngredient, RecipeIngredientRead,
+    Favorite, Pour, PourCreate, PourRead,
 )
+from datetime import datetime, timedelta
+from sqlalchemy import func
 from .hardware import loadcell, gpio
 from .pouring import pour_recipe, cancel_pour
 from .updater import get_version_info, check_updates_available, run_update
@@ -353,6 +356,84 @@ async def upload_recipe_image(recipe_id: int, file: UploadFile = File(...), sess
     recipe.image_url = f"/uploads/{filename}"
     session.add(recipe); session.commit()
     return {"image_url": recipe.image_url}
+
+
+# ── Favorites ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/favorites")
+def list_favorites(session: Session = Depends(get_session)):
+    favs = session.exec(select(Favorite)).all()
+    return [f.recipe_id for f in favs]
+
+@app.post("/api/favorites/{recipe_id}")
+def add_favorite(recipe_id: int, session: Session = Depends(get_session)):
+    existing = session.exec(
+        select(Favorite).where(Favorite.recipe_id == recipe_id)
+    ).first()
+    if not existing:
+        session.add(Favorite(recipe_id=recipe_id))
+        session.commit()
+    return {"ok": True}
+
+@app.delete("/api/favorites/{recipe_id}")
+def remove_favorite(recipe_id: int, session: Session = Depends(get_session)):
+    for f in session.exec(select(Favorite).where(Favorite.recipe_id == recipe_id)).all():
+        session.delete(f)
+    session.commit()
+    return {"ok": True}
+
+
+# ── Pour history ──────────────────────────────────────────────────────────────
+
+# Statische routes MOETEN vóór /{...} routes — hier geen conflict, maar
+# stats staat bewust vóór de generieke GET zodat alles netjes geordend is.
+@app.get("/api/pours/stats")
+def pour_stats(session: Session = Depends(get_session)):
+    total_pours = session.exec(select(func.count(Pour.id))).one()
+    start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_pours = session.exec(
+        select(func.count(Pour.id)).where(Pour.poured_at >= start_of_day)
+    ).one()
+
+    top_rows = session.exec(
+        select(Pour.recipe_name, func.count(Pour.id).label("cnt"))
+        .group_by(Pour.recipe_name)
+        .order_by(func.count(Pour.id).desc())
+        .limit(5)
+    ).all()
+    top_recipes = [{"name": name or "Onbekend", "count": cnt} for name, cnt in top_rows]
+
+    # Gietsels per dag (laatste 7 dagen)
+    since = datetime.utcnow() - timedelta(days=6)
+    since = since.replace(hour=0, minute=0, second=0, microsecond=0)
+    recent = session.exec(select(Pour).where(Pour.poured_at >= since)).all()
+    counts = {}
+    for p in recent:
+        d = p.poured_at.date().isoformat()
+        counts[d] = counts.get(d, 0) + 1
+    pours_per_day = []
+    for i in range(7):
+        d = (since + timedelta(days=i)).date().isoformat()
+        pours_per_day.append({"date": d, "count": counts.get(d, 0)})
+
+    return {
+        "total_pours": total_pours,
+        "today_pours": today_pours,
+        "top_recipes": top_recipes,
+        "pours_per_day": pours_per_day,
+    }
+
+@app.get("/api/pours", response_model=List[PourRead])
+def list_pours(limit: int = 50, session: Session = Depends(get_session)):
+    return session.exec(
+        select(Pour).order_by(Pour.poured_at.desc()).limit(limit)
+    ).all()
+
+@app.post("/api/pours", response_model=PourRead)
+def create_pour(data: PourCreate, session: Session = Depends(get_session)):
+    pour = Pour(recipe_id=data.recipe_id, recipe_name=data.recipe_name, scale=data.scale)
+    session.add(pour); session.commit(); session.refresh(pour)
+    return pour
 
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────
