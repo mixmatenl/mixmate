@@ -72,7 +72,7 @@ async def run_update():
     {"type": "done"} or {"type": "error", "message": "..."}
     """
     steps = [
-        ("Git — code ophalen",       ["git", "pull", "--rebase", "origin", "HEAD"], APP_DIR),
+        ("Git — code ophalen",       ["git", "pull"], APP_DIR),
         ("Python — dependencies",    [str(VENV_PIP), "install", "-q", "-r", "requirements.txt"], APP_DIR / "backend"),
         ("Frontend — dependencies",  [NPM, "install", "--silent"], APP_DIR / "frontend"),
         ("Frontend — bouwen",        [NPM, "run", "build"], APP_DIR / "frontend"),
