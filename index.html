@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MixMate — Cocktailmachines voor de Horeca</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#060606;--dark:#0f0f0f;--dark2:#161616;--dark3:#1e1e1e;
+  --white:#fff;--gray:#777;--lgray:#bbb;
+  --border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.2);
+  --blue:#1a5cff;--blueh:#0040cc;--bluel:rgba(26,92,255,.12);--blueb:rgba(26,92,255,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--black);color:var(--white);overflow-x:hidden}
+.page{display:none}.page.active{display:block}
+
+/* LOGO */
+.logo-wrap{display:flex;align-items:center;gap:11px;cursor:pointer}
+.logo-text-group{display:flex;flex-direction:column;gap:1px}
+.logo-wordmark{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--white);line-height:1}
+.logo-sub{font-family:'DM Sans',sans-serif;font-size:8px;letter-spacing:4px;text-transform:uppercase;color:var(--gray);line-height:1}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(6,6,6,.96);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:1rem 3rem}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links button{font-size:12px;color:var(--gray);transition:color .2s;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.nav-links button:hover,.nav-links button.active{color:var(--white)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-nav{background:var(--blue);color:#fff;border:none;padding:9px 22px;border-radius:3px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;letter-spacing:.08em;text-transform:uppercase}
+.btn-nav:hover{background:var(--blueh)}
+.btn-nav-ghost{background:transparent;color:var(--lgray);border:1px solid var(--border2);padding:8px 18px;border-radius:3px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+.btn-nav-ghost:hover{color:var(--white);border-color:rgba(255,255,255,.4)}
+
+/* EDIT BAR */
+#edit-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--blue);color:#fff;padding:.6rem 2rem;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+#edit-bar.show{display:flex}
+#edit-bar-hint{font-size:11px;font-weight:400;opacity:.85;letter-spacing:.04em;text-transform:none}
+.btn-edit-bar{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:3px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.btn-edit-bar:hover{background:rgba(255,255,255,.3)}
+body.edit-bar-open nav,body.edit-bar-open .login-wrap{margin-top:37px}
+
+/* EDIT MODE STYLES */
+.edit-mode [data-ed]{outline:2px dashed rgba(26,92,255,.45);outline-offset:2px;cursor:text;border-radius:2px}
+.edit-mode [data-ed]:hover{outline-color:var(--blue);background:rgba(26,92,255,.07)}
+.edit-mode [data-ed]:focus,[data-ed][contenteditable="true"]{outline:2px solid var(--blue)!important;background:rgba(26,92,255,.1)!important;cursor:text}
+.edit-mode .img-editable{position:relative;cursor:pointer}
+.edit-mode .img-editable::after{content:'📷  Foto uploaden';position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-family:'DM Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;font-weight:600;opacity:0;transition:opacity .2s}
+.edit-mode .img-editable:hover::after{opacity:1}
+/* ::after doesn't support display:flex in all cases — use overlay div instead */
+.img-edit-overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;font-size:13px;color:#fff;font-family:'DM Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.edit-mode .ml-visual:hover .img-edit-overlay{opacity:1}
+.edit-mode .ml-visual{cursor:pointer}
+
+/* FLOATING EDIT BUTTON */
+#edit-fab{display:none;position:fixed;bottom:2rem;right:2rem;z-index:500;background:var(--blue);color:#fff;border:none;padding:12px 22px;border-radius:3px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 4px 24px rgba(26,92,255,.5)}
+#edit-fab.show{display:flex;align-items:center;gap:8px}
+#edit-fab:hover{background:var(--blueh)}
+
+/* HERO */
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:90vh;align-items:center}
+.hero-left{padding:6rem 3rem 6rem 5rem}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--bluel);color:var(--blue);border:1px solid var(--blueb);font-size:11px;font-weight:600;padding:5px 14px;border-radius:2px;margin-bottom:2rem;letter-spacing:.12em;text-transform:uppercase}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:70px;font-weight:400;line-height:1;color:var(--white);margin-bottom:1.5rem;letter-spacing:3px}
+.hero h1 em{color:var(--blue);font-style:normal}
+.hero-sub{font-size:16px;color:var(--gray);line-height:1.8;max-width:440px;margin-bottom:2.5rem;font-weight:300}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:13px 28px;border-radius:3px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;letter-spacing:.1em;text-transform:uppercase}
+.btn-primary:hover{background:var(--blueh);transform:translateY(-1px);box-shadow:0 6px 24px rgba(26,92,255,.4)}
+.btn-ghost{background:transparent;color:var(--lgray);border:1px solid var(--border2);padding:12px 24px;border-radius:3px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.btn-ghost:hover{border-color:rgba(255,255,255,.5);color:var(--white)}
+.hero-stats{display:flex;gap:2.5rem;margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid var(--border)}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:2px}
+.stat-label{font-size:11px;color:var(--gray);margin-top:2px;text-transform:uppercase;letter-spacing:.1em}
+.hero-right{background:var(--dark2);min-height:90vh;display:flex;align-items:center;justify-content:center;border-left:1px solid var(--border);position:relative;overflow:hidden}
+.hero-right::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(26,92,255,.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%)}
+.hero-visual{position:relative;z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.75rem}
+.hero-visual-mark{display:flex;flex-direction:column;align-items:center;gap:.75rem}
+.hero-visual-title{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:6px}
+.hero-visual-sub{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--gray)}
+.product-tag{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--lgray);padding:10px 22px;border-radius:2px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+
+/* CLIENTS STRIP */
+.clients-strip{padding:2rem 5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:3rem;overflow:hidden}
+.clients-label{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap}
+.clients-logos{display:flex;gap:3rem;align-items:center;flex-wrap:wrap}
+.client-name{font-size:13px;color:rgba(255,255,255,.25);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+
+/* SECTIONS */
+.section{padding:6rem 5rem}
+.eyebrow{font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem;display:block}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:52px;font-weight:400;color:var(--white);line-height:1;letter-spacing:2px}
+.sec-sub{font-size:15px;color:var(--gray);max-width:540px;margin-top:1rem;line-height:1.8;font-weight:300}
+.sec-header{margin-bottom:3.5rem}
+
+/* FEATURES */
+.features-bg{background:var(--dark2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
+.feat-card{background:var(--dark3);border:1px solid var(--border);border-radius:3px;padding:1.75rem;transition:transform .2s,border-color .2s}
+.feat-card:hover{transform:translateY(-4px);border-color:var(--blueb)}
+.feat-icon{width:44px;height:44px;background:var(--bluel);border:1px solid var(--blueb);border-radius:3px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:20px}
+.feat-card h3{font-size:15px;font-weight:700;margin-bottom:.5rem;letter-spacing:.02em}
+.feat-card p{font-size:13px;color:var(--gray);line-height:1.75;font-weight:300}
+
+/* FOR WHOM */
+.whom-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem}
+.whom-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:2rem;transition:border-color .2s}
+.whom-card:hover{border-color:var(--border2)}
+.whom-icon{font-size:32px;margin-bottom:1rem}
+.whom-card h3{font-size:17px;font-weight:700;margin-bottom:.5rem}
+.whom-card p{font-size:13px;color:var(--gray);line-height:1.7;font-weight:300}
+.whom-tag{display:inline-block;font-size:11px;color:var(--blue);border:1px solid var(--blueb);padding:3px 10px;border-radius:2px;margin-top:1rem;letter-spacing:.06em;text-transform:uppercase}
+
+/* MACHINES PAGE */
+.page-hero{padding:5rem 5rem 3.5rem;text-align:center;border-bottom:1px solid var(--border);background:var(--dark2)}
+.page-hero h1{font-family:'Bebas Neue',sans-serif;font-size:58px;font-weight:400;letter-spacing:3px;margin-bottom:1rem}
+.page-hero p{font-size:15px;color:var(--gray);max-width:540px;margin:0 auto;font-weight:300;line-height:1.8}
+.machines-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;padding:4rem 5rem}
+.machine-listing{background:var(--dark2);border:1px solid var(--border);border-radius:3px;overflow:hidden;transition:transform .2s,border-color .2s;display:flex;flex-direction:column}
+.machine-listing:hover{transform:translateY(-5px);border-color:var(--border2)}
+.machine-listing.featured-prod{border-color:var(--blue)}
+.ml-visual{background:var(--dark3);height:220px;display:flex;align-items:center;justify-content:center;font-size:72px;position:relative;overflow:hidden}
+.ml-visual img{width:100%;height:100%;object-fit:cover}
+.ml-badge-wrap{position:absolute;top:1rem;left:1rem;z-index:2}
+.ml-badge{display:inline-block;font-size:10px;font-weight:700;padding:4px 10px;border-radius:2px;text-transform:uppercase;letter-spacing:.1em}
+.ml-badge.starter{background:rgba(255,255,255,.1);color:var(--lgray);border:1px solid var(--border2)}
+.ml-badge.popular{background:var(--blue);color:#fff}
+.ml-badge.pro{background:rgba(240,180,41,.15);color:#f0b429;border:1px solid rgba(240,180,41,.3)}
+.ml-body{padding:1.75rem;flex:1;display:flex;flex-direction:column}
+.ml-name{font-family:'Bebas Neue',sans-serif;font-size:26px;font-weight:400;margin-bottom:.25rem;letter-spacing:2px}
+.ml-tagline{font-size:11px;color:var(--blue);margin-bottom:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.ml-desc{font-size:13px;color:var(--gray);line-height:1.75;margin-bottom:1.5rem;flex:1;font-weight:300}
+.ml-specs{list-style:none;margin-bottom:1.5rem}
+.ml-specs li{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--lgray);padding:5px 0;border-bottom:1px solid var(--border)}
+.ml-specs li:last-child{border-bottom:none}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.ml-price{font-family:'Bebas Neue',sans-serif;font-size:34px;font-weight:400;margin-bottom:1rem;letter-spacing:2px}
+.ml-price small{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--gray);font-weight:300}
+.ml-actions{display:flex;gap:.75rem}
+
+/* COMPARE */
+.compare-sec{background:var(--dark2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:5rem}
+.compare-table{width:100%;border-collapse:collapse;margin-top:2.5rem}
+.compare-table th,.compare-table td{padding:12px 20px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
+.compare-table th{color:var(--gray);font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.compare-table td:first-child{color:var(--gray);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.col-name{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--white);letter-spacing:2px}
+.col-name.blue{color:var(--blue)}
+.hl{color:var(--blue);font-weight:700}
+.tick{color:var(--blue)}.cross{color:#2a2a2a}
+
+/* REVIEWS */
+.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem}
+.rev-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.75rem}
+.stars{color:#f0b429;font-size:13px;margin-bottom:1rem;letter-spacing:2px}
+.rev-text{font-size:14px;color:var(--gray);line-height:1.8;font-weight:300;margin-bottom:1.5rem;font-style:italic}
+.rev-author strong{color:var(--white);font-weight:600;display:block;margin-bottom:2px;font-size:14px}
+.rev-author span{font-size:12px;color:var(--gray)}
+
+/* CTA */
+.cta-sec{background:var(--blue);padding:7rem 5rem;text-align:center}
+.cta-sec h2{font-family:'Bebas Neue',sans-serif;font-size:62px;font-weight:400;color:#fff;margin-bottom:1rem;letter-spacing:3px}
+.cta-sec p{font-size:16px;color:rgba(255,255,255,.8);margin-bottom:2.5rem;font-weight:300;max-width:500px;margin-left:auto;margin-right:auto}
+.btn-white{background:#fff;color:var(--blue);border:none;padding:14px 36px;border-radius:3px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;letter-spacing:.1em;text-transform:uppercase}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.3)}
+
+/* ROI */
+.roi-sec{background:var(--dark2);border-bottom:1px solid var(--border)}
+.roi-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
+.roi-visual{background:var(--dark3);border:1px solid var(--border);border-radius:3px;padding:2.5rem}
+.roi-row{display:flex;align-items:center;justify-content:space-between;padding:1rem 0;border-bottom:1px solid var(--border)}
+.roi-row:last-child{border-bottom:none;padding-bottom:0}
+.roi-label{font-size:13px;color:var(--gray)}
+.roi-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px}
+.roi-val.positive{color:#10b981}
+.roi-val.negative{color:#ef4444}
+
+/* FOOTER */
+footer{background:var(--dark);padding:2.5rem 5rem;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
+.footer-links{display:flex;gap:2rem;list-style:none}
+.footer-links button,.footer-links a{font-size:11px;color:var(--gray);text-decoration:none;transition:color .2s;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;letter-spacing:.08em;text-transform:uppercase}
+.footer-links button:hover,.footer-links a:hover{color:#fff}
+.footer-copy{font-size:11px;color:var(--gray);letter-spacing:.06em}
+
+/* OVER ONS */
+.about-hero{padding:6rem 5rem;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;border-bottom:1px solid var(--border)}
+.about-hero h1{font-family:'Bebas Neue',sans-serif;font-size:58px;font-weight:400;letter-spacing:3px;margin-bottom:1.5rem;line-height:1}
+.about-hero h1 em{color:var(--blue);font-style:normal}
+.about-hero p{font-size:15px;color:var(--gray);line-height:1.85;margin-bottom:1.25rem;font-weight:300}
+.about-visual{background:var(--dark2);border:1px solid var(--border);border-radius:3px;height:400px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.about-visual::before{content:'';position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(26,92,255,.18) 0%,transparent 70%)}
+.values-sec{padding:5rem;background:var(--dark2);border-bottom:1px solid var(--border)}
+.values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:3rem}
+.val-card{padding:2rem;background:var(--dark3);border:1px solid var(--border);border-radius:3px}
+.val-icon{font-size:28px;margin-bottom:1rem}
+.val-card h3{font-size:15px;font-weight:700;margin-bottom:.75rem}
+.val-card p{font-size:13px;color:var(--gray);line-height:1.75;font-weight:300}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;margin-top:3rem}
+.team-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.75rem;text-align:center}
+.team-avatar{width:68px;height:68px;border-radius:50%;background:var(--dark3);border:1px solid var(--blueb);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 1rem}
+.team-name{font-size:15px;font-weight:700;margin-bottom:.25rem}
+.team-role{font-size:11px;color:var(--blue);margin-bottom:.5rem;letter-spacing:.1em;text-transform:uppercase}
+.team-bio{font-size:12px;color:var(--gray);line-height:1.65;font-weight:300}
+.tl{margin-top:3rem;position:relative;padding-left:2rem;max-width:620px}
+.tl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--border2)}
+.tl-item{position:relative;padding-bottom:2.5rem;padding-left:2rem}
+.tl-item::before{content:'';position:absolute;left:-2.2rem;top:5px;width:9px;height:9px;border-radius:50%;background:var(--blue)}
+.tl-year{font-size:11px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.25rem}
+.tl-title{font-size:16px;font-weight:700;margin-bottom:.4rem}
+.tl-desc{font-size:13px;color:var(--gray);line-height:1.7;font-weight:300}
+
+/* CONTACT */
+.contact-wrap{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 65px)}
+.contact-left{padding:5rem;border-right:1px solid var(--border)}
+.contact-left h1{font-family:'Bebas Neue',sans-serif;font-size:52px;font-weight:400;letter-spacing:3px;margin-bottom:1rem;line-height:1}
+.contact-left h1 em{color:var(--blue);font-style:normal}
+.contact-left > p{font-size:15px;color:var(--gray);line-height:1.8;margin-bottom:3rem;font-weight:300}
+.ci-item{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}
+.ci-icon{width:40px;height:40px;background:var(--bluel);border:1px solid var(--blueb);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ci-label{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.ci-val{font-size:14px;color:var(--white)}
+.contact-right{padding:5rem;background:var(--dark2)}
+.contact-right h2{font-family:'Bebas Neue',sans-serif;font-size:34px;font-weight:400;margin-bottom:.5rem;letter-spacing:2px}
+.contact-sub{font-size:13px;color:var(--gray);margin-bottom:2rem}
+
+/* FORMS */
+.form-group{margin-bottom:1.25rem}
+.form-label{display:block;font-size:10px;color:var(--lgray);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--dark3);border:1px solid var(--border);border-radius:3px;color:var(--white);font-size:14px;font-family:'DM Sans',sans-serif;padding:10px 14px;outline:none;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--blue)}
+.form-input::placeholder{color:var(--gray)}
+.form-select option{background:var(--dark3)}
+.form-textarea{resize:vertical;min-height:100px}
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.alert-ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:3px;padding:12px 16px;font-size:13px;color:#10b981;margin-top:1rem;display:none}
+.alert-ok.show{display:block}
+.warn-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:3px;padding:14px 16px;font-size:13px;color:#ef4444;margin-bottom:1.5rem;line-height:1.65}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);padding:2rem}
+.login-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:3rem;width:100%;max-width:400px}
+.login-brand{text-align:center;margin-bottom:2.5rem;display:flex;flex-direction:column;align-items:center;gap:.75rem}
+.login-wordmark{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:5px}
+.login-sub-text{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--gray)}
+.login-back button{color:var(--gray);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.login-back button:hover{color:var(--white)}
+.login-back{text-align:center;margin-bottom:2rem}
+.login-forgot{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;margin-bottom:1.5rem;display:block;text-align:right;letter-spacing:.04em}
+.login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:3px;padding:10px 14px;font-size:12px;color:#ef4444;margin-bottom:1rem;display:none}
+.login-error.show{display:block}
+.login-register{text-align:center;font-size:13px;color:var(--gray);margin-top:1.5rem}
+.login-register button{color:var(--blue);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px}
+
+/* ACCOUNT */
+.acc-header{background:var(--dark2);border-bottom:1px solid var(--border);padding:2rem 5rem;display:flex;align-items:center;justify-content:space-between}
+.acc-header h2{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px}
+.acc-header p{font-size:13px;color:var(--gray)}
+.acc-body{padding:3rem 5rem}
+.acc-grid{display:grid;grid-template-columns:1fr 2fr;gap:2rem}
+.acc-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.5rem;margin-bottom:1.5rem}
+.acc-card h3{font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--gray)}.info-val{font-weight:600}
+.mach-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.mach-info{display:flex;align-items:center;gap:1rem}
+.mach-icon{width:46px;height:46px;background:var(--dark3);border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.mach-name{font-size:15px;font-weight:700}
+.mach-serial{font-size:11px;color:var(--gray);margin-top:2px;letter-spacing:.04em}
+.mbadge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;text-transform:uppercase;letter-spacing:.08em}
+.mb-koop{background:rgba(26,92,255,.15);color:var(--blue);border:1px solid var(--blueb)}
+.mb-lease{background:rgba(255,255,255,.07);color:var(--lgray);border:1px solid var(--border2)}
+.mb-active{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.mach-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.25rem;padding:1rem;background:var(--dark3);border-radius:3px}
+.meta-label{font-size:10px;color:var(--gray);margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em}
+.meta-val{font-size:13px;font-weight:600}
+.mach-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.machine-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.75rem;margin-bottom:1.5rem}
+.btn-sm{padding:7px 13px;border-radius:3px;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;letter-spacing:.06em;text-transform:uppercase}
+.btn-sm-blue{background:var(--blue);color:#fff;border:none}
+.btn-sm-blue:hover{background:var(--blueh)}
+.btn-sm-outline{background:transparent;color:var(--lgray);border:1px solid var(--border)}
+.btn-sm-outline:hover{border-color:var(--border2);color:var(--white)}
+.btn-sm-red{background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.btn-sm-red:hover{background:rgba(239,68,68,.1)}
+.machines-sec h3{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:1.5rem}
+
+/* ADMIN */
+.admin-header{background:var(--dark2);border-bottom:1px solid var(--border);padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between}
+.admin-badge{background:var(--bluel);color:var(--blue);border:1px solid var(--blueb);font-size:10px;font-weight:700;padding:3px 10px;border-radius:2px;letter-spacing:.1em;text-transform:uppercase;margin-left:1rem}
+.admin-body{padding:2.5rem 3rem}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:3rem}
+.admin-stat{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.5rem}
+.admin-stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:2px}
+.admin-stat-label{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+.admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.admin-machine-card{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.75rem;transition:border-color .2s}
+.admin-machine-card.is-featured{border-color:var(--blue)}
+.amc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
+.amc-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;margin-top:.25rem}
+.amc-specs{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem}
+.amc-spec{background:var(--dark3);border-radius:3px;padding:.75rem}
+.amc-spec-label{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.amc-spec-val{font-size:14px;font-weight:700}
+.admin-edit-btn{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:3px;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;width:100%}
+.admin-edit-btn:hover{background:var(--blueh)}
+.admin-section-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;margin-bottom:1.5rem;margin-top:3rem}
+.readonly-field{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:3px;padding:10px 14px;font-size:13px;color:var(--gray);display:flex;align-items:center;gap:8px}
+.readonly-tick{color:var(--blue);font-size:16px}
+.chk-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--lgray);padding:4px 0}
+.chk-row input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px;cursor:pointer}
+.modal-section{font-size:10px;color:var(--blue);font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin:1.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.modal-section:first-of-type{margin-top:0}
+
+/* MODALS */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:2.5rem;width:100%;max-width:580px;position:relative;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:.4rem}
+.modal-sub{font-size:13px;color:var(--gray);margin-bottom:1.75rem}
+.modal-close{position:absolute;top:1.25rem;right:1.25rem;background:none;border:none;color:var(--gray);font-size:20px;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--white)}
+.modal-actions{display:flex;gap:.75rem;margin-top:2rem}
+
+/* RESPONSIVE */
+@media(max-width:1000px){
+  .hero,.roi-grid,.about-hero,.contact-wrap{grid-template-columns:1fr}
+  .hero-right{min-height:280px}
+  .hero-left,.section,.admin-body{padding:3rem 1.5rem}
+  .features-grid,.whom-grid{grid-template-columns:1fr 1fr}
+  .reviews-grid,.values-grid,.plans-grid{grid-template-columns:1fr}
+  nav{padding:1rem 1.5rem}
+  .nav-links{display:none}
+  footer{padding:2rem 1.5rem;flex-direction:column;gap:1rem;text-align:center}
+  .acc-body,.acc-header{padding:1.5rem}
+  .acc-grid{grid-template-columns:1fr}
+  .machines-grid,.admin-grid{grid-template-columns:1fr;padding:2rem 1.5rem}
+  .page-hero,.compare-sec{padding:3rem 1.5rem}
+  .team-grid{grid-template-columns:1fr 1fr}
+  .contact-left{border-right:none;border-bottom:1px solid var(--border)}
+  .contact-left,.contact-right{padding:3rem 1.5rem}
+  .form-2{grid-template-columns:1fr}
+  .admin-stats{grid-template-columns:1fr 1fr}
+  .admin-header{padding:1.25rem 1.5rem}
+  .clients-strip{padding:2rem 1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- EDIT BAR -->
+<div id="edit-bar">
+  <div>
+    <span style="font-size:13px">✏ BEWERKINGSMODUS</span>
+    <span id="edit-bar-hint"> — Klik op tekst om te bewerken · Klik op machine-foto's om te uploaden</span>
+  </div>
+  <div style="display:flex;gap:.75rem;align-items:center">
+    <span style="font-size:11px;opacity:.7">Wijzigingen worden live zichtbaar</span>
+    <button class="btn-edit-bar" onclick="stopEditing()">✕ Stoppen</button>
+  </div>
+</div>
+
+<!-- FLOATING EDIT BUTTON -->
+<button id="edit-fab" onclick="startEditing()">✏ &nbsp;Pagina bewerken</button>
+
+<!-- HIDDEN FILE INPUT for image upload -->
+<input type="file" id="img-upload" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="logo-wrap" onclick="showPage('home')">
+    <svg width="28" height="36" viewBox="0 0 30 38" fill="none">
+      <rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/>
+      <line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/>
+      <path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/>
+      <path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/>
+      <path d="M26 12 Q32 18 28.5 25" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <path d="M28 19 Q33 24 30 30" stroke="white" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div class="logo-text-group">
+      <span class="logo-wordmark">MIXMATE</span>
+      <span class="logo-sub">Cocktail Machine</span>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><button onclick="showPage('home')" id="nav-home">Home</button></li>
+    <li><button onclick="showPage('machines')" id="nav-machines">Machines</button></li>
+    <li><button onclick="showPage('about')" id="nav-about">Over Ons</button></li>
+    <li><button onclick="showPage('contact')" id="nav-contact">Contact</button></li>
+  </ul>
+  <div class="nav-right" id="nav-guest">
+    <button class="btn-nav-ghost" onclick="showPage('login')">Inloggen</button>
+    <button class="btn-nav" onclick="showPage('contact')">Demo aanvragen</button>
+  </div>
+  <div class="nav-right" id="nav-user" style="display:none">
+    <button class="btn-nav-ghost" id="nav-account-btn" onclick="showPage('account')">Mijn account</button>
+    <button class="btn-nav-ghost" onclick="logout()">Uitloggen</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ HOME ═══════════════ -->
+<div id="page-home" class="page active">
+
+<section class="hero">
+  <div class="hero-left">
+    <span class="badge">B2B — Uitsluitend voor de horeca</span>
+    <h1><span data-ed="hero-h1">PROFESSIONELE<br>COCKTAILS,<br><em>OP SCHAAL.</em></span></h1>
+    <p class="hero-sub" data-ed="hero-sub">MixMate cocktailmachines zijn ontworpen voor de drukste bars, restaurants en evenementen. Consistente kwaliteit, hoge capaciteit — elke dienst opnieuw.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="showPage('contact')">Demo aanvragen</button>
+      <button class="btn-ghost" onclick="showPage('machines')">Bekijk machines</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num" data-ed="stat1-num">150</div><div class="stat-label" data-ed="stat1-label">Cocktails/uur</div></div>
+      <div><div class="stat-num" data-ed="stat2-num">30S</div><div class="stat-label" data-ed="stat2-label">Per cocktail</div></div>
+      <div><div class="stat-num" data-ed="stat3-num">500+</div><div class="stat-label" data-ed="stat3-label">Horecazaken</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-visual">
+      <div class="hero-visual-mark">
+        <svg width="90" height="116" viewBox="0 0 30 38" fill="none">
+          <rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.3"/>
+          <line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+          <path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+          <path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+          <path d="M26 12 Q32 18 28.5 25" stroke="white" stroke-width="1.1" stroke-linecap="round" fill="none" opacity=".6"/>
+          <path d="M28 19 Q33 24 30 30" stroke="white" stroke-width=".9" stroke-linecap="round" fill="none" opacity=".4"/>
+        </svg>
+        <div class="hero-visual-title">MIXMATE</div>
+        <div class="hero-visual-sub">Cocktail Machine</div>
+      </div>
+      <div class="product-tag" data-ed="hero-tag">Horeca · Restaurants · Hotels · Evenementen</div>
+    </div>
+  </div>
+</section>
+
+<div class="clients-strip">
+  <span class="clients-label">Vertrouwd door</span>
+  <div class="clients-logos">
+    <span class="client-name" data-ed="client1">Bar Central</span>
+    <span class="client-name" data-ed="client2">Hotel Metropole</span>
+    <span class="client-name" data-ed="client3">Brasserie Noord</span>
+    <span class="client-name" data-ed="client4">Events by DK</span>
+    <span class="client-name" data-ed="client5">Club Paradiso</span>
+  </div>
+</div>
+
+<section class="section features-bg">
+  <div class="sec-header">
+    <span class="eyebrow">Waarom MixMate</span>
+    <h2 class="sec-title" data-ed="feat-title">GEBOUWD VOOR DE HORECA</h2>
+    <p class="sec-sub" data-ed="feat-sub">Minder druk op uw barmedewerkers. Meer omzet per vierkante meter. Consistente kwaliteit tijdens elke dienst.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feat-card"><div class="feat-icon">⚡</div><h3 data-ed="f1-title">Hoge capaciteit</h3><p data-ed="f1-desc">Tot 150 cocktails per uur. Geen wachtrijen, tevreden gasten — ook tijdens piekuren.</p></div>
+    <div class="feat-card"><div class="feat-icon">🎯</div><h3 data-ed="f2-title">100% consistent</h3><p data-ed="f2-desc">Elk glas identiek gedoseerd. Geen afhankelijkheid van bardienst of ervaring van het personeel.</p></div>
+    <div class="feat-card"><div class="feat-icon">💶</div><h3 data-ed="f3-title">Bewezen ROI</h3><p data-ed="f3-desc">Gemiddeld 40% lagere personeelskosten aan de bar. Terugverdientijd binnen 6 maanden.</p></div>
+    <div class="feat-card"><div class="feat-icon">✅</div><h3 data-ed="f4-title">CE-gecertificeerd</h3><p data-ed="f4-desc">Voldoet aan alle Europese horeca- en voedselveiligheidsnormen. Inclusief service-SLA.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="sec-header">
+    <span class="eyebrow">Voor wie</span>
+    <h2 class="sec-title" data-ed="whom-title">VOOR ELKE HORECAZAAK</h2>
+  </div>
+  <div class="whom-grid">
+    <div class="whom-card"><div class="whom-icon">🍺</div><h3 data-ed="whom1-title">Bars & Cafés</h3><p data-ed="whom1-desc">Verhoog uw cocktailomzet zonder extra barmedewerkers. Ideaal voor drukke avonden en weekenden.</p><span class="whom-tag">MixMate Bar</span></div>
+    <div class="whom-card"><div class="whom-icon">🍽️</div><h3 data-ed="whom2-title">Restaurants & Brasseries</h3><p data-ed="whom2-desc">Bied een volledig cocktailmenu aan zonder een gespecialiseerde barman in dienst te nemen.</p><span class="whom-tag">MixMate Bar Pro</span></div>
+    <div class="whom-card"><div class="whom-icon">🏨</div><h3 data-ed="whom3-title">Hotels & Evenementen</h3><p data-ed="whom3-desc">Schaal moeiteloos op voor grote volumes. Perfecte cocktails voor congressen, bruiloften en galadineers.</p><span class="whom-tag">MixMate Bar Elite</span></div>
+  </div>
+</section>
+
+<section class="section roi-sec">
+  <div class="roi-grid">
+    <div>
+      <span class="eyebrow">Rendement</span>
+      <h2 class="sec-title" data-ed="roi-title">UW INVESTERING<br>TERUGVERDIEND</h2>
+      <p class="sec-sub" style="margin-top:1.25rem" data-ed="roi-sub">Een MixMate Bar Pro vervangt gemiddeld 1 fulltime barmedewerker tijdens piekuren. Op jaarbasis bespaart u tienduizenden euro's aan personeels- en opleidingskosten.</p>
+      <div style="margin-top:2rem"><button class="btn-primary" onclick="showPage('contact')">Bereken uw ROI</button></div>
+    </div>
+    <div class="roi-visual">
+      <div class="roi-row"><span class="roi-label">Gemiddelde personeelsbesparing/jaar</span><span class="roi-val positive" data-ed="roi-v1">€ 28.000</span></div>
+      <div class="roi-row"><span class="roi-label">Extra cocktailomzet/jaar</span><span class="roi-val positive" data-ed="roi-v2">€ 14.000</span></div>
+      <div class="roi-row"><span class="roi-label">Investering MixMate Bar Pro</span><span class="roi-val negative" data-ed="roi-v3">€ 1.199</span></div>
+      <div class="roi-row"><span class="roi-label">Terugverdientijd</span><span class="roi-val" style="color:var(--blue)" data-ed="roi-v4">~3 weken</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="border-top:1px solid var(--border)">
+  <div class="sec-header">
+    <span class="eyebrow">Klanten aan het woord</span>
+    <h2 class="sec-title" data-ed="rev-title">WAT DE HORECA ZEGT</h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="rev-card"><div class="stars">★★★★★</div><p class="rev-text" data-ed="rev1-text">"Onze barmedewerkers kunnen zich nu richten op gastvrijheid. De MixMate draait de cocktails feilloos, ook tijdens ons drukste weekend."</p><div class="rev-author"><strong data-ed="rev1-name">Joost van der Meer</strong><span data-ed="rev1-func">Eigenaar, Bar Central Amsterdam</span></div></div>
+    <div class="rev-card"><div class="stars">★★★★★</div><p class="rev-text" data-ed="rev2-text">"We serveren nu 3x zoveel cocktails per avond met hetzelfde personeel. De kwaliteit is elke keer perfect — gasten vragen er zelfs naar."</p><div class="rev-author"><strong data-ed="rev2-name">Katrien Dubois</strong><span data-ed="rev2-func">F&B Manager, Hotel Metropole Gent</span></div></div>
+    <div class="rev-card"><div class="stars">★★★★★</div><p class="rev-text" data-ed="rev3-text">"Voor onze evenementen met 500+ gasten is de MixMate Bar Elite onmisbaar. Geen wachtrijen, blije gasten en een scherpe marge op elke cocktail."</p><div class="rev-author"><strong data-ed="rev3-name">Marco Hendriksen</strong><span data-ed="rev3-func">Directeur, Events by DK Rotterdam</span></div></div>
+  </div>
+</section>
+
+<section class="cta-sec">
+  <h2 data-ed="cta-title">KLAAR VOOR DE VOLGENDE STAP?</h2>
+  <p data-ed="cta-sub">Vraag een gratis demo aan. Wij komen langs bij uw zaak en laten zien wat MixMate voor u kan betekenen.</p>
+  <button class="btn-white" onclick="showPage('contact')">Gratis demo aanvragen</button>
+</section>
+
+<footer>
+  <div class="logo-wrap" onclick="showPage('home')">
+    <svg width="20" height="26" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/></svg>
+    <div class="logo-text-group"><span class="logo-wordmark" style="font-size:16px">MIXMATE</span><span class="logo-sub">Cocktail Machine</span></div>
+  </div>
+  <ul class="footer-links">
+    <li><button onclick="showPage('about')">Over ons</button></li>
+    <li><button onclick="showPage('contact')">Contact</button></li>
+    <li><a href="#">Privacy</a></li><li><a href="#">Algemene voorwaarden</a></li>
+  </ul>
+  <p class="footer-copy">© 2026 MixMate B.V.</p>
+</footer>
+</div>
+
+<!-- ═══════════════ MACHINES ═══════════════ -->
+<div id="page-machines" class="page">
+<div class="page-hero">
+  <span class="eyebrow">Assortiment</span>
+  <h1 data-ed="mach-page-title">COCKTAILMACHINES VOOR DE HORECA</h1>
+  <p data-ed="mach-page-sub">Drie modellen, schaalbaar voor iedere horecazaak. Van drukke stadsbar tot groot evenementencomplex.</p>
+</div>
+<div class="machines-grid" id="machines-grid"></div>
+<section class="compare-sec">
+  <span class="eyebrow">Vergelijken</span>
+  <h2 class="sec-title">SPECIFICATIES</h2>
+  <table class="compare-table" id="compare-table"></table>
+</section>
+<section class="cta-sec">
+  <h2>INTERESSE? PLAN EEN DEMO</h2>
+  <p>Wij komen langs bij uw zaak en demonstreren de MixMate live. Geheel vrijblijvend.</p>
+  <button class="btn-white" onclick="showPage('contact')">Demo aanvragen</button>
+</section>
+<footer>
+  <div class="logo-wrap" onclick="showPage('home')"><svg width="20" height="26" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/></svg><div class="logo-text-group"><span class="logo-wordmark" style="font-size:16px">MIXMATE</span><span class="logo-sub">Cocktail Machine</span></div></div>
+  <ul class="footer-links"><li><button onclick="showPage('about')">Over ons</button></li><li><button onclick="showPage('contact')">Contact</button></li><li><a href="#">Privacy</a></li></ul>
+  <p class="footer-copy">© 2026 MixMate B.V.</p>
+</footer>
+</div>
+
+<!-- ═══════════════ OVER ONS ═══════════════ -->
+<div id="page-about" class="page">
+<div class="about-hero">
+  <div>
+    <span class="eyebrow">Ons verhaal</span>
+    <h1>DE COCKTAILMACHINE<br>VOOR <em>PROFESSIONALS.</em></h1>
+    <p data-ed="about-p1">MixMate B.V. ontwikkelt en produceert professionele cocktailmachines uitsluitend voor de horeca. Wij geloven dat elk horecabedrijf — van kleine bruine kroeg tot vijfsterrenhotel — toegang verdient tot consistente, schaalbare cocktailkwaliteit.</p>
+    <p data-ed="about-p2">Onze machines worden vervaardigd in Nederland, voldoen aan alle Europese certificeringen en worden ondersteund door een eigen serviceteam met 24/7 beschikbaarheid voor onze zakelijke klanten.</p>
+  </div>
+  <div class="about-visual">
+    <svg style="position:relative;z-index:1" width="90" height="116" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.3"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.3" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.3" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.3" stroke-linejoin="round" fill="none"/><path d="M26 12 Q32 18 28.5 25" stroke="white" stroke-width="1.1" stroke-linecap="round" fill="none" opacity=".6"/></svg>
+  </div>
+</div>
+<section class="values-sec">
+  <div class="sec-header"><span class="eyebrow">Onze waarden</span><h2 class="sec-title">WAAR WIJ VOOR STAAN</h2></div>
+  <div class="values-grid">
+    <div class="val-card"><div class="val-icon">🏭</div><h3>Made in Nederland</h3><p>Elke MixMate wordt in eigen fabriek geassembleerd en uitgebreid getest. Kwaliteitscontrole van ontwerp tot levering.</p></div>
+    <div class="val-card"><div class="val-icon">🔧</div><h3>24/7 Service</h3><p>Onze technische dienst staat altijd klaar. Storingen worden gemiddeld binnen 4 uur opgelost — ook in het weekend.</p></div>
+    <div class="val-card"><div class="val-icon">📈</div><h3>Partner in groei</h3><p>Wij denken mee over uw horecaconcept. Van machine-advies tot receptontwikkeling — MixMate is meer dan een leverancier.</p></div>
+  </div>
+</section>
+<section class="section" style="border-top:1px solid var(--border)">
+  <div class="sec-header"><span class="eyebrow">Het team</span><h2 class="sec-title">DE MENSEN ACHTER MIXMATE</h2></div>
+  <div class="team-grid">
+    <div class="team-card"><div class="team-avatar">👨‍💼</div><div class="team-name">Daan Vermeer</div><div class="team-role">CEO & Co-founder</div><p class="team-bio">15 jaar horeca-ervaring. Daan zag de uitdagingen van drukke bars van binnenuit en besloot ze op te lossen.</p></div>
+    <div class="team-card"><div class="team-avatar">👩‍💻</div><div class="team-name">Sara Hoekstra</div><div class="team-role">CTO & Co-founder</div><p class="team-bio">Werktuigbouwkunde TU Delft. Sara leidt de productontwikkeling en is verantwoordelijk voor alle technische certificeringen.</p></div>
+    <div class="team-card"><div class="team-avatar">👨‍💼</div><div class="team-name">Tom Claes</div><div class="team-role">Head of Sales</div><p class="team-bio">Voormalig horecaondernemer. Tom begeleidt nieuwe zakelijke klanten van demo tot installatie.</p></div>
+    <div class="team-card"><div class="team-avatar">👩‍🍳</div><div class="team-name">Nina Bakker</div><div class="team-role">Head of Recipes</div><p class="team-bio">Gecertificeerd sommelier. Nina ontwikkelt alle recepten in samenwerking met onze zakelijke klanten.</p></div>
+  </div>
+</section>
+<section class="section features-bg">
+  <span class="eyebrow">Onze geschiedenis</span>
+  <h2 class="sec-title">VAN STARTUP TOT MARKTLEIDER</h2>
+  <div class="tl">
+    <div class="tl-item"><div class="tl-year">2021</div><div class="tl-title">Oprichting</div><p class="tl-desc">MixMate B.V. opgericht in Amsterdam. Eerste prototype getest in 3 Amsterdamse bars.</p></div>
+    <div class="tl-item"><div class="tl-year">2022</div><div class="tl-title">Marktintroductie</div><p class="tl-desc">MixMate Bar gelanceerd. Binnen 6 maanden 80 horecazaken als klant.</p></div>
+    <div class="tl-item"><div class="tl-year">2023</div><div class="tl-title">MixMate Bar Pro & Series A</div><p class="tl-desc">Pro-model gelanceerd voor restaurants en hotels. €2,4M Series A opgehaald.</p></div>
+    <div class="tl-item"><div class="tl-year">2024</div><div class="tl-title">Benelux-expansie</div><p class="tl-desc">Uitbreiding naar België en Luxemburg. 500+ actieve horecaklanten.</p></div>
+    <div class="tl-item"><div class="tl-year">2026</div><div class="tl-title">MixMate Bar Elite</div><p class="tl-desc">High-volume model voor hotels en evenementen. Marktleider cocktailmachines in de Benelux.</p></div>
+  </div>
+</section>
+<section class="cta-sec">
+  <h2>ONTDEK MIXMATE VOOR UW ZAAK</h2>
+  <p>Plan een demo en ervaar zelf wat MixMate kan betekenen voor uw horecabedrijf.</p>
+  <button class="btn-white" onclick="showPage('contact')">Demo aanvragen</button>
+</section>
+<footer><div class="logo-wrap" onclick="showPage('home')"><svg width="20" height="26" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/></svg><div class="logo-text-group"><span class="logo-wordmark" style="font-size:16px">MIXMATE</span><span class="logo-sub">Cocktail Machine</span></div></div><ul class="footer-links"><li><button onclick="showPage('about')">Over ons</button></li><li><button onclick="showPage('contact')">Contact</button></li></ul><p class="footer-copy">© 2026 MixMate B.V.</p></footer>
+</div>
+
+<!-- ═══════════════ CONTACT ═══════════════ -->
+<div id="page-contact" class="page">
+<div class="contact-wrap">
+  <div class="contact-left">
+    <span class="eyebrow">Contact & Demo</span>
+    <h1>PLAN EEN DEMO<br><em>BIJ U IN DE ZAAK.</em></h1>
+    <p data-ed="contact-intro">Wij komen langs, demonstreren de MixMate en berekenen samen uw potentiële besparing. Geheel vrijblijvend.</p>
+    <div class="ci-item"><div class="ci-icon">📍</div><div><div class="ci-label">Adres</div><div class="ci-val" data-ed="contact-addr">Keizersgracht 482, 1017 EG Amsterdam</div></div></div>
+    <div class="ci-item"><div class="ci-icon">📧</div><div><div class="ci-label">E-mail</div><div class="ci-val" data-ed="contact-email">sales@mixmate.nl</div></div></div>
+    <div class="ci-item"><div class="ci-icon">📞</div><div><div class="ci-label">Telefoon</div><div class="ci-val" data-ed="contact-phone">+31 (0)20 123 45 67</div></div></div>
+    <div class="ci-item"><div class="ci-icon">🕐</div><div><div class="ci-label">Bereikbaar</div><div class="ci-val" data-ed="contact-hours">Ma–Vr 08:30–18:00</div></div></div>
+  </div>
+  <div class="contact-right">
+    <h2>DEMO AANVRAGEN</h2>
+    <p class="contact-sub">Vul het formulier in — ons salesteam neemt binnen één werkdag contact op.</p>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Voornaam</label><input type="text" class="form-input" placeholder="Jan"></div>
+      <div class="form-group"><label class="form-label">Achternaam</label><input type="text" class="form-input" placeholder="Jansen"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Zaak / Bedrijfsnaam</label><input type="text" class="form-input" placeholder="Bar Central B.V."></div>
+    <div class="form-group"><label class="form-label">E-mailadres</label><input type="email" class="form-input" placeholder="jan@uwzaak.nl"></div>
+    <div class="form-group"><label class="form-label">Type horecazaak</label>
+      <select class="form-select"><option>Bar / Café</option><option>Restaurant / Brasserie</option><option>Hotel</option><option>Evenementenlocatie</option><option>Cateraar</option><option>Anders</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">Opmerkingen (optioneel)</label><textarea class="form-textarea" placeholder="Vertel ons iets over uw zaak en uw verwachtingen..."></textarea></div>
+    <div class="alert-ok" id="alert-contact">✓ Aanvraag ontvangen! Ons salesteam neemt binnen één werkdag contact op.</div>
+    <button class="btn-primary" style="width:100%" onclick="submitContact()">Demo aanvragen</button>
+  </div>
+</div>
+<footer style="border-top:1px solid var(--border)"><div class="logo-wrap" onclick="showPage('home')"><svg width="20" height="26" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/></svg><div class="logo-text-group"><span class="logo-wordmark" style="font-size:16px">MIXMATE</span><span class="logo-sub">Cocktail Machine</span></div></div><ul class="footer-links"><li><button onclick="showPage('about')">Over ons</button></li><li><button onclick="showPage('contact')">Contact</button></li></ul><p class="footer-copy">© 2026 MixMate B.V.</p></footer>
+</div>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="page-login" class="page">
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-back"><button onclick="showPage('home')">← Terug naar site</button></div>
+    <div class="login-brand">
+      <svg width="40" height="52" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M26 12 Q32 18 28.5 25" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+      <div class="login-wordmark">MIXMATE</div>
+      <div class="login-sub-text">Klantportaal</div>
+    </div>
+    <div id="login-error" class="login-error">Onbekend e-mailadres of wachtwoord.</div>
+    <div class="form-group"><label class="form-label">E-mailadres</label><input type="email" class="form-input" id="login-email" placeholder="uw@email.nl" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="form-group"><label class="form-label">Wachtwoord</label><input type="password" class="form-input" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-forgot">Wachtwoord vergeten?</button>
+    <button class="btn-primary" style="width:100%;padding:13px" onclick="doLogin()">Inloggen</button>
+    <p class="login-register" style="margin-top:1.5rem;text-align:center;font-size:12px;color:var(--gray)">Nog geen klant? <button onclick="showPage('contact')" style="color:var(--blue);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px">Vraag een demo aan</button></p>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ ACCOUNT ═══════════════ -->
+<div id="page-account" class="page">
+  <div class="acc-header">
+    <div><h2>KLANTPORTAAL</h2><p>Welkom terug, Bar Central Amsterdam</p></div>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn-nav-ghost" onclick="showPage('home')">← Terug naar site</button>
+      <button class="btn-nav-ghost" onclick="logout()">Uitloggen</button>
+    </div>
+  </div>
+  <div class="acc-body">
+    <div class="acc-grid">
+      <div>
+        <div class="acc-card">
+          <h3>Bedrijfsgegevens</h3>
+          <div class="info-row"><span class="info-label">Bedrijf</span><span class="info-val">Bar Central B.V.</span></div>
+          <div class="info-row"><span class="info-label">Contactpersoon</span><span class="info-val">Joost van der Meer</span></div>
+          <div class="info-row"><span class="info-label">Klant sinds</span><span class="info-val">Maart 2024</span></div>
+          <div class="info-row"><span class="info-label">Machines</span><span class="info-val">2</span></div>
+        </div>
+        <div class="acc-card">
+          <h3>Snelle acties</h3>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <button class="btn-sm btn-sm-blue" onclick="openModal('m-prob','Alle machines')">🔧 Storing melden</button>
+            <button class="btn-sm btn-sm-outline" onclick="showPage('contact')">📋 Extra machine aanvragen</button>
+            <button class="btn-sm btn-sm-outline">📄 Facturen bekijken</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="machines-sec" style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;margin-bottom:1.5rem">MIJN MACHINES</h3>
+        <div class="machine-card">
+          <div class="mach-header">
+            <div class="mach-info"><div class="mach-icon">🍹</div><div><div class="mach-name">MixMate Bar Pro</div><div class="mach-serial">Serie: MM-BP-24-0047</div></div></div>
+            <div style="display:flex;gap:8px"><span class="mbadge mb-active">Actief</span><span class="mbadge mb-koop">Koop</span></div>
+          </div>
+          <div class="mach-meta">
+            <div><div class="meta-label">Aankoopdatum</div><div class="meta-val">12 mrt 2024</div></div>
+            <div><div class="meta-label">Garantie t/m</div><div class="meta-val">12 mrt 2026</div></div>
+            <div><div class="meta-label">Service SLA</div><div class="meta-val">4 uur respons</div></div>
+          </div>
+          <div class="mach-actions">
+            <button class="btn-sm btn-sm-blue" onclick="openModal('m-prob','MixMate Bar Pro (MM-BP-24-0047)')">🔧 Storing melden</button>
+            <button class="btn-sm btn-sm-outline">📖 Handleiding</button>
+          </div>
+        </div>
+        <div class="machine-card">
+          <div class="mach-header">
+            <div class="mach-info"><div class="mach-icon">🍸</div><div><div class="mach-name">MixMate Bar</div><div class="mach-serial">Serie: MM-B-25-0112</div></div></div>
+            <div style="display:flex;gap:8px"><span class="mbadge mb-active">Actief</span><span class="mbadge mb-lease">Lease</span></div>
+          </div>
+          <div class="mach-meta">
+            <div><div class="meta-label">Leasedatum</div><div class="meta-val">5 jan 2025</div></div>
+            <div><div class="meta-label">Maandelijks</div><div class="meta-val">€ 39,00</div></div>
+            <div><div class="meta-label">Contract t/m</div><div class="meta-val">5 jan 2027</div></div>
+          </div>
+          <div class="mach-actions">
+            <button class="btn-sm btn-sm-blue" onclick="openModal('m-prob','MixMate Bar (MM-B-25-0112)')">🔧 Storing melden</button>
+            <button class="btn-sm btn-sm-outline">📄 Contract bekijken</button>
+            <button class="btn-sm btn-sm-red" onclick="openModal('m-opzeg','MixMate Bar')">✕ Opzeggen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ADMIN ═══════════════ -->
+<div id="page-admin" class="page">
+  <div class="admin-header">
+    <div style="display:flex;align-items:center">
+      <div class="logo-wrap" style="cursor:default">
+        <svg width="22" height="28" viewBox="0 0 30 38" fill="none"><rect x="9.5" y="1" width="11" height="7" rx="2.5" stroke="white" stroke-width="1.7"/><line x1="6" y1="8" x2="24" y2="8" stroke="white" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8.5 L8.5 15 L21.5 15 L24 8.5" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/><path d="M8 16 L5.5 35 L24.5 35 L22 16 Z" stroke="white" stroke-width="1.7" stroke-linejoin="round" fill="none"/></svg>
+        <div class="logo-text-group"><span class="logo-wordmark" style="font-size:17px">MIXMATE</span><span class="logo-sub">Cocktail Machine</span></div>
+      </div>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn-nav-ghost" onclick="showPage('home');startEditing()">✏ Site bewerken</button>
+      <button class="btn-nav-ghost" onclick="showPage('home')">← Bekijk site</button>
+      <button class="btn-nav-ghost" onclick="logout()">Uitloggen</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="admin-stats" id="admin-stats"></div>
+    <div class="admin-section-title">MACHINES BEHEREN</div>
+    <div class="admin-grid" id="admin-grid"></div>
+    <div style="background:var(--dark2);border:1px solid var(--border);border-radius:3px;padding:1.25rem 1.5rem;font-size:13px;color:var(--gray);margin-top:2rem;line-height:1.75">
+      <strong style="color:var(--lgray)">Tips:</strong> Gebruik "Site bewerken" (knop rechtsboven) om tekst direct op de website aan te passen. Gebruik "Bewerk" per machine voor prijzen, specs en foto uploads. Touchscreen is bij alle modellen standaard aanwezig.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+<div id="m-prob" class="modal-bg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-prob')">✕</button>
+    <h3>STORING MELDEN</h3>
+    <p class="modal-sub" id="prob-machine">Machine: —</p>
+    <div class="form-group"><label class="form-label">Type storing</label><select class="form-select"><option>Machine start niet op</option><option>Dosering klopt niet</option><option>App-verbinding werkt niet</option><option>Lekkage</option><option>Touchscreen reageert niet</option><option>Geluidsoverlast</option><option>Anders</option></select></div>
+    <div class="form-group"><label class="form-label">Urgentie</label><select class="form-select"><option>Normaal — binnen 24 uur</option><option>Hoog — machine buiten gebruik</option><option>Kritisch — hinder voor gasten</option></select></div>
+    <div class="form-group"><label class="form-label">Omschrijving</label><textarea class="form-textarea" placeholder="Beschrijf de storing zo nauwkeurig mogelijk..."></textarea></div>
+    <div class="alert-ok" id="alert-prob">✓ Storingsmelding ontvangen. Ons serviceteam neemt binnen 4 uur contact op.</div>
+    <div class="modal-actions"><button class="btn-primary" onclick="submit('prob')">Melding indienen</button><button class="btn-ghost" onclick="closeModal('m-prob')">Annuleren</button></div>
+  </div>
+</div>
+
+<div id="m-opzeg" class="modal-bg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-opzeg')">✕</button>
+    <h3>CONTRACT OPZEGGEN</h3>
+    <p class="modal-sub" id="opzeg-machine">Machine: —</p>
+    <div class="warn-box">⚠️ Minimale looptijd is <strong>12 maanden</strong>. Uw contract loopt tot <strong>5 januari 2027</strong>. Bij vroegtijdige opzegging worden resterende maanden in rekening gebracht.</div>
+    <div class="form-group"><label class="form-label">Reden</label><select class="form-select"><option>Machine kopen i.p.v. leasen</option><option>Upgrade naar groter model</option><option>Financiële redenen</option><option>Machine voldoet niet</option><option>Anders</option></select></div>
+    <div class="form-group"><label class="form-label">Gewenste einddatum</label><input type="date" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Toelichting (optioneel)</label><textarea class="form-textarea"></textarea></div>
+    <div class="alert-ok" id="alert-opzeg">✓ Opzeggingsverzoek ingediend. U ontvangt een bevestiging per e-mail.</div>
+    <div class="modal-actions"><button class="btn-sm btn-sm-red" style="padding:12px 22px;font-size:12px" onclick="submit('opzeg')">Opzegging bevestigen</button><button class="btn-ghost" onclick="closeModal('m-opzeg')">Toch niet</button></div>
+  </div>
+</div>
+
+<div id="m-edit" class="modal-bg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('m-edit')">✕</button>
+    <h3>MACHINE BEWERKEN</h3>
+    <p class="modal-sub" id="edit-subtitle">—</p>
+    <input type="hidden" id="edit-id">
+
+    <div class="modal-section">Algemeen</div>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Naam</label><input type="text" class="form-input" id="edit-name"></div>
+      <div class="form-group"><label class="form-label">Emoji</label><input type="text" class="form-input" id="edit-emoji" style="font-size:22px;text-align:center" maxlength="4"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Tagline</label><input type="text" class="form-input" id="edit-tagline"></div>
+    <div class="form-group"><label class="form-label">Beschrijving</label><textarea class="form-textarea" id="edit-desc" style="min-height:75px"></textarea></div>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Badge tekst</label><input type="text" class="form-input" id="edit-badge"></div>
+      <div class="form-group"><label class="form-label">Badge stijl</label><select class="form-select" id="edit-badge-style"><option value="starter">Grijs (Instap)</option><option value="popular">Blauw (Bestseller)</option><option value="pro">Goud (Professioneel)</option></select></div>
+    </div>
+    <div class="chk-row" style="margin-bottom:1rem"><input type="checkbox" id="edit-featured"><label for="edit-featured" style="cursor:pointer">Uitgelicht weergeven (blauwe rand)</label></div>
+
+    <div class="modal-section">Prijzen</div>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Koopprijs (€)</label><input type="number" class="form-input" id="edit-price" min="0"></div>
+      <div class="form-group"><label class="form-label">Leaseprijs (€/mnd)</label><input type="number" class="form-input" id="edit-lease" min="0"></div>
+    </div>
+
+    <div class="modal-section">Technische specs</div>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Ingrediënten</label><input type="number" class="form-input" id="edit-ingredients" min="1"></div>
+      <div class="form-group"><label class="form-label">Capaciteit (cocktails/uur)</label><input type="number" class="form-input" id="edit-capacity" min="1"></div>
+    </div>
+    <div class="form-2">
+      <div class="form-group"><label class="form-label">Recepten</label><input type="number" class="form-input" id="edit-recipes" min="1"></div>
+      <div class="form-group"><label class="form-label">Garantie (jaren)</label><input type="number" class="form-input" id="edit-warranty" min="1" max="10"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Geschikt voor (bijv. Bar, Restaurant)</label><input type="text" class="form-input" id="edit-suitable"></div>
+    <div class="chk-row" style="margin-bottom:.75rem"><input type="checkbox" id="edit-cooling"><label for="edit-cooling" style="cursor:pointer">Koelsysteem inbegrepen</label></div>
+    <div class="form-group"><label class="form-label">Touchscreen</label><div class="readonly-field"><span class="readonly-tick">✓</span> Standaard bij alle MixMate modellen</div></div>
+
+    <div class="modal-section">Foto uploaden</div>
+    <div style="background:var(--dark3);border:1px solid var(--border);border-radius:3px;padding:1.25rem;text-align:center">
+      <div id="edit-img-preview" style="margin-bottom:1rem;font-size:48px;min-height:60px;display:flex;align-items:center;justify-content:center"></div>
+      <button class="btn-ghost" style="font-size:12px" onclick="document.getElementById('img-upload').click();uploadTargetId=document.getElementById('edit-id').value">📷 Foto uploaden</button>
+      <p style="font-size:11px;color:var(--gray);margin-top:.75rem">Aanbevolen: min. 800×600px, JPG of PNG</p>
+    </div>
+
+    <div class="alert-ok" id="alert-edit">✓ Wijzigingen opgeslagen!</div>
+    <div class="modal-actions"><button class="btn-primary" onclick="saveEdit()">Opslaan</button><button class="btn-ghost" onclick="closeModal('m-edit')">Annuleren</button></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// MACHINE DATA
+// ═══════════════════════════════════
+const machines = [
+  { id:'bar', name:'MixMate Bar', tagline:'Instapmodel voor bars & cafés', description:'De ideale instapoplossing voor kleinere horecazaken. Compact, betrouwbaar en direct inzetbaar. Geschikt voor cafés, bistro\'s en kleine restaurants.', emoji:'🍺', image:null, badge:'Instap', badgeStyle:'starter', ingredients:4, capacity:60, recipes:200, cooling:false, warranty:2, price:599, leasePrice:39, featured:false, suitable:'Café, Bistro, Klein restaurant' },
+  { id:'barpro', name:'MixMate Bar Pro', tagline:'Voor drukke restaurants & bars', description:'Onze meest populaire machine voor de horeca. 8 ingrediënten, dubbel koelsysteem en een hoge capaciteit — perfect voor restaurants en drukke bars.', emoji:'🍹', image:null, badge:'Meest gevraagd', badgeStyle:'popular', ingredients:8, capacity:100, recipes:500, cooling:true, warranty:2, price:1199, leasePrice:79, featured:true, suitable:'Restaurant, Bar, Lounge' },
+  { id:'barelite', name:'MixMate Bar Elite', tagline:'High-volume voor hotels & evenementen', description:'De topoplossing voor grote volumes. Tot 12 ingrediënten, triple koelsysteem en remote monitoring via dashboard. Onmisbaar voor hotels en evenementenlocaties.', emoji:'🍸', image:null, badge:'High-volume', badgeStyle:'pro', ingredients:12, capacity:150, recipes:800, cooling:true, warranty:2, price:1999, leasePrice:129, featured:false, suitable:'Hotel, Evenementenhal, Cateraar' },
+];
+
+// ═══════════════════════════════════
+// AUTH
+// ═══════════════════════════════════
+const ACCOUNTS = {
+  'info@barcentralamsterdam.nl': { pass:'klant2026', role:'user' },
+  'admin@mixmate.nl':           { pass:'admin2026', role:'admin' },
+};
+let currentRole = null;
+let editMode = false;
+let uploadTargetId = null;
+
+// ═══════════════════════════════════
+// PAGE ROUTING
+// ═══════════════════════════════════
+function showPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + n).classList.add('active');
+  window.scrollTo(0, 0);
+  ['home','machines','about','contact'].forEach(id => {
+    const el = document.getElementById('nav-' + id);
+    if (el) el.classList.toggle('active', id === n);
+  });
+  const loggedIn = !!currentRole;
+  document.getElementById('nav-guest').style.display = loggedIn ? 'none' : 'flex';
+  document.getElementById('nav-user').style.display  = loggedIn ? 'flex' : 'none';
+  const hideNav = (n === 'login' || n === 'admin');
+  document.getElementById('main-nav').style.display = hideNav ? 'none' : 'flex';
+  document.getElementById('edit-fab').className = (loggedIn && currentRole === 'admin' && !hideNav) ? 'show' : '';
+  if (n === 'machines') renderMachines();
+  if (n === 'admin')    renderAdmin();
+  if (editMode && n !== 'admin' && n !== 'login') applyEditMode();
+}
+
+// ═══════════════════════════════════
+// AUTH FUNCTIONS
+// ═══════════════════════════════════
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-password').value;
+  const err   = document.getElementById('login-error');
+  const acc   = ACCOUNTS[email];
+  if (acc && acc.pass === pass) {
+    currentRole = acc.role;
+    err.classList.remove('show');
+    showPage(currentRole === 'admin' ? 'admin' : 'account');
+  } else {
+    err.classList.add('show');
+  }
+}
+
+function logout() {
+  currentRole = null;
+  stopEditing();
+  showPage('home');
+}
+
+// ═══════════════════════════════════
+// RENDER MACHINES
+// ═══════════════════════════════════
+function renderMachines() {
+  const grid = document.getElementById('machines-grid');
+  grid.innerHTML = machines.map(m => `
+    <div class="machine-listing ${m.featured ? 'featured-prod' : ''}">
+      <div class="ml-visual" onclick="editMode && triggerImageUpload('${m.id}')">
+        ${m.image
+          ? `<img src="${m.image}" alt="${m.name}">`
+          : `<span style="font-size:72px;position:relative;z-index:1">${m.emoji}</span>`}
+        <div class="ml-badge-wrap"><span class="ml-badge ${m.badgeStyle}">${m.badge}</span></div>
+        <div class="img-edit-overlay"><span style="font-size:24px">📷</span><span>Foto uploaden</span></div>
+      </div>
+      <div class="ml-body">
+        <div class="ml-name">${m.name}</div>
+        <div class="ml-tagline">${m.tagline}</div>
+        <p class="ml-desc">${m.description}</p>
+        <ul class="ml-specs">
+          <li><span class="dot"></span>Tot ${m.ingredients} ingrediënten</li>
+          <li><span class="dot"></span>${m.capacity} cocktails/uur</li>
+          <li><span class="dot"></span>${m.recipes}+ recepten</li>
+          <li><span class="dot"></span>Touchscreen bediening</li>
+          ${m.cooling ? '<li><span class="dot"></span>Koelsysteem</li>' : ''}
+          <li><span class="dot"></span>${m.warranty} jaar garantie</li>
+          <li><span class="dot"></span>Geschikt voor: ${m.suitable}</li>
+        </ul>
+        <div class="ml-price">€${m.price.toLocaleString('nl')} <small>excl. btw</small></div>
+        <div class="ml-actions">
+          <button class="btn-primary" style="flex:1" onclick="showPage('contact')">Demo aanvragen</button>
+          <button class="btn-ghost">Lease €${m.leasePrice}/mnd</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  const rows = [
+    ['Capaciteit', m => m.capacity + '/uur'],
+    ['Ingrediënten', m => 'Tot ' + m.ingredients],
+    ['Recepten', m => m.recipes + '+'],
+    ['Touchscreen', () => '<span class="tick">✓</span>'],
+    ['Koelsysteem', m => m.cooling ? '<span class="tick">✓</span>' : '<span class="cross">✕</span>'],
+    ['Garantie', m => m.warranty + ' jaar'],
+    ['Geschikt voor', m => m.suitable],
+    ['Koopprijs', m => '€' + m.price.toLocaleString('nl')],
+    ['Leaseprijs', m => '€' + m.leasePrice + '/mnd'],
+  ];
+  document.getElementById('compare-table').innerHTML =
+    `<thead><tr><th>Specificatie</th>${machines.map(m => `<th><span class="col-name ${m.featured ? 'blue' : ''}">${m.name}</span></th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map(([l, fn]) => `<tr><td>${l}</td>${machines.map(m => `<td ${m.featured ? 'class="hl"' : ''}>${fn(m)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+// ═══════════════════════════════════
+// RENDER ADMIN
+// ═══════════════════════════════════
+function renderAdmin() {
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="admin-stat"><div class="admin-stat-val">${machines.length}</div><div class="admin-stat-label">Modellen</div></div>
+    <div class="admin-stat"><div class="admin-stat-val">€${Math.min(...machines.map(m=>m.price)).toLocaleString('nl')}</div><div class="admin-stat-label">Laagste prijs</div></div>
+    <div class="admin-stat"><div class="admin-stat-val">€${Math.max(...machines.map(m=>m.price)).toLocaleString('nl')}</div><div class="admin-stat-label">Hoogste prijs</div></div>
+    <div class="admin-stat"><div class="admin-stat-val">${machines.filter(m=>m.image).length}/${machines.length}</div><div class="admin-stat-label">Met foto</div></div>
+  `;
+  document.getElementById('admin-grid').innerHTML = machines.map(m => `
+    <div class="admin-machine-card ${m.featured ? 'is-featured' : ''}">
+      <div class="amc-top">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span style="font-size:30px">${m.image ? '🖼️' : m.emoji}</span>
+          <div><div class="amc-name">${m.name}</div><span class="ml-badge ${m.badgeStyle}" style="font-size:9px;padding:2px 8px">${m.badge}</span></div>
+        </div>
+        ${m.featured ? '<span style="font-size:10px;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;font-weight:700">★ Uitgelicht</span>' : ''}
+      </div>
+      <div class="amc-specs">
+        <div class="amc-spec"><div class="amc-spec-label">Koopprijs</div><div class="amc-spec-val">€${m.price.toLocaleString('nl')}</div></div>
+        <div class="amc-spec"><div class="amc-spec-label">Lease</div><div class="amc-spec-val">€${m.leasePrice}/mnd</div></div>
+        <div class="amc-spec"><div class="amc-spec-label">Ingrediënten</div><div class="amc-spec-val">${m.ingredients}</div></div>
+        <div class="amc-spec"><div class="amc-spec-label">Capaciteit</div><div class="amc-spec-val">${m.capacity}/uur</div></div>
+        <div class="amc-spec"><div class="amc-spec-label">Garantie</div><div class="amc-spec-val">${m.warranty} jaar</div></div>
+        <div class="amc-spec"><div class="amc-spec-label">Foto</div><div class="amc-spec-val">${m.image ? '✓ Ja' : '✕ Nee'}</div></div>
+      </div>
+      <button class="admin-edit-btn" onclick="openEditModal('${m.id}')">✏ Bewerk machine</button>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════
+// EDIT MODE (visual editor)
+// ═══════════════════════════════════
+function startEditing() {
+  editMode = true;
+  document.getElementById('edit-bar').classList.add('show');
+  document.body.classList.add('edit-bar-open', 'edit-mode');
+  document.getElementById('edit-fab').style.display = 'none';
+  const curPage = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (curPage === 'machines') renderMachines();
+}
+
+function stopEditing() {
+  editMode = false;
+  document.getElementById('edit-bar').classList.remove('show');
+  document.body.classList.remove('edit-bar-open', 'edit-mode');
+  document.getElementById('edit-fab').className = (currentRole === 'admin') ? 'show' : '';
+  // commit any open contenteditable
+  document.querySelectorAll('[data-ed][contenteditable="true"]').forEach(el => {
+    el.removeAttribute('contenteditable');
+  });
+  if (document.getElementById('page-machines').classList.contains('active')) renderMachines();
+}
+
+function applyEditMode() {
+  // delegated handler already set up — just ensure class is on body
+  document.body.classList.add('edit-mode');
+}
+
+// Click to edit text
+document.addEventListener('click', function(e) {
+  if (!editMode) return;
+  // image upload on machine visual
+  const vis = e.target.closest('.ml-visual');
+  if (vis) {
+    const card = vis.closest('.machine-listing');
+    if (!card) return;
+    const idx = Array.from(document.getElementById('machines-grid').children).indexOf(card);
+    if (idx >= 0) { uploadTargetId = machines[idx].id; document.getElementById('img-upload').click(); }
+    return;
+  }
+  // text editing
+  const el = e.target.closest('[data-ed]');
+  if (!el) return;
+  if (el.getAttribute('contenteditable') === 'true') return;
+  el.setAttribute('contenteditable', 'true');
+  el.focus();
+  // place cursor at end
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+
+document.addEventListener('keydown', function(e) {
+  if (!editMode) return;
+  const el = document.activeElement;
+  if (el && el.getAttribute('contenteditable') === 'true' && e.key === 'Escape') {
+    el.removeAttribute('contenteditable');
+    el.blur();
+  }
+});
+
+document.addEventListener('blur', function(e) {
+  const el = e.target;
+  if (el.getAttribute('contenteditable') === 'true' && el.hasAttribute('data-ed')) {
+    el.removeAttribute('contenteditable');
+  }
+}, true);
+
+// ═══════════════════════════════════
+// IMAGE UPLOAD
+// ═══════════════════════════════════
+function triggerImageUpload(id) {
+  uploadTargetId = id;
+  document.getElementById('img-upload').click();
+}
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file || !uploadTargetId) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const m = machines.find(x => x.id === uploadTargetId);
+    if (m) {
+      m.image = ev.target.result;
+      renderMachines();
+      renderAdmin();
+      // update preview in edit modal if open
+      const prev = document.getElementById('edit-img-preview');
+      if (prev && document.getElementById('edit-id').value === uploadTargetId) {
+        prev.innerHTML = `<img src="${m.image}" style="max-height:80px;border-radius:3px">`;
+      }
+    }
+    uploadTargetId = null;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// ═══════════════════════════════════
+// ADMIN EDIT MODAL
+// ═══════════════════════════════════
+function openEditModal(id) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('edit-id').value          = id;
+  document.getElementById('edit-subtitle').textContent = 'Bewerk: ' + m.name;
+  document.getElementById('edit-name').value        = m.name;
+  document.getElementById('edit-emoji').value       = m.emoji;
+  document.getElementById('edit-tagline').value     = m.tagline;
+  document.getElementById('edit-desc').value        = m.description;
+  document.getElementById('edit-badge').value       = m.badge;
+  document.getElementById('edit-badge-style').value = m.badgeStyle;
+  document.getElementById('edit-featured').checked  = m.featured;
+  document.getElementById('edit-price').value       = m.price;
+  document.getElementById('edit-lease').value       = m.leasePrice;
+  document.getElementById('edit-ingredients').value = m.ingredients;
+  document.getElementById('edit-capacity').value    = m.capacity;
+  document.getElementById('edit-recipes').value     = m.recipes;
+  document.getElementById('edit-warranty').value    = m.warranty;
+  document.getElementById('edit-suitable').value    = m.suitable;
+  document.getElementById('edit-cooling').checked   = m.cooling;
+  document.getElementById('edit-img-preview').innerHTML = m.image
+    ? `<img src="${m.image}" style="max-height:80px;border-radius:3px">`
+    : `<span style="font-size:48px">${m.emoji}</span>`;
+  document.getElementById('alert-edit').classList.remove('show');
+  document.getElementById('m-edit').classList.add('open');
+}
+
+function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const m  = machines.find(x => x.id === id);
+  if (!m) return;
+  m.name       = document.getElementById('edit-name').value.trim() || m.name;
+  m.emoji      = document.getElementById('edit-emoji').value.trim() || m.emoji;
+  m.tagline    = document.getElementById('edit-tagline').value.trim();
+  m.description= document.getElementById('edit-desc').value.trim();
+  m.badge      = document.getElementById('edit-badge').value.trim();
+  m.badgeStyle = document.getElementById('edit-badge-style').value;
+  m.featured   = document.getElementById('edit-featured').checked;
+  m.price      = parseInt(document.getElementById('edit-price').value) || m.price;
+  m.leasePrice = parseInt(document.getElementById('edit-lease').value) || m.leasePrice;
+  m.ingredients= parseInt(document.getElementById('edit-ingredients').value) || m.ingredients;
+  m.capacity   = parseInt(document.getElementById('edit-capacity').value) || m.capacity;
+  m.recipes    = parseInt(document.getElementById('edit-recipes').value) || m.recipes;
+  m.warranty   = parseInt(document.getElementById('edit-warranty').value) || m.warranty;
+  m.suitable   = document.getElementById('edit-suitable').value.trim();
+  m.cooling    = document.getElementById('edit-cooling').checked;
+  document.getElementById('alert-edit').classList.add('show');
+  renderAdmin();
+  if (document.getElementById('page-machines').classList.contains('active')) renderMachines();
+  setTimeout(() => closeModal('m-edit'), 1600);
+}
+
+// ═══════════════════════════════════
+// MODALS
+// ═══════════════════════════════════
+function openModal(id, name) {
+  if (id === 'm-prob')  { document.getElementById('prob-machine').textContent = 'Machine: ' + name; document.getElementById('alert-prob').classList.remove('show'); }
+  if (id === 'm-opzeg') { document.getElementById('opzeg-machine').textContent = 'Machine: ' + name; document.getElementById('alert-opzeg').classList.remove('show'); }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function submit(t) { document.getElementById('alert-' + t).classList.add('show'); setTimeout(() => closeModal('m-' + t), 2500); }
+function submitContact() { const a = document.getElementById('alert-contact'); a.classList.add('show'); setTimeout(() => a.classList.remove('show'), 4000); }
+
+document.querySelectorAll('.modal-bg').forEach(o => o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); }));
+
+// Initial render
+renderMachines();
+</script>
+</body>
+</html>

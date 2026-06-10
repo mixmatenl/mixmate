@@ -1,0 +1,481 @@
+import asyncio
+import os
+from contextlib import asynccontextmanager
+from typing import List, Optional
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from sqlmodel import Session, select
+
+from .database import create_db, get_session, engine
+from .models import (
+    Glass, GlassCreate, GlassRead, GlassUpdate,
+    Category, CategoryCreate, CategoryRead, CategoryUpdate,
+    Ingredient, IngredientCreate, IngredientRead,
+    Pump, PumpCreate, PumpRead, PumpUpdate, PumpSimple,
+    Recipe, RecipeCreate, RecipeRead, RecipeUpdate,
+    RecipeIngredient, RecipeIngredientRead,
+)
+from .hardware import loadcell, gpio
+from .pouring import pour_recipe, cancel_pour
+from .updater import get_version_info, check_updates_available, run_update
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db()
+    yield
+    gpio.cleanup()
+
+
+app = FastAPI(title="Mixmate", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _loaded_ingredient_ids(session: Session):
+    return {
+        p.ingredient_id for p in session.exec(select(Pump)).all()
+        if p.ingredient_id and p.enabled
+    }
+
+def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
+    items = session.exec(
+        select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe.id)
+    ).all()
+    loaded = _loaded_ingredient_ids(session)
+    ingredients_read = []
+    for item in sorted(items, key=lambda x: x.order):
+        ing = session.get(Ingredient, item.ingredient_id)
+        if ing:
+            ingredients_read.append(RecipeIngredientRead(
+                ingredient_id=ing.id,
+                ingredient_name=ing.name,
+                amount_ml=item.amount_ml,
+                order=item.order,
+                has_pump=ing.id in loaded,
+            ))
+    fully_automatic = all(i.has_pump for i in ingredients_read)
+    partially_available = len(ingredients_read) > 0
+    cat = session.get(Category, recipe.category_id) if recipe.category_id else None
+    glass = session.get(Glass, recipe.glass_id) if recipe.glass_id else None
+    total_volume_ml = sum(i.amount_ml for i in ingredients_read)
+    return RecipeRead(
+        id=recipe.id, name=recipe.name, description=recipe.description,
+        image_url=recipe.image_url, category_id=recipe.category_id,
+        category_name=cat.name if cat else None,
+        glass_id=recipe.glass_id,
+        glass_name=glass.name if glass else None,
+        glass_volume_ml=glass.volume_ml if glass else None,
+        total_volume_ml=total_volume_ml,
+        enabled=recipe.enabled,
+        ingredients=ingredients_read,
+        fully_automatic=fully_automatic,
+        partially_available=partially_available,
+    )
+
+
+# ── PIN / auth ─────────────────────────────────────────────────────────────────
+
+@app.post("/api/auth/verify-pin")
+def verify_pin(body: dict):
+    pin = os.environ.get("MIXMATE_PIN", "2580")
+    if body.get("pin") == pin:
+        return {"ok": True}
+    raise HTTPException(403, "Verkeerde PIN")
+
+@app.post("/api/auth/verify-admin-pin")
+def verify_admin_pin(body: dict):
+    pin = os.environ.get("MIXMATE_ADMIN_PIN", "0000")
+    if body.get("pin") == pin:
+        return {"ok": True}
+    raise HTTPException(403, "Verkeerde PIN")
+
+@app.post("/api/auth/set-pin")
+def set_pin(body: dict):
+    """Change bartender PIN at runtime (stores in env for this process)."""
+    admin_pin = os.environ.get("MIXMATE_ADMIN_PIN", "0000")
+    if body.get("admin_pin") != admin_pin:
+        raise HTTPException(403, "Niet geautoriseerd")
+    new_pin = str(body.get("new_pin", "")).strip()
+    if len(new_pin) < 4 or not new_pin.isdigit():
+        raise HTTPException(400, "PIN moet minimaal 4 cijfers zijn")
+    os.environ["MIXMATE_PIN"] = new_pin
+    # Persist to .env file next to the backend
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    lines = []
+    replaced = False
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                if line.startswith("MIXMATE_PIN="):
+                    lines.append(f"MIXMATE_PIN={new_pin}\n")
+                    replaced = True
+                else:
+                    lines.append(line)
+    if not replaced:
+        lines.append(f"MIXMATE_PIN={new_pin}\n")
+    with open(env_path, "w") as f:
+        f.writelines(lines)
+    return {"ok": True}
+
+# Backwards compat
+@app.post("/api/backoffice/verify-pin")
+def verify_pin_compat(body: dict):
+    return verify_pin(body)
+
+
+# ── Glasses ───────────────────────────────────────────────────────────────────
+
+@app.get("/api/glasses", response_model=List[GlassRead])
+def list_glasses(session: Session = Depends(get_session)):
+    return session.exec(select(Glass).order_by(Glass.sort_order, Glass.volume_ml)).all()
+
+@app.post("/api/glasses", response_model=GlassRead)
+def create_glass(data: GlassCreate, session: Session = Depends(get_session)):
+    glass = Glass(**data.model_dump())
+    session.add(glass); session.commit(); session.refresh(glass)
+    return glass
+
+@app.patch("/api/glasses/{glass_id}", response_model=GlassRead)
+def update_glass(glass_id: int, data: GlassUpdate, session: Session = Depends(get_session)):
+    glass = session.get(Glass, glass_id)
+    if not glass: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(glass, k, v)
+    session.add(glass); session.commit(); session.refresh(glass)
+    return glass
+
+@app.delete("/api/glasses/{glass_id}")
+def delete_glass(glass_id: int, session: Session = Depends(get_session)):
+    glass = session.get(Glass, glass_id)
+    if not glass: raise HTTPException(404)
+    for r in session.exec(select(Recipe).where(Recipe.glass_id == glass_id)).all():
+        r.glass_id = None; session.add(r)
+    session.delete(glass); session.commit()
+    return {"ok": True}
+
+
+# ── Categories ────────────────────────────────────────────────────────────────
+
+@app.get("/api/categories", response_model=List[CategoryRead])
+def list_categories(session: Session = Depends(get_session)):
+    return session.exec(select(Category).order_by(Category.sort_order)).all()
+
+@app.post("/api/categories", response_model=CategoryRead)
+def create_category(data: CategoryCreate, session: Session = Depends(get_session)):
+    cat = Category(**data.model_dump())
+    session.add(cat); session.commit(); session.refresh(cat)
+    return cat
+
+@app.patch("/api/categories/{cat_id}", response_model=CategoryRead)
+def update_category(cat_id: int, data: CategoryUpdate, session: Session = Depends(get_session)):
+    cat = session.get(Category, cat_id)
+    if not cat: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(cat, k, v)
+    session.add(cat); session.commit(); session.refresh(cat)
+    return cat
+
+@app.delete("/api/categories/{cat_id}")
+def delete_category(cat_id: int, session: Session = Depends(get_session)):
+    cat = session.get(Category, cat_id)
+    if not cat: raise HTTPException(404)
+    # Unlink recipes
+    for r in session.exec(select(Recipe).where(Recipe.category_id == cat_id)).all():
+        r.category_id = None
+        session.add(r)
+    session.delete(cat); session.commit()
+    return {"ok": True}
+
+
+# ── Ingredients ───────────────────────────────────────────────────────────────
+
+@app.get("/api/ingredients", response_model=List[IngredientRead])
+def list_ingredients(session: Session = Depends(get_session)):
+    return session.exec(select(Ingredient)).all()
+
+@app.post("/api/ingredients", response_model=IngredientRead)
+def create_ingredient(data: IngredientCreate, session: Session = Depends(get_session)):
+    ing = Ingredient(**data.model_dump())
+    session.add(ing); session.commit(); session.refresh(ing)
+    return ing
+
+@app.delete("/api/ingredients/{ingredient_id}")
+def delete_ingredient(ingredient_id: int, session: Session = Depends(get_session)):
+    ing = session.get(Ingredient, ingredient_id)
+    if not ing: raise HTTPException(404)
+    session.delete(ing); session.commit()
+    return {"ok": True}
+
+
+# ── Pumps (full — backoffice only) ────────────────────────────────────────────
+
+@app.get("/api/pumps", response_model=List[PumpRead])
+def list_pumps(session: Session = Depends(get_session)):
+    pumps = session.exec(select(Pump)).all()
+    result = []
+    for p in pumps:
+        ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
+        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+        result.append(PumpRead(id=p.id, slot=p.slot, pump_type=p.pump_type, gpio_pin=p.gpio_pin,
+            ml_per_second=p.ml_per_second, enabled=p.enabled,
+            ingredient_id=p.ingredient_id, ingredient=ing_read))
+    return result
+
+@app.post("/api/pumps", response_model=PumpRead)
+def create_pump(data: PumpCreate, session: Session = Depends(get_session)):
+    pump = Pump(**data.model_dump())
+    session.add(pump); session.commit(); session.refresh(pump)
+    ing = session.get(Ingredient, pump.ingredient_id) if pump.ingredient_id else None
+    ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+    return PumpRead(**pump.model_dump(), ingredient=ing_read)
+
+@app.patch("/api/pumps/{pump_id}", response_model=PumpRead)
+def update_pump(pump_id: int, data: PumpUpdate, session: Session = Depends(get_session)):
+    pump = session.get(Pump, pump_id)
+    if not pump: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(pump, k, v)
+    session.add(pump); session.commit(); session.refresh(pump)
+    ing = session.get(Ingredient, pump.ingredient_id) if pump.ingredient_id else None
+    ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+    return PumpRead(**pump.model_dump(), ingredient=ing_read)
+
+@app.delete("/api/pumps/{pump_id}")
+def delete_pump(pump_id: int, session: Session = Depends(get_session)):
+    pump = session.get(Pump, pump_id)
+    if not pump: raise HTTPException(404)
+    session.delete(pump); session.commit()
+    return {"ok": True}
+
+# Pumps simple — for bartender ingredient assignment (no GPIO)
+@app.get("/api/pumps/simple", response_model=List[PumpSimple])
+def list_pumps_simple(session: Session = Depends(get_session)):
+    pumps = session.exec(select(Pump)).all()
+    result = []
+    for p in pumps:
+        ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
+        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+        result.append(PumpSimple(id=p.id, slot=p.slot, ingredient_id=p.ingredient_id,
+            ingredient=ing_read, enabled=p.enabled))
+    return result
+
+@app.patch("/api/pumps/{pump_id}/ingredient")
+def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_session)):
+    pump = session.get(Pump, pump_id)
+    if not pump: raise HTTPException(404)
+    pump.ingredient_id = body.get("ingredient_id")
+    session.add(pump); session.commit()
+    return {"ok": True}
+
+
+# ── Recipes ───────────────────────────────────────────────────────────────────
+
+@app.get("/api/recipes", response_model=List[RecipeRead])
+def list_recipes(session: Session = Depends(get_session)):
+    recipes = session.exec(select(Recipe)).all()
+    return [_build_recipe_read(r, session) for r in recipes]
+
+@app.post("/api/recipes", response_model=RecipeRead)
+def create_recipe(data: RecipeCreate, session: Session = Depends(get_session)):
+    recipe = Recipe(name=data.name, description=data.description,
+                    category_id=data.category_id, glass_id=data.glass_id, image_url=data.image_url)
+    session.add(recipe); session.commit(); session.refresh(recipe)
+    for i, ing_data in enumerate(data.ingredients):
+        session.add(RecipeIngredient(recipe_id=recipe.id,
+            ingredient_id=ing_data.ingredient_id, amount_ml=ing_data.amount_ml, order=i))
+    session.commit()
+    return _build_recipe_read(recipe, session)
+
+@app.patch("/api/recipes/{recipe_id}", response_model=RecipeRead)
+def update_recipe(recipe_id: int, data: RecipeUpdate, session: Session = Depends(get_session)):
+    recipe = session.get(Recipe, recipe_id)
+    if not recipe: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True, exclude={"ingredients"}).items():
+        setattr(recipe, k, v)
+    session.add(recipe); session.commit(); session.refresh(recipe)
+    if data.ingredients is not None:
+        for item in session.exec(select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)).all():
+            session.delete(item)
+        for i, ing_data in enumerate(data.ingredients):
+            session.add(RecipeIngredient(recipe_id=recipe.id,
+                ingredient_id=ing_data.ingredient_id, amount_ml=ing_data.amount_ml, order=i))
+        session.commit()
+    return _build_recipe_read(recipe, session)
+
+@app.delete("/api/recipes/{recipe_id}")
+def delete_recipe(recipe_id: int, session: Session = Depends(get_session)):
+    recipe = session.get(Recipe, recipe_id)
+    if not recipe: raise HTTPException(404)
+    for item in session.exec(select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)).all():
+        session.delete(item)
+    session.delete(recipe); session.commit()
+    return {"ok": True}
+
+
+# ── Weight & pour ─────────────────────────────────────────────────────────────
+
+@app.get("/api/weight")
+def get_weight():
+    return {"weight_g": round(loadcell.get_weight_grams(), 1)}
+
+@app.post("/api/weight/tare")
+def tare_scale():
+    loadcell.tare()
+    return {"ok": True, "weight_g": round(loadcell.get_weight_grams(), 1)}
+
+@app.post("/api/weight/calibrate")
+def calibrate_scale(body: dict):
+    known_weight_g = float(body.get("known_weight_g", 0))
+    if known_weight_g <= 0:
+        raise HTTPException(400, "Voer een geldig gewicht in (> 0 gram)")
+    scale = loadcell.calibrate(known_weight_g)
+    measured = round(loadcell.get_weight_grams(), 1)
+    return {"ok": True, "scale_factor": round(scale, 4), "measured_g": measured}
+
+@app.get("/api/weight/scale-factor")
+def get_scale_factor():
+    return {"scale_factor": round(loadcell._scale, 4)}
+
+@app.get("/api/system/loadcell-pins")
+def get_loadcell_pins():
+    return loadcell.get_pins()
+
+@app.post("/api/system/loadcell-pins")
+def set_loadcell_pins(body: dict):
+    dout = int(body.get("dout_pin", loadcell._dout_pin))
+    sck = int(body.get("sck_pin", loadcell._sck_pin))
+    loadcell.set_pins(dout, sck)
+    return {"ok": True, "dout_pin": dout, "sck_pin": sck, "restart_required": True}
+
+@app.post("/api/pour/cancel")
+def cancel():
+    cancel_pour()
+    return {"ok": True}
+
+@app.websocket("/ws/pour/{recipe_id}")
+async def websocket_pour(websocket: WebSocket, recipe_id: int, scale: float = 1.0):
+    await websocket.accept()
+    with Session(engine) as session:
+        recipe = session.get(Recipe, recipe_id)
+        if not recipe:
+            await websocket.send_json({"type": "error", "message": "Recept niet gevonden"})
+            await websocket.close(); return
+        items = session.exec(select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)).all()
+        pumps = session.exec(select(Pump)).all()
+        pump_by_ingredient = {p.ingredient_id: p for p in pumps if p.ingredient_id}
+        steps = []
+        for item in sorted(items, key=lambda x: x.order):
+            pump = pump_by_ingredient.get(item.ingredient_id)
+            if not pump: continue  # manual ingredients are skipped (handled in frontend)
+            ing = session.get(Ingredient, item.ingredient_id)
+            steps.append({"pin": pump.gpio_pin, "ml": item.amount_ml * scale,
+                "ml_per_second": pump.ml_per_second, "name": ing.name if ing else "?"})
+
+    async def send_progress(data: dict):
+        try: await websocket.send_json(data)
+        except Exception: pass
+
+    try:
+        await pour_recipe(steps, send_progress)
+    except WebSocketDisconnect:
+        cancel_pour()
+
+
+# ── Calibration ───────────────────────────────────────────────────────────────
+
+@app.websocket("/ws/calibrate/{pump_id}")
+async def websocket_calibrate(websocket: WebSocket, pump_id: int):
+    await websocket.accept()
+    with Session(engine) as session:
+        pump = session.get(Pump, pump_id)
+        if not pump:
+            await websocket.send_json({"type": "error", "message": "Pomp niet gevonden"})
+            await websocket.close(); return
+        pin = pump.gpio_pin
+    try:
+        msg = await websocket.receive_json()
+        if msg.get("action") != "start":
+            await websocket.send_json({"type": "error", "message": "Verwacht {action: start}"}); return
+        seconds = max(1.0, min(30.0, float(msg.get("seconds", 5))))
+        loadcell.tare()
+        await asyncio.sleep(0.3)
+        gpio.setup_pin(pin); gpio.activate(pin)
+        await websocket.send_json({"type": "running", "seconds": seconds})
+        start = asyncio.get_event_loop().time()
+        while True:
+            elapsed = asyncio.get_event_loop().time() - start
+            if elapsed >= seconds: break
+            weight = loadcell.get_weight_grams()
+            if not (hasattr(loadcell, '_hx') and loadcell._hx):
+                loadcell._mock_add(1.5 * 0.1); weight = loadcell.get_weight_grams()
+            await websocket.send_json({"type": "progress", "elapsed": round(elapsed, 1), "weight_g": round(weight, 1)})
+            await asyncio.sleep(0.1)
+        gpio.deactivate(pin)
+        final_weight = loadcell.get_weight_grams()
+        await websocket.send_json({"type": "done", "elapsed": seconds,
+            "weight_g": round(final_weight, 1), "suggested_ml": round(final_weight, 1)})
+        save_msg = await websocket.receive_json()
+        if save_msg.get("action") == "save":
+            measured_ml = float(save_msg["measured_ml"])
+            ml_per_second = round(measured_ml / seconds, 3)
+            with Session(engine) as session:
+                pump = session.get(Pump, pump_id)
+                pump.ml_per_second = ml_per_second
+                session.add(pump); session.commit()
+            await websocket.send_json({"type": "saved", "ml_per_second": ml_per_second})
+    except Exception as e:
+        gpio.deactivate(pin)
+        await websocket.send_json({"type": "error", "message": str(e)})
+    finally:
+        gpio.deactivate(pin)
+
+
+# ── OTA Updates ──────────────────────────────────────────────────────────────
+
+@app.get("/api/system/version")
+async def system_version():
+    info = await get_version_info()
+    return info
+
+@app.get("/api/system/check-updates")
+async def system_check_updates():
+    has_updates = await check_updates_available()
+    return {"updates_available": has_updates}
+
+@app.websocket("/ws/system/update")
+async def websocket_update(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        async for event in run_update():
+            await websocket.send_json(event)
+            if event["type"] in ("done", "error"):
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# ── Static frontend ───────────────────────────────────────────────────────────
+
+FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.exists(FRONTEND_DIST):
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
