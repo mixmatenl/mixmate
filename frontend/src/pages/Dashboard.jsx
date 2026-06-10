@@ -414,15 +414,22 @@ export default function Dashboard({ onStandby, theme, onThemeChange }) {
   function handleLogout() { sessionStorage.removeItem('mixmate_auth'); window.location.reload() }
 
   useEffect(() => {
-    Promise.all([api.getRecipes(), api.getCategories(), api.getGlasses(), api.getFavorites()])
-      .then(([r, c, g, f]) => { setRecipes(r); setCategories(c); setGlasses(g); setFavorites(f) })
+    // Recepten/categorieën/glazen apart van favorieten laden —
+    // zodat een ontbrekend favorites-endpoint (oude backend) de recepten niet blokkeert
+    Promise.all([api.getRecipes(), api.getCategories(), api.getGlasses()])
+      .then(([r, c, g]) => { setRecipes(r); setCategories(c); setGlasses(g) })
       .catch(console.error)
       .finally(() => setLoading(false))
+
+    api.getFavorites()
+      .then(f => setFavorites(Array.isArray(f) ? f : []))
+      .catch(() => {}) // stil falen als endpoint nog niet bestaat
   }, [])
 
   const favSet = new Set(favorites)
 
   function toggleFavorite(recipeId) {
+    if (window.__dragScrollDidScroll?.()) return
     const isFav = favSet.has(recipeId)
     // Optimistische update
     setFavorites(prev => isFav ? prev.filter(id => id !== recipeId) : [...prev, recipeId])
