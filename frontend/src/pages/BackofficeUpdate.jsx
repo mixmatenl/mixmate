@@ -9,8 +9,8 @@ function ChangelogSection({ changelog }) {
       <div className="px-4 py-2.5 border-b border-white/10">
         <p className="text-white/70 text-sm font-semibold">Wat is er nieuw?</p>
       </div>
-      <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
-        {changelog.map((entry, i) => (
+      <div className="divide-y divide-white/5">
+        {changelog.slice(0, 1).map((entry, i) => (
           <div key={i} className="px-4 py-3 space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-white/80 bg-white/10 px-2 py-0.5 rounded-full font-mono">

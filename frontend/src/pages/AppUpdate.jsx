@@ -162,8 +162,8 @@ export default function AppUpdate() {
               <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
                 <p className="text-gray-700 font-semibold text-sm">Wat is er nieuw?</p>
               </div>
-              <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
-                {changelog.map((entry, i) => (
+              <div className="divide-y divide-gray-50">
+                {changelog.slice(0, 1).map((entry, i) => (
                   <div key={i} className="px-5 py-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full font-mono">
