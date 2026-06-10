@@ -233,7 +233,10 @@ function CocktailCard({ recipe, onMake }) {
   const canMake = recipe.partially_available
 
   return (
-    <div className={`bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col ${!canMake ? 'opacity-50' : ''}`}>
+    <div
+      onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
+      className={`bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col ${canMake ? 'cursor-pointer active:scale-[0.98] transition-transform' : 'opacity-50'}`}
+    >
       <div className="h-44 relative overflow-hidden bg-gray-100 shrink-0">
         {recipe.image_url
           ? <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
@@ -255,13 +258,9 @@ function CocktailCard({ recipe, onMake }) {
         <h3 className="font-bold text-[#111] text-base tracking-tight leading-tight mb-1">{recipe.name.toUpperCase()}</h3>
         {recipe.description && <p className="text-gray-400 text-xs mb-3 leading-relaxed">{recipe.description}</p>}
         <div className="mt-auto pt-3">
-          <button
-            onClick={() => { if (!window.__dragScrollDidScroll?.()) onMake(recipe) }}
-            disabled={!canMake}
-            className="w-full py-3 rounded-2xl bg-[#2a2a2a] text-white text-sm font-semibold hover:bg-[#1a1a1a] disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
-          >
+          <div className={`w-full py-3 rounded-2xl text-center text-sm font-semibold ${canMake ? 'bg-[#2a2a2a] text-white' : 'bg-gray-100 text-gray-300'}`}>
             maken
-          </button>
+          </div>
         </div>
       </div>
     </div>

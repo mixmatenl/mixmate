@@ -25,10 +25,12 @@ export function DragScrollProvider({ children }) {
     }
 
     function onDown(e) {
-      // Negeer als het een knop/input/select is — die mogen gewoon klikken
+      // Altijd resetten — ook als we niet scrollen, anders blokkeren oude drags nieuwe kliks
+      didScroll = false
+
+      // Knoppen/inputs scrollen niet, maar we moeten didScroll wel gereset hebben
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return
-      // Negeer als het element zelf een onClick of role=button heeft
       if (e.target.closest('button, a, [role="button"]')) return
 
       scrollEl = findScrollable(e.target)
@@ -36,7 +38,6 @@ export function DragScrollProvider({ children }) {
 
       startY = e.clientY
       startScroll = scrollEl.scrollTop
-      didScroll = false
     }
 
     function onMove(e) {
