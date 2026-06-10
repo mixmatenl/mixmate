@@ -352,8 +352,9 @@ export default function Dashboard({ onStandby }) {
   }, [])
 
   const allCats = [{ id: 'all', name: 'Alles' }, ...categories]
-  const filtered = recipes.filter(r => r.enabled && (
-    activeCategory === 'all' || r.category_id === activeCategory
+  // eslint-disable-next-line eqeqeq — category_id is number, activeCategory kan string of number zijn
+  const filtered = recipes.filter(r => r.enabled !== false && (
+    activeCategory === 'all' || r.category_id == activeCategory
   ))
 
   return (

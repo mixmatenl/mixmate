@@ -59,7 +59,7 @@ function ImageUploader({ recipeId, currentUrl, onUploaded }) {
 }
 
 /* ── Recept formulier (nieuw + bewerken) ──────────────────────────────── */
-function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel }) {
+function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel, onReload }) {
   const isEdit = !!recipe
   const [name, setName]               = useState(recipe?.name || '')
   const [description, setDescription] = useState(recipe?.description || '')
@@ -102,6 +102,8 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
       if (pendingFile && saved?.id) {
         await api.uploadRecipeImage(saved.id, pendingFile)
       }
+      // Nu pas lijst herladen zodat foto ook zichtbaar is
+      if (saved) onReload?.()
     } finally {
       setSaving(false)
     }
@@ -207,10 +209,11 @@ function RecipeCard({ recipe, ingredients, categories, glasses, onUpdated, onDel
         categories={categories}
         glasses={glasses}
         onSave={async data => {
-          await api.updateRecipe(recipe.id, data)
+          const saved = await api.updateRecipe(recipe.id, data)
           setEditing(false)
-          onUpdated()
+          return saved
         }}
+        onReload={onUpdated}
         onCancel={() => setEditing(false)}
       />
     )
@@ -304,9 +307,9 @@ export default function AdminRecipes() {
           onSave={async data => {
             const saved = await api.createRecipe(data)
             setAdding(false)
-            load()
             return saved
           }}
+          onReload={load}
           onCancel={() => setAdding(false)}
         />
       )}

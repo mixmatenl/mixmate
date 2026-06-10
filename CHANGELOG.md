@@ -1,5 +1,17 @@
 # MIXMATE OS — Changelog
 
+## [1.2.0] - 2026-06-10
+### Gefixt
+- Recepten met niet-geladen pompen werden ten onrechte als beschikbaar getoond
+- Categorie-filter werkte niet (getal vs. tekst vergelijking)
+- `/api/pumps/simple` endpoint gaf altijd 404 terug (route-volgorde conflict)
+- PIN-wijziging ging verloren na herstart van de service
+- Foto van nieuw recept werd niet getoond na opslaan (race condition)
+- Login-knop bleef uitgeschakeld bij netwerkfout
+- Calibratie crashte als pomp tussentijds verwijderd was
+- Scrollen werkt nu ook op echte touchscreens (naast Pi muis-emulatie)
+- Uploadlimiet voor receptfoto's: max 8MB
+
 ## [1.1.3] - 2026-06-10
 ### Nieuw
 - Update-pagina toont nu release notes voordat je een update installeert

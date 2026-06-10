@@ -19,7 +19,9 @@ export default function Login({ onLogin, onBackoffice }) {
         onLogin()
       } catch {
         setShake(true)
-        setTimeout(() => { setInput(''); setShake(false); setLoading(false) }, 600)
+        setTimeout(() => { setInput(''); setShake(false); }, 600)
+      } finally {
+        setTimeout(() => setLoading(false), 600)
       }
     }
   }

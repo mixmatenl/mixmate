@@ -24,25 +24,24 @@ export function DragScrollProvider({ children }) {
       return null
     }
 
-    function onDown(e) {
-      // Altijd resetten — ook als we niet scrollen, anders blokkeren oude drags nieuwe kliks
-      didScroll = false
+    function getClientY(e) {
+      return e.touches ? e.touches[0]?.clientY ?? 0 : e.clientY
+    }
 
-      // Knoppen/inputs scrollen niet, maar we moeten didScroll wel gereset hebben
+    function onDown(e) {
+      didScroll = false
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return
       if (e.target.closest('button, a, [role="button"]')) return
-
       scrollEl = findScrollable(e.target)
       if (!scrollEl) return
-
-      startY = e.clientY
+      startY = getClientY(e)
       startScroll = scrollEl.scrollTop
     }
 
     function onMove(e) {
       if (!scrollEl) return
-      const dy = e.clientY - startY
+      const dy = getClientY(e) - startY
       if (Math.abs(dy) > 6) {
         didScroll = true
         scrollEl.scrollTop = startScroll - dy
@@ -55,17 +54,25 @@ export function DragScrollProvider({ children }) {
       scrollEl = null
     }
 
-    // Sla op zodat klikhandlers kunnen checken of het een drag was
     window.__dragScrollDidScroll = () => didScroll
 
+    // Mouse events (Pi met touchscreen-emulatie als muis)
     document.addEventListener('mousedown', onDown, { passive: true })
     document.addEventListener('mousemove', onMove, { passive: false })
     document.addEventListener('mouseup', onUp, { passive: true })
+
+    // Touch events (echte touchscreens)
+    document.addEventListener('touchstart', onDown, { passive: true })
+    document.addEventListener('touchmove', onMove, { passive: false })
+    document.addEventListener('touchend', onUp, { passive: true })
 
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('touchstart', onDown)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onUp)
       delete window.__dragScrollDidScroll
     }
   }, [])

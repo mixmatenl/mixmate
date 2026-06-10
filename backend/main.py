@@ -24,8 +24,20 @@ from .pouring import pour_recipe, cancel_pour
 from .updater import get_version_info, check_updates_available, run_update
 
 
+def _load_env():
+    """Laad .env bestand zodat PIN-wijzigingen na herstart behouden blijven."""
+    env_path = Path(__file__).parent.parent / ".env"
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _load_env()
     create_db()
     yield
     gpio.cleanup()
@@ -65,8 +77,8 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
                 order=item.order,
                 has_pump=ing.id in loaded,
             ))
-    fully_automatic = all(i.has_pump for i in ingredients_read)
-    partially_available = len(ingredients_read) > 0
+    fully_automatic = len(ingredients_read) > 0 and all(i.has_pump for i in ingredients_read)
+    partially_available = any(i.has_pump for i in ingredients_read)
     cat = session.get(Category, recipe.category_id) if recipe.category_id else None
     glass = session.get(Glass, recipe.glass_id) if recipe.glass_id else None
     total_volume_ml = sum(i.amount_ml for i in ingredients_read)
@@ -233,6 +245,18 @@ def list_pumps(session: Session = Depends(get_session)):
             ingredient_id=p.ingredient_id, ingredient=ing_read))
     return result
 
+# Pumps simple — MOET vóór /{pump_id} staan anders matcht FastAPI "simple" als int
+@app.get("/api/pumps/simple", response_model=List[PumpSimple])
+def list_pumps_simple(session: Session = Depends(get_session)):
+    pumps = session.exec(select(Pump)).all()
+    result = []
+    for p in pumps:
+        ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
+        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+        result.append(PumpSimple(id=p.id, slot=p.slot, ingredient_id=p.ingredient_id,
+            ingredient=ing_read, enabled=p.enabled))
+    return result
+
 @app.post("/api/pumps", response_model=PumpRead)
 def create_pump(data: PumpCreate, session: Session = Depends(get_session)):
     pump = Pump(**data.model_dump())
@@ -258,18 +282,6 @@ def delete_pump(pump_id: int, session: Session = Depends(get_session)):
     if not pump: raise HTTPException(404)
     session.delete(pump); session.commit()
     return {"ok": True}
-
-# Pumps simple — for bartender ingredient assignment (no GPIO)
-@app.get("/api/pumps/simple", response_model=List[PumpSimple])
-def list_pumps_simple(session: Session = Depends(get_session)):
-    pumps = session.exec(select(Pump)).all()
-    result = []
-    for p in pumps:
-        ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
-        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
-        result.append(PumpSimple(id=p.id, slot=p.slot, ingredient_id=p.ingredient_id,
-            ingredient=ing_read, enabled=p.enabled))
-    return result
 
 @app.patch("/api/pumps/{pump_id}/ingredient")
 def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_session)):
@@ -335,6 +347,8 @@ async def upload_recipe_image(recipe_id: int, file: UploadFile = File(...), sess
     filename = f"recipe_{recipe_id}{suffix}"
     dest = uploads_dir / filename
     content = await file.read()
+    if len(content) > 8_000_000:  # max 8MB
+        raise HTTPException(413, "Bestand te groot (max 8MB)")
     dest.write_bytes(content)
     recipe.image_url = f"/uploads/{filename}"
     session.add(recipe); session.commit()
@@ -449,6 +463,9 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
             ml_per_second = round(measured_ml / seconds, 3)
             with Session(engine) as session:
                 pump = session.get(Pump, pump_id)
+                if not pump:
+                    await websocket.send_json({"type": "error", "message": "Pomp niet meer gevonden"})
+                    return
                 pump.ml_per_second = ml_per_second
                 session.add(pump); session.commit()
             await websocket.send_json({"type": "saved", "ml_per_second": ml_per_second})
