@@ -5,25 +5,51 @@ Streams output line-by-line via an async generator.
 """
 import asyncio
 import os
+import shutil
 from pathlib import Path
 
 APP_DIR = Path(__file__).parent.parent.resolve()
-VENV_PYTHON = APP_DIR / ".venv" / "bin" / "python3"
 VENV_PIP = APP_DIR / ".venv" / "bin" / "pip"
-NPM = "npm"
 
 
-async def _run(cmd, cwd=None):
-    """Yield (stream, line) tuples from a subprocess."""
+def _find_npm():
+    """Find npm binary — tries PATH first, then common locations."""
+    # 1. shutil.which uses current process PATH
+    found = shutil.which("npm")
+    if found:
+        return found
+    # 2. Common locations on Debian/Ubuntu/Pi
+    for p in [
+        "/usr/bin/npm",
+        "/usr/local/bin/npm",
+        "/opt/nodejs/bin/npm",
+    ]:
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            return p
+    # 3. NVM per-user installs
+    home = Path.home()
+    for nvm_path in sorted((home / ".nvm" / "versions" / "node").glob("*/bin/npm"), reverse=True):
+        if nvm_path.is_file():
+            return str(nvm_path)
+    return "npm"  # fallback, will fail with a clear error
+
+
+NPM = _find_npm()
+
+
+async def _run_proc(cmd, cwd=None):
+    """Run a subprocess, yield output lines, return exit code."""
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         cwd=str(cwd or APP_DIR),
+        env={**os.environ, "HOME": str(Path.home()), "PATH": os.environ.get("PATH", "") + ":/usr/bin:/usr/local/bin"},
     )
     async for raw in proc.stdout:
         yield raw.decode(errors="replace").rstrip()
     await proc.wait()
+    return proc.returncode
 
 
 async def get_version_info() -> dict:
@@ -51,15 +77,28 @@ async def get_version_info() -> dict:
 async def check_updates_available() -> bool:
     """Fetch remote and check if we're behind."""
     try:
-        proc = await asyncio.create_subprocess_exec(
-            "git", "fetch", "--dry-run",
+        env = {**os.environ, "HOME": str(Path.home())}
+        # Fetch latest remote info
+        proc1 = await asyncio.create_subprocess_exec(
+            "git", "fetch", "origin",
+            cwd=str(APP_DIR),
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            env=env,
+        )
+        await proc1.communicate()
+
+        # Compare local HEAD with remote
+        proc2 = await asyncio.create_subprocess_exec(
+            "git", "rev-list", "HEAD..origin/main", "--count",
             cwd=str(APP_DIR),
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+            env=env,
         )
-        _, err = await proc.communicate()
-        # If fetch --dry-run has output, there are remote changes
-        return bool(err.strip())
+        out, _ = await proc2.communicate()
+        count = int(out.decode().strip() or "0")
+        return count > 0
     except Exception:
         return False
 
@@ -68,52 +107,81 @@ async def run_update():
     """
     Full update sequence. Yields progress dicts:
     {"type": "step", "label": "..."}
-    {"type": "log", "line": "..."}
+    {"type": "log",  "line": "..."}
     {"type": "done"} or {"type": "error", "message": "..."}
     """
-    SETUP_SCRIPT = APP_DIR / "scripts" / "setup-display.sh"
+    env_extra = {
+        **os.environ,
+        "HOME": str(Path.home()),
+        "PATH": os.environ.get("PATH", "") + ":/usr/bin:/usr/local/bin:/usr/local/sbin",
+        "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    }
+
+    npm = _find_npm()
+    yield {"type": "log", "line": f"npm gevonden: {npm}"}
+    yield {"type": "log", "line": f"App map: {APP_DIR}"}
 
     steps = [
-        ("Git — code ophalen",       ["git", "pull"], APP_DIR),
-        ("Python — dependencies",    [str(VENV_PIP), "install", "-q", "-r", "requirements.txt"], APP_DIR / "backend"),
-        ("Frontend — dependencies",  [NPM, "install", "--silent"], APP_DIR / "frontend"),
-        ("Frontend — bouwen",        [NPM, "run", "build"], APP_DIR / "frontend"),
+        (
+            "Git — code ophalen",
+            ["git", "pull"],
+            APP_DIR,
+        ),
+        (
+            "Python — dependencies",
+            [str(VENV_PIP), "install", "-q", "-r", "requirements.txt"],
+            APP_DIR / "backend",
+        ),
+        (
+            "Frontend — dependencies",
+            [npm, "install", "--prefer-offline", "--no-audit", "--no-fund"],
+            APP_DIR / "frontend",
+        ),
+        (
+            "Frontend — bouwen",
+            [npm, "run", "build"],
+            APP_DIR / "frontend",
+        ),
     ]
-
-    # Display setup script toevoegen als het bestaat
-    if SETUP_SCRIPT.exists():
-        steps.append(("Display instellen", ["bash", str(SETUP_SCRIPT)], APP_DIR))
 
     try:
         for label, cmd, cwd in steps:
             yield {"type": "step", "label": label}
+            yield {"type": "log", "line": f"$ {' '.join(str(c) for c in cmd)}"}
+
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=str(cwd),
+                env=env_extra,
             )
             async for raw in proc.stdout:
                 line = raw.decode(errors="replace").rstrip()
                 if line:
                     yield {"type": "log", "line": line}
             await proc.wait()
+
             if proc.returncode != 0:
-                yield {"type": "error", "message": f"Stap mislukt: {label} (exit {proc.returncode})"}
+                yield {
+                    "type": "error",
+                    "message": f"Stap mislukt: {label} (exit {proc.returncode})"
+                }
                 return
 
-        # Restart service if running under systemd
+        # Herstart service
         yield {"type": "step", "label": "Service herstarten"}
         restart = await asyncio.create_subprocess_exec(
             "sudo", "systemctl", "restart", "mixmate",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
-        await restart.communicate()
+        out, _ = await restart.communicate()
         if restart.returncode == 0:
-            yield {"type": "log", "line": "Service herstart via systemd"}
+            yield {"type": "log", "line": "✓ Service herstart via systemd"}
         else:
-            yield {"type": "log", "line": "Systemd niet beschikbaar — herstart handmatig"}
+            out_text = out.decode(errors="replace").strip() if out else ""
+            yield {"type": "log", "line": f"Systemd: {out_text or 'niet beschikbaar'}"}
 
         yield {"type": "done"}
 
