@@ -1,5 +1,10 @@
 # MIXMATE OS — Changelog
 
+## [1.2.1] - 2026-06-10
+### Verbeterd
+- Update-pagina toont nu release notes in de backoffice ook vóór installeren
+- Versienummer toont nu correct "v1.2.1" in plaats van git-hash
+
 ## [1.2.0] - 2026-06-10
 ### Gefixt
 - Recepten met niet-geladen pompen werden ten onrechte als beschikbaar getoond
