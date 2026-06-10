@@ -1,33 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-/*
-  Fasen:
-  ENTERING   — zwart paneel schuift omhoog van onderaf (0.9s)
-  STANDBY    — logo + aan-knop zichtbaar
-  WAKING     — logo schaalt groot op en vervaagt (2s)
-  REVEALING  — zwart paneel zakt omlaag en onthult de app (1.1s)
-*/
 const P = { ENTERING: 0, STANDBY: 1, WAKING: 2, REVEALING: 3 }
+
+const WAKE_DURATION = 8000 // ms — hoe lang de opstartanimatie duurt
 
 export default function StandbyScreen({ onWake }) {
   const [phase, setPhase] = useState(P.ENTERING)
+  const [progress, setProgress] = useState(0)
   const calledWake = useRef(false)
+  const rafRef = useRef(null)
+  const startRef = useRef(null)
 
-  // Na inkomst-animatie: standby-modus
+  // Inkomst-animatie klaar → standby
   useEffect(() => {
     if (phase !== P.ENTERING) return
     const t = setTimeout(() => setPhase(P.STANDBY), 900)
     return () => clearTimeout(t)
   }, [phase])
 
-  // Na logo-zoom: paneel omlaag laten zakken
+  // Opstarten: progress balk animeren
   useEffect(() => {
     if (phase !== P.WAKING) return
-    const t = setTimeout(() => setPhase(P.REVEALING), 2000)
-    return () => clearTimeout(t)
+    setProgress(0)
+    startRef.current = null
+
+    function tick(now) {
+      if (!startRef.current) startRef.current = now
+      const elapsed = now - startRef.current
+      const pct = Math.min((elapsed / WAKE_DURATION) * 100, 100)
+      setProgress(pct)
+
+      if (pct < 100) {
+        rafRef.current = requestAnimationFrame(tick)
+      } else {
+        // Progress klaar → revealing
+        setTimeout(() => setPhase(P.REVEALING), 300)
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
   }, [phase])
 
-  // Na reveal: onWake aanroepen
+  // Reveal klaar → onWake
   useEffect(() => {
     if (phase !== P.REVEALING) return
     const t = setTimeout(() => {
@@ -35,48 +50,59 @@ export default function StandbyScreen({ onWake }) {
         calledWake.current = true
         onWake()
       }
-    }, 1200)
+    }, 1300)
     return () => clearTimeout(t)
   }, [phase])
 
-  const panelY =
-    phase === P.ENTERING  ? '0%'    :  // volledig in beeld
-    phase === P.STANDBY   ? '0%'    :  // stil
-    phase === P.WAKING    ? '0%'    :  // nog in beeld tijdens logo-zoom
-    '100%'                             // REVEALING: zakt weg
+  const isWaking    = phase === P.WAKING
+  const isRevealing = phase === P.REVEALING
 
-  const panelEntrance = phase === P.ENTERING ? 'translateY(100%)' : 'translateY(0%)'
+  // Paneel: schuift omhoog bij ingang, omlaag bij onthulling
+  const panelTransform =
+    phase === P.ENTERING  ? 'translateY(100%)' :
+    isRevealing           ? 'translateY(100%)' :
+                            'translateY(0%)'
 
-  // Logo zoom + fade tijdens WAKING
-  const logoScale   = phase === P.WAKING ? 2.8 : 1
-  const logoOpacity = phase === P.WAKING ? 0   : (phase === P.ENTERING ? 0 : 1)
+  const panelTransition =
+    phase === P.ENTERING  ? 'transform 0.9s cubic-bezier(0.22,1,0.36,1)' :
+    isRevealing           ? 'transform 1.3s cubic-bezier(0.76,0,0.24,1)' :
+                            'none'
 
-  // Knop: verschijnt pas als STANDBY, verdwijnt bij WAKING
-  const btnOpacity  = phase === P.STANDBY ? 1 : 0
-  const btnPointer  = phase === P.STANDBY ? 'auto' : 'none'
+  // Logo schaal: langzaam naar 1.5× tijdens waking
+  const logoScale   = isWaking || isRevealing ? 1.5 : 1
+  const logoOpacity = isWaking || isRevealing
+    ? (isRevealing ? 0 : 1)
+    : (phase === P.ENTERING ? 0 : 1)
+
+  const logoScaleTransition   = isWaking   ? `transform ${WAKE_DURATION}ms cubic-bezier(0.16,1,0.3,1)` :
+                                isRevealing ? 'none' : 'none'
+  const logoOpacityTransition = isWaking
+    ? `opacity 2.5s ease ${(WAKE_DURATION / 1000 - 2.8).toFixed(1)}s`  // fade start vlak voor einde
+    : isRevealing ? 'opacity 0.4s ease' : 'none'
+
+  const btnVisible = phase === P.STANDBY
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9998,
-      pointerEvents: phase === P.REVEALING ? 'none' : 'auto',
+      pointerEvents: isRevealing ? 'none' : 'auto',
     }}>
-      {/* Zwart paneel */}
       <div style={{
         position: 'absolute', inset: 0,
         background: '#000',
-        transform: phase === P.ENTERING
-          ? panelEntrance
-          : `translateY(${panelY})`,
-        transition: phase === P.ENTERING
-          ? 'transform 0.9s cubic-bezier(0.22, 1, 0.36, 1)'
-          : phase === P.REVEALING
-          ? 'transform 1.1s cubic-bezier(0.76, 0, 0.24, 1)'
-          : 'none',
+        transform: panelTransform,
+        transition: panelTransition,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: '56px',
+        gap: '52px',
         overflow: 'hidden',
       }}>
+
+        {/* Subtiele radial glow */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse at 50% 38%, rgba(255,255,255,0.04) 0%, transparent 65%)',
+        }} />
 
         {/* Logo */}
         <img
@@ -88,16 +114,12 @@ export default function StandbyScreen({ onWake }) {
             objectFit: 'contain',
             transform: `scale(${logoScale})`,
             opacity: logoOpacity,
-            transition: phase === P.WAKING
-              ? 'transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.6s ease-in 0.3s'
-              : phase === P.ENTERING
-              ? 'opacity 0.5s ease 0.6s'
-              : 'none',
+            transition: [logoScaleTransition, logoOpacityTransition].filter(Boolean).join(', ') || 'opacity 0.5s ease 0.6s',
             willChange: 'transform, opacity',
           }}
         />
 
-        {/* Aan-knop */}
+        {/* Aan-knop (standby) */}
         <button
           onClick={() => setPhase(P.WAKING)}
           style={{
@@ -106,11 +128,11 @@ export default function StandbyScreen({ onWake }) {
             border: '1px solid rgba(255,255,255,0.16)',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: btnOpacity,
-            pointerEvents: btnPointer,
+            opacity: btnVisible ? 1 : 0,
+            pointerEvents: btnVisible ? 'auto' : 'none',
             transition: 'opacity 0.4s ease',
           }}
-          onMouseEnter={e => { if (phase === P.STANDBY) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
+          onMouseEnter={e => { if (btnVisible) e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
         >
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
@@ -120,11 +142,41 @@ export default function StandbyScreen({ onWake }) {
           </svg>
         </button>
 
-        {/* Subtiele grain-textuur overlay voor diepte */}
+        {/* Progress balk + label (waking) */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.03) 0%, transparent 70%)',
-        }} />
+          position: 'absolute', bottom: '60px', left: '50%',
+          transform: 'translateX(-50%)',
+          width: '200px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+          opacity: isWaking ? 1 : 0,
+          transition: 'opacity 0.6s ease',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            width: '100%', height: '1px',
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '1px', overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${progress}%`,
+              background: 'rgba(255,255,255,0.55)',
+              borderRadius: '1px',
+              boxShadow: '0 0 6px rgba(255,255,255,0.3)',
+              transition: 'width 0.1s linear',
+            }} />
+          </div>
+          <span style={{
+            color: 'rgba(255,255,255,0.3)',
+            fontSize: '10px',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            fontFamily: 'system-ui, sans-serif',
+          }}>
+            Machine opstarten
+          </span>
+        </div>
+
       </div>
     </div>
   )
