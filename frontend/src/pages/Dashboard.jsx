@@ -233,7 +233,7 @@ function CocktailCard({ recipe, onMake }) {
   const canMake = recipe.partially_available
 
   return (
-    <div className={`bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex flex-col ${!canMake ? 'opacity-50' : ''}`}>
+    <div style={{ touchAction: 'pan-y' }} className={`bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex flex-col ${!canMake ? 'opacity-50' : ''}`}>
       <div className="h-44 relative overflow-hidden bg-gray-100 shrink-0">
         {recipe.image_url
           ? <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
@@ -302,7 +302,7 @@ export default function Dashboard({ onStandby }) {
         onLogout={handleLogout}
         onStandby={onStandby}
       />
-      <main className="flex-1 overflow-y-auto px-8 py-8 select-none" style={{ touchAction: 'pan-y' }}>
+      <main className="flex-1 overflow-y-auto px-8 py-8 select-none" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}>
         {loading ? (
           <div className="flex justify-center pt-20">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />

@@ -32,6 +32,21 @@ html, body, #root {
   overscroll-behavior: contain;
 }
 
+/* Alles binnen een scroll-container mag de veegbeweging niet blokkeren */
+.overflow-y-auto *,
+.overflow-y-scroll * {
+  touch-action: pan-y;
+}
+
+/* Knoppen en interactieve elementen mogen ook gewoon geklikt worden */
+.overflow-y-auto button,
+.overflow-y-auto a,
+.overflow-y-auto input,
+.overflow-y-auto select,
+.overflow-y-auto textarea {
+  touch-action: manipulation;
+}
+
 /* Voorkom tekst-selectie tijdens scrollen, maar laat invoervelden gewoon werken */
 .select-none {
   -webkit-user-select: none;
