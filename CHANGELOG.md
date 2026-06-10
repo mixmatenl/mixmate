@@ -1,5 +1,9 @@
 # MIXMATE OS — Changelog
 
+## [1.2.2] - 2026-06-10
+### Verbeterd
+- Update-pagina toont nu alleen de release notes van de versie die je installeert
+
 ## [1.2.1] - 2026-06-10
 ### Verbeterd
 - Update-pagina toont nu release notes in de backoffice ook vóór installeren
