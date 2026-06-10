@@ -123,7 +123,7 @@ export default function StandbyScreen({ onWake }) {
         {/* Logo */}
         <img
           src="/logo.png"
-          alt="MIMATE OS"
+          alt="MIXMATE"
           style={{
             width: '48%', maxWidth: '300px', objectFit: 'contain',
             transform: `scale(${logoScale})`,

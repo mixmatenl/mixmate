@@ -12,7 +12,7 @@ export default function Layout({ children, onLogout, onStandby }) {
     <div className="h-screen bg-[#F2F2F2] flex flex-col overflow-hidden">
       {/* Top bar */}
       <header className="bg-[#111111] h-16 flex items-center px-8 gap-12 shrink-0 z-30 shadow-lg">
-        <span className="text-white font-bold tracking-[0.28em] text-base select-none">MIMATE OS</span>
+        <span className="text-white font-bold tracking-[0.28em] text-base select-none">MIXMATE</span>
         <nav className="flex gap-10">
           {NAV.map(({ to, label, exact }) => (
             <NavLink

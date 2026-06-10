@@ -33,7 +33,7 @@ export default function Login({ onLogin, onBackoffice }) {
   return (
     <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center relative">
       <div className="mb-12 text-center">
-        <span className="text-white font-bold tracking-[0.3em] text-2xl">MIMATE OS</span>
+        <span className="text-white font-bold tracking-[0.3em] text-2xl">MIXMATE</span>
         <p className="text-white/30 text-sm mt-2 tracking-wide">Voer uw PIN in</p>
       </div>
 

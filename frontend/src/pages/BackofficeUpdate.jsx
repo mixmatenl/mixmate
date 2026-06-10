@@ -9,7 +9,7 @@ function VersionBadge({ info }) {
       <div className="flex items-center gap-3">
         <div className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0" />
         <div>
-          <span className="text-white/80 text-sm font-medium">MIMATE OS </span>
+          <span className="text-white/80 text-sm font-medium">MIXMATE OS</span>
           <span className="text-white font-mono text-sm font-bold">{info.version ?? info.commit}</span>
         </div>
         {info.date && <span className="text-white/55 text-xs ml-auto">{info.date}</span>}
