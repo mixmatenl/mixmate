@@ -1,5 +1,9 @@
 # MIXMATE OS — Changelog
 
+## [3.0.0] - 2026-06-11
+### Nieuw
+- Testversie — alleen beschikbaar voor MATE.1 CO₂ en MATE.1 PRO
+
 ## [2.1.0] - 2026-06-10
 ### Nieuw
 - Machine model instelling in backoffice (MATE.1 / MATE.1 CO₂ / MATE.1 PRO)
