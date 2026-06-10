@@ -100,12 +100,12 @@ export default function AppUpdate() {
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-[#111] flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="MIXMATE" className="w-full h-full object-contain p-2" />
+            <img src="/logo.png" alt="MIXMATE OS" className="w-full h-full object-contain p-2" />
           </div>
           <div className="flex-1">
-            <p className="text-gray-900 font-bold text-lg">MIXMATE</p>
+            <p className="text-gray-900 font-bold text-lg">MIXMATE OS</p>
             <p className="text-gray-500 text-sm">
-              {versionInfo ? `Versie ${versionInfo.commit}` : 'Versie laden…'}
+              {versionInfo ? `Versie ${versionInfo.version ?? versionInfo.commit}` : 'Versie laden…'}
             </p>
             {versionInfo?.date && <p className="text-gray-400 text-xs mt-0.5">{versionInfo.date}</p>}
           </div>
@@ -142,7 +142,7 @@ export default function AppUpdate() {
       {/* Status: UP TO DATE */}
       {status === STATUS.UP_TO_DATE && (
         <div className="text-center py-4 space-y-1">
-          <p className="text-gray-700 font-medium text-sm">MIXMATE is up‑to‑date</p>
+          <p className="text-gray-700 font-medium text-sm">MIXMATE OS is up‑to‑date</p>
           <p className="text-gray-400 text-xs">Je hebt de nieuwste versie</p>
           <button onClick={() => setStatus(STATUS.IDLE)} className="mt-3 text-xs text-gray-400 hover:text-gray-600 transition-colors">
             Opnieuw controleren
@@ -155,7 +155,7 @@ export default function AppUpdate() {
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-4">
           <div>
             <p className="text-blue-900 font-semibold text-sm">Update beschikbaar</p>
-            <p className="text-blue-600 text-xs mt-1">Er is een nieuwe versie van MIXMATE beschikbaar. De update duurt ongeveer 2 minuten.</p>
+            <p className="text-blue-600 text-xs mt-1">Er is een nieuwe versie van MIXMATE OS beschikbaar. De update duurt ongeveer 2 minuten.</p>
           </div>
           <button onClick={startUpdate}
             className="w-full py-3 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-all active:scale-[0.98]">
