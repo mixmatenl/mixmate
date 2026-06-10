@@ -54,11 +54,7 @@ apt-get update -qq
 log "Basis dependencies installeren..."
 apt-get install -y -qq git python3 python3-pip python3-venv python3-full curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
 
-# python3.X-venv (vereist op Debian trixie / bookworm)
-PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
-try_install "python${PYVER}-venv"
-
-# ── Optionele packages (overslaan als niet beschikbaar) ───
+# ── Optionele packages ────────────────────────
 log "Optionele packages installeren..."
 try_install unclutter
 
@@ -94,17 +90,30 @@ else
   sudo -u $USER git clone "$REPO" "$INSTALL_DIR" || fail "Kan repository niet downloaden. Controleer de internetverbinding."
 fi
 
-# ── Python venv + dependencies ────────────────
-log "Python omgeving instellen..."
+# ── Python dependencies ───────────────────────
+log "Python dependencies installeren..."
+# Probeer eerst venv (schoner), fallback naar system pip (Debian trixie)
+PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+apt-get install -y -qq "python${PYVER}-venv" 2>/dev/null || true
+
 rm -rf "$INSTALL_DIR/.venv"
-sudo -u $USER python3 -m venv "$INSTALL_DIR/.venv" \
-  || sudo -u $USER python3 -m venv --system-site-packages "$INSTALL_DIR/.venv" \
-  || fail "Kan Python venv niet aanmaken"
-
-[ -f "$INSTALL_DIR/.venv/bin/pip" ] || fail "venv aangemaakt maar pip ontbreekt — probeer opnieuw"
-
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" || fail "Kan Python packages niet installeren"
+if python3 -m venv "$INSTALL_DIR/.venv" 2>/dev/null && [ -f "$INSTALL_DIR/.venv/bin/pip" ]; then
+  log "Venv aangemaakt (Python ${PYVER})"
+  chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
+  sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
+  sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
+    || fail "Kan Python packages niet installeren"
+  PYTHON_BIN="$INSTALL_DIR/.venv/bin/python3"
+  UVICORN_BIN="$INSTALL_DIR/.venv/bin/uvicorn"
+else
+  warn "Venv niet beschikbaar — system pip gebruiken"
+  rm -rf "$INSTALL_DIR/.venv"
+  pip3 install --quiet --break-system-packages -r "$INSTALL_DIR/backend/requirements.txt" \
+    || pip3 install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
+    || fail "Kan Python packages niet installeren"
+  PYTHON_BIN="$(which python3)"
+  UVICORN_BIN="$(which uvicorn)"
+fi
 
 # ── Frontend bouwen ───────────────────────────
 log "Frontend installeren en bouwen (dit duurt even)..."
@@ -123,7 +132,7 @@ After=network.target
 [Service]
 User=${USER}
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=${INSTALL_DIR}/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
+ExecStart=${UVICORN_BIN} backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=5
 Environment=PYTHONPATH=${INSTALL_DIR}
