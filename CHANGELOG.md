@@ -1,5 +1,9 @@
 # MIXMATE OS — Changelog
 
+## [4.0.0] - 2026-06-11
+### Nieuw
+- Testversie — alleen beschikbaar voor MATE.1 PRO
+
 ## [3.0.0] - 2026-06-11
 ### Nieuw
 - Testversie — alleen beschikbaar voor MATE.1 CO₂ en MATE.1 PRO
