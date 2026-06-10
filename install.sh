@@ -101,9 +101,8 @@ rm -rf "$INSTALL_DIR/.venv"
 python3 -m venv "$INSTALL_DIR/.venv" || fail "Kan Python venv niet aanmaken (python${PYVER}-venv geïnstalleerd?)"
 chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
 
-# Installeer packages in de venv
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --upgrade pip
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
+# Installeer packages in de venv (--ignore-installed voorkomt conflict met Debian system packages)
+sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --ignore-installed -r "$INSTALL_DIR/backend/requirements.txt" \
   || fail "Kan Python packages niet installeren"
 UVICORN_BIN="$INSTALL_DIR/.venv/bin/uvicorn"
 
