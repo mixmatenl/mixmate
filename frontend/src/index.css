@@ -47,22 +47,13 @@ select option {
   color: #ffffff;
 }
 
-/* ── Pagina fade-transitie ───────────────────────────────────────────── */
-.page-enter {
-  opacity: 0;
-  transform: translateY(6px);
+/* ── Pagina fade-transitie (keyframe, geen state flip) ──────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.page-exit {
-  opacity: 1;
-}
-.page-exit-active {
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.page-fade {
+  animation: pageFadeIn 0.3s ease forwards;
 }
 
 /* ── Ambient dashboard achtergrond ──────────────────────────────────── */

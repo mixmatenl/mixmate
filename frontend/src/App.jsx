@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Login from './pages/Login'
 import Backoffice from './pages/Backoffice'
@@ -14,27 +14,10 @@ import { DragScrollProvider } from './components/DragScroll'
 const SESSION_KEY = 'mixmate_auth'
 
 /* ── Pagina fade wrapper ─────────────────────────────────────────────── */
-function PageTransition({ children, routeKey }) {
-  const [visible, setVisible] = useState(false)
-  const prev = useRef(null)
-
-  useEffect(() => {
-    if (prev.current === routeKey) return
-    prev.current = routeKey
-    setVisible(false)
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
-    return () => cancelAnimationFrame(raf)
-  }, [routeKey])
-
+// Elke route-wissel geeft een nieuwe key → component remount → CSS animatie speelt
+function FadePage({ children }) {
   return (
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(7px)',
-      transition: visible
-        ? 'opacity 0.32s ease, transform 0.32s cubic-bezier(0.22,1,0.36,1)'
-        : 'none',
-    }}>
+    <div className="page-fade" style={{ flex: 1, display: 'flex', minHeight: 0 }}>
       {children}
     </div>
   )
@@ -43,14 +26,12 @@ function PageTransition({ children, routeKey }) {
 function AnimatedRoutes({ onStandby }) {
   const location = useLocation()
   return (
-    <PageTransition routeKey={location.pathname}>
-      <Routes location={location}>
-        <Route path="/" element={<Dashboard onStandby={onStandby} />} />
-        <Route path="/instellingen/*" element={<Instellingen />} />
-        <Route path="/rapporten" element={<Rapporten />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </PageTransition>
+    <Routes location={location}>
+      <Route path="/" element={<FadePage key="dashboard"><Dashboard onStandby={onStandby} /></FadePage>} />
+      <Route path="/instellingen/*" element={<FadePage key="instellingen"><Instellingen /></FadePage>} />
+      <Route path="/rapporten" element={<FadePage key="rapporten"><Rapporten /></FadePage>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
