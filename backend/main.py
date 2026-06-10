@@ -483,8 +483,8 @@ async def system_version():
 
 @app.get("/api/system/check-updates")
 async def system_check_updates():
-    has_updates = await check_updates_available()
-    return {"updates_available": has_updates}
+    has_updates, changelog = await check_updates_available()
+    return {"updates_available": has_updates, "changelog": changelog}
 
 @app.websocket("/ws/system/update")
 async def websocket_update(websocket: WebSocket):

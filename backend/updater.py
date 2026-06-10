@@ -70,11 +70,81 @@ async def get_version_info() -> dict:
     return info
 
 
-async def check_updates_available() -> bool:
-    """Fetch remote and check if we're behind."""
+def _parse_changelog(text: str, since_version: str | None = None) -> list[dict]:
+    """
+    Parst CHANGELOG.md en geeft een lijst van versies terug.
+    Als since_version opgegeven is, worden alleen nieuwere versies teruggegeven.
+    """
+    import re
+    versions = []
+    current = None
+
+    for line in text.splitlines():
+        # Versie header: ## [1.2.3] - 2026-01-01
+        m = re.match(r'^## \[(.+?)\](?:\s*-\s*(.+))?', line)
+        if m:
+            if current:
+                versions.append(current)
+            current = {"version": m.group(1), "date": (m.group(2) or "").strip(), "sections": {}, "_current_section": None}
+            continue
+
+        if current is None:
+            continue
+
+        # Sectie header: ### Nieuw / Verbeterd / Gefixt
+        m2 = re.match(r'^### (.+)', line)
+        if m2:
+            current["_current_section"] = m2.group(1)
+            current["sections"][m2.group(1)] = []
+            continue
+
+        # Bullet
+        m3 = re.match(r'^- (.+)', line)
+        if m3 and current["_current_section"]:
+            current["sections"][current["_current_section"]].append(m3.group(1))
+
+    if current:
+        versions.append(current)
+
+    # Verwijder interne helper key
+    for v in versions:
+        v.pop("_current_section", None)
+
+    # Filter versies die nieuwer zijn dan since_version
+    if since_version:
+        try:
+            from packaging.version import Version
+            versions = [v for v in versions if Version(v["version"]) > Version(since_version)]
+        except Exception:
+            # packaging niet beschikbaar — simpele string vergelijking
+            versions = [v for v in versions if v["version"] != since_version]
+
+    return versions
+
+
+async def get_remote_changelog(since_version: str | None = None) -> list[dict]:
+    """Lees CHANGELOG.md van de remote branch (na git fetch)."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "git", "show", "origin/main:CHANGELOG.md",
+            cwd=str(APP_DIR),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        text = out.decode(errors="replace")
+        return _parse_changelog(text, since_version)
+    except Exception:
+        return []
+
+
+async def check_updates_available() -> tuple[bool, list[dict]]:
+    """
+    Fetch remote en check of we achterliggen.
+    Geeft (updates_available, changelog_entries) terug.
+    """
     try:
         env = {**os.environ, "HOME": str(Path.home())}
-        # Fetch latest remote info
         proc1 = await asyncio.create_subprocess_exec(
             "git", "fetch", "origin",
             cwd=str(APP_DIR),
@@ -84,7 +154,6 @@ async def check_updates_available() -> bool:
         )
         await proc1.communicate()
 
-        # Compare local HEAD with remote
         proc2 = await asyncio.create_subprocess_exec(
             "git", "rev-list", "HEAD..origin/main", "--count",
             cwd=str(APP_DIR),
@@ -94,9 +163,16 @@ async def check_updates_available() -> bool:
         )
         out, _ = await proc2.communicate()
         count = int(out.decode().strip() or "0")
-        return count > 0
+        updates_available = count > 0
+
+        changelog = []
+        if updates_available:
+            current_version = _read_app_version()
+            changelog = await get_remote_changelog(since_version=current_version)
+
+        return updates_available, changelog
     except Exception:
-        return False
+        return False, []
 
 
 async def run_update():

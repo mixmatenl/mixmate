@@ -22,6 +22,7 @@ function stepIndexFromLabel(label) {
 export default function AppUpdate() {
   const [status, setStatus] = useState(STATUS.IDLE)
   const [versionInfo, setVersionInfo] = useState(null)
+  const [changelog, setChangelog] = useState([])
   const [currentStepIdx, setCurrentStepIdx] = useState(-1)
   const [completedSteps, setCompletedSteps] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
@@ -42,7 +43,7 @@ export default function AppUpdate() {
     setStatus(STATUS.CHECKING)
     fetch('/api/system/check-updates')
       .then(r => r.json())
-      .then(d => setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE))
+      .then(d => { setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE); if (d.changelog) setChangelog(d.changelog) })
       .catch(() => setStatus(STATUS.IDLE))
   }
 
@@ -152,15 +153,61 @@ export default function AppUpdate() {
 
       {/* Status: AVAILABLE */}
       {status === STATUS.AVAILABLE && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-4">
-          <div>
-            <p className="text-blue-900 font-semibold text-sm">Update beschikbaar</p>
-            <p className="text-blue-600 text-xs mt-1">Er is een nieuwe versie van MIXMATE OS beschikbaar. De update duurt ongeveer 2 minuten.</p>
+        <div className="space-y-3">
+          {/* Changelog */}
+          {changelog.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+              <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+                <p className="text-gray-700 font-semibold text-sm">Wat is er nieuw?</p>
+              </div>
+              <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto">
+                {changelog.map((entry, i) => (
+                  <div key={i} className="px-5 py-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded-full font-mono">
+                        v{entry.version}
+                      </span>
+                      {entry.date && (
+                        <span className="text-gray-400 text-xs">{entry.date}</span>
+                      )}
+                    </div>
+                    {Object.entries(entry.sections).map(([section, items]) => items.length > 0 && (
+                      <div key={section}>
+                        <p className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                          section === 'Nieuw'     ? 'text-green-600' :
+                          section === 'Verbeterd' ? 'text-blue-600'  :
+                          section === 'Gefixt'    ? 'text-orange-500' :
+                          'text-gray-500'
+                        }`}>
+                          {section === 'Nieuw' ? '✦ ' : section === 'Verbeterd' ? '↑ ' : section === 'Gefixt' ? '✓ ' : ''}{section}
+                        </p>
+                        <ul className="space-y-1">
+                          {items.map((item, j) => (
+                            <li key={j} className="text-gray-600 text-xs flex items-start gap-2">
+                              <span className="text-gray-300 mt-0.5 shrink-0">—</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Install knop */}
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-4">
+            <div>
+              <p className="text-blue-900 font-semibold text-sm">Update beschikbaar</p>
+              <p className="text-blue-600 text-xs mt-1">De update duurt ongeveer 2 minuten. De machine herstart automatisch.</p>
+            </div>
+            <button onClick={startUpdate}
+              className="w-full py-3 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-all active:scale-[0.98]">
+              Nu installeren
+            </button>
           </div>
-          <button onClick={startUpdate}
-            className="w-full py-3 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-all active:scale-[0.98]">
-            Nu installeren
-          </button>
         </div>
       )}
 
