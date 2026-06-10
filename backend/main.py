@@ -441,6 +441,21 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
         gpio.deactivate(pin)
 
 
+# ── Systeem beheer ───────────────────────────────────────────────────────────
+
+@app.post("/api/system/reboot")
+async def reboot_system():
+    import subprocess
+    subprocess.Popen(["sudo", "reboot"])
+    return {"ok": True, "message": "Pi herstart over enkele seconden…"}
+
+@app.post("/api/system/shutdown")
+async def shutdown_system():
+    import subprocess
+    subprocess.Popen(["sudo", "shutdown", "-h", "now"])
+    return {"ok": True, "message": "Pi wordt afgesloten…"}
+
+
 # ── OTA Updates ──────────────────────────────────────────────────────────────
 
 @app.get("/api/system/version")

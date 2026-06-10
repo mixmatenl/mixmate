@@ -71,12 +71,18 @@ async def run_update():
     {"type": "log", "line": "..."}
     {"type": "done"} or {"type": "error", "message": "..."}
     """
+    SETUP_SCRIPT = APP_DIR / "scripts" / "setup-display.sh"
+
     steps = [
         ("Git — code ophalen",       ["git", "pull"], APP_DIR),
         ("Python — dependencies",    [str(VENV_PIP), "install", "-q", "-r", "requirements.txt"], APP_DIR / "backend"),
         ("Frontend — dependencies",  [NPM, "install", "--silent"], APP_DIR / "frontend"),
         ("Frontend — bouwen",        [NPM, "run", "build"], APP_DIR / "frontend"),
     ]
+
+    # Display setup script toevoegen als het bestaat
+    if SETUP_SCRIPT.exists():
+        steps.append(("Display instellen", ["bash", str(SETUP_SCRIPT)], APP_DIR))
 
     try:
         for label, cmd, cwd in steps:

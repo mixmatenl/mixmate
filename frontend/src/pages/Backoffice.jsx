@@ -3,6 +3,7 @@ import { api } from '../api'
 import AdminCalibrate from './AdminCalibrate'
 import BackofficeLoadcell from './BackofficeLoadcell'
 import BackofficeUpdate from './BackofficeUpdate'
+import BackofficeSystem from './BackofficeSystem'
 
 const PIN_LENGTH = 4
 const BO_SESSION = 'mixmate_bo_auth'
@@ -256,7 +257,7 @@ export default function Backoffice({ onClose }) {
 
   if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} />
 
-  const TABS = [{ id:'pin', label:'PIN beheer' }, { id:'pumps', label:'GPIO Pompen' }, { id:'loadcell', label:'Weegschaal' }, { id:'update', label:'Updates' }]
+  const TABS = [{ id:'pin', label:'PIN beheer' }, { id:'pumps', label:'GPIO Pompen' }, { id:'loadcell', label:'Weegschaal' }, { id:'update', label:'Updates' }, { id:'system', label:'Systeem' }]
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col">
@@ -282,6 +283,7 @@ export default function Backoffice({ onClose }) {
         {tab === 'pumps' && <PumpsManager ingredients={ingredients} />}
         {tab === 'loadcell' && <BackofficeLoadcell />}
         {tab === 'update' && <BackofficeUpdate />}
+        {tab === 'system' && <BackofficeSystem />}
       </div>
     </div>
   )
