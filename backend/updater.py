@@ -38,9 +38,19 @@ NPM = _find_npm()
 
 
 
+def _read_app_version() -> str:
+    """Lees versie uit frontend/package.json."""
+    try:
+        import json
+        pkg = APP_DIR / "frontend" / "package.json"
+        return json.loads(pkg.read_text()).get("version", "?")
+    except Exception:
+        return "?"
+
+
 async def get_version_info() -> dict:
-    """Return current git commit info."""
-    info = {"commit": "onbekend", "message": "", "date": "", "branch": ""}
+    """Return current git commit info + app version."""
+    info = {"commit": "onbekend", "message": "", "date": "", "branch": "", "version": _read_app_version()}
     try:
         proc = await asyncio.create_subprocess_exec(
             "git", "log", "-1", "--pretty=format:%H|%s|%ci|%D",

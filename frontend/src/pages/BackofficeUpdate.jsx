@@ -9,12 +9,14 @@ function VersionBadge({ info }) {
       <div className="flex items-center gap-3">
         <div className="w-2.5 h-2.5 rounded-full bg-green-400 shrink-0" />
         <div>
-          <span className="text-white/80 text-sm font-medium">Versie </span>
-          <span className="text-white font-mono text-sm font-bold">{info.commit}</span>
+          <span className="text-white/80 text-sm font-medium">MIMATE OS </span>
+          <span className="text-white font-mono text-sm font-bold">{info.version ?? info.commit}</span>
         </div>
-        {info.date && <span className="text-white/60 text-sm ml-auto">{info.date}</span>}
+        {info.date && <span className="text-white/55 text-xs ml-auto">{info.date}</span>}
       </div>
-      {info.message && <p className="text-white/60 text-sm pl-5">{info.message}</p>}
+      {info.commit && info.commit !== 'onbekend' && (
+        <p className="text-white/30 text-xs pl-5 font-mono">{info.commit}</p>
+      )}
     </div>
   )
 }
