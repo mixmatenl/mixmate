@@ -16,15 +16,21 @@ html, body, #root {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
+/* Scrollbalk verbergen — touch scroll zoals op telefoon */
+* {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
 }
-::-webkit-scrollbar-track {
-  background: #1A1A1A;
+*::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari/WebKit */
 }
-::-webkit-scrollbar-thumb {
-  background: #424242;
-  border-radius: 2px;
+
+/* Smooth momentum scroll op alle scroll-containers */
+.overflow-y-auto,
+.overflow-y-scroll,
+[class*="overflow-y"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Fix select dropdown options on dark background */

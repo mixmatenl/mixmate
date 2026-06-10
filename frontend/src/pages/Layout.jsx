@@ -42,8 +42,9 @@ export default function Layout({ children, onLogout, onStandby }) {
 /* Sidebar used by Dashboard */
 export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
   return (
-    <aside className="w-52 bg-[#1E1E1E] flex flex-col shrink-0">
-      <div className="px-6 pt-8 pb-4">
+    <aside className="w-52 bg-[#1E1E1E] flex flex-col shrink-0 h-full">
+      {/* Categorieën — scrollbaar als er veel zijn */}
+      <div className="flex-1 overflow-y-auto px-6 pt-8 pb-4 min-h-0">
         <p className="text-white/40 text-xs font-semibold tracking-[0.2em] uppercase mb-5">Categorie</p>
         <ul className="space-y-1">
           {categories.map(cat => (
@@ -62,7 +63,9 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
           ))}
         </ul>
       </div>
-      <div className="mt-auto px-6 pb-8 space-y-3">
+
+      {/* Stand-by + uitloggen — altijd zichtbaar onderaan */}
+      <div className="shrink-0 px-6 pb-8 pt-4 border-t border-white/5 space-y-3">
         <button
           onClick={onStandby}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/5 text-sm transition-all"
