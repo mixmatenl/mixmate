@@ -1,5 +1,10 @@
 # MIXMATE OS — Changelog
 
+## [4.0.1] - 2026-06-11
+### Gefixt
+- Thema-wisseling verwijderd — alleen donker thema beschikbaar
+- Installer: Python venv aanmaken met --without-pip + get-pip.py om PEP 668 conflict op Debian trixie te vermijden
+
 ## [4.0.0] - 2026-06-11
 ### Nieuw
 - Testversie — alleen beschikbaar voor MATE.1 PRO
