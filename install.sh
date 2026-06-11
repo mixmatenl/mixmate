@@ -111,8 +111,11 @@ python3 -m venv --without-pip "$INSTALL_DIR/.venv" \
 
 # Bootstrap pip via get-pip.py (werkt altijd, omzeilt systeem-pip en PEP 668)
 log "pip installeren..."
-curl -sSL https://bootstrap.pypa.io/get-pip.py | "$INSTALL_DIR/.venv/bin/python3" - \
+curl -sSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py \
+  || fail "Kan get-pip.py niet downloaden."
+"$INSTALL_DIR/.venv/bin/python3" /tmp/get-pip.py \
   || fail "Kan pip niet installeren."
+rm -f /tmp/get-pip.py
 
 chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
 
