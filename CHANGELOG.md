@@ -1,5 +1,10 @@
 # MIXMATE OS — Changelog
 
+## [4.0.3] - 2026-06-11
+### Gefixt
+- Stijl teruggezet naar origineel donker thema (zwarte topbar, transparante kaarten, geen goud accent)
+- Modal volledig donker gemaakt
+
 ## [4.0.2] - 2026-06-11
 ### Gefixt
 - Installer herschreven voor Raspberry Pi OS Lite 64-bit (X11 + openbox kiosk)
