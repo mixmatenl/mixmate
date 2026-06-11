@@ -195,8 +195,13 @@ async def run_update():
 
     steps = [
         (
-            "Git — code ophalen",
-            ["git", "pull"],
+            "Git — code ophalen (fetch)",
+            ["git", "fetch", "origin", "main"],
+            APP_DIR,
+        ),
+        (
+            "Git — code ophalen (reset)",
+            ["git", "reset", "--hard", "origin/main"],
             APP_DIR,
         ),
         (
