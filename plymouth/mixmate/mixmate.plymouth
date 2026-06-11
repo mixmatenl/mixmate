@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=MIXMATE
+Description=MIXMATE Cocktailmachine boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/mixmate
+ScriptFile=/usr/share/plymouth/themes/mixmate/mixmate.script

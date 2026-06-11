@@ -41,6 +41,7 @@ apt-get update -qq
 # ── Basis dependencies ────────────────────────
 log "Basis dependencies installeren..."
 apt-get install -y -qq git python3 python3-full curl ca-certificates \
+  plymouth plymouth-themes \
   || fail "Kan basispackages niet installeren."
 
 # ── X11 kiosk display stack ───────────────────
@@ -144,6 +145,27 @@ sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" run build \
   || fail "Frontend build mislukt."
 [ ! -f "$INSTALL_DIR/frontend/dist/index.html" ] && fail "Frontend build heeft geen index.html opgeleverd."
 log "Frontend: OK"
+
+# ── Plymouth boot splash ──────────────────────
+log "Plymouth boot splash instellen..."
+THEME_DIR="/usr/share/plymouth/themes/mixmate"
+mkdir -p "$THEME_DIR"
+
+# Theme bestanden kopiëren vanuit repo
+cp "$INSTALL_DIR/plymouth/mixmate/mixmate.plymouth" "$THEME_DIR/"
+cp "$INSTALL_DIR/plymouth/mixmate/mixmate.script"   "$THEME_DIR/"
+cp "$INSTALL_DIR/frontend/public/logo.png"          "$THEME_DIR/"
+
+# Plymouth activeren
+plymouth-set-default-theme mixmate 2>/dev/null || warn "Plymouth theme instellen mislukt — doorgaan"
+update-initramfs -u 2>/dev/null || warn "initramfs update mislukt — doorgaan"
+
+# Boottext verbergen: voeg quiet splash toe aan cmdline.txt
+CMDLINE="/boot/cmdline.txt"
+if [ -f "$CMDLINE" ] && ! grep -q "quiet" "$CMDLINE"; then
+  sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE"
+  log "Boot parameters aangepast"
+fi
 
 # ── Systemd backend service ───────────────────
 log "Backend service instellen..."

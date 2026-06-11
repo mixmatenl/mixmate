@@ -1,0 +1,66 @@
+// ── Achtergrond: volledig zwart ──────────────────────────────────────
+bg_image = Image(1, 1);
+bg_image.Fill(0.04, 0.04, 0.04, 1);
+bg_sprite = Sprite(bg_image.Scale(Window.GetWidth(), Window.GetHeight()));
+bg_sprite.SetPosition(0, 0, -1);
+
+// ── Logo ─────────────────────────────────────────────────────────────
+logo = Image("logo.png");
+
+// Schaal logo naar max 35% van de schermbreedte
+max_w = Window.GetWidth() * 0.35;
+scale  = (logo.GetWidth() > max_w) ? (max_w / logo.GetWidth()) : 1.0;
+logo_w = Math.Int(logo.GetWidth()  * scale);
+logo_h = Math.Int(logo.GetHeight() * scale);
+logo_scaled = logo.Scale(logo_w, logo_h);
+
+logo_sprite = Sprite(logo_scaled);
+logo_x = Math.Int((Window.GetWidth()  - logo_w) / 2);
+logo_y = Math.Int((Window.GetHeight() - logo_h) / 2) - 30;
+logo_sprite.SetPosition(logo_x, logo_y, 0);
+logo_sprite.SetOpacity(0);
+
+// ── Progress bar ─────────────────────────────────────────────────────
+bar_total_w = Math.Int(Window.GetWidth() * 0.28);
+bar_h       = 2;
+bar_x       = Math.Int((Window.GetWidth() - bar_total_w) / 2);
+bar_y       = logo_y + logo_h + 36;
+
+// Achtergrond balk (donkergrijs)
+bar_bg = Image(bar_total_w, bar_h);
+bar_bg.Fill(0.18, 0.18, 0.18, 1);
+bar_bg_sprite = Sprite(bar_bg);
+bar_bg_sprite.SetPosition(bar_x, bar_y, 0);
+
+// Voortgang balk (wit)
+bar_fill = Image(bar_total_w, bar_h);
+bar_fill.Fill(1, 1, 1, 1);
+bar_sprite = Sprite(bar_fill);
+bar_sprite.SetPosition(bar_x, bar_y, 1);
+bar_sprite.SetOpacity(0);
+
+// ── Animatie state ────────────────────────────────────────────────────
+opacity  = 0.0;
+progress = 0.0;   // 0.0 – 1.0 (wordt gevuld via Plymouth.SetUpdateStatusFunction)
+
+fun refresh_callback() {
+    // Logo fade-in
+    if (opacity < 1.0) {
+        opacity = Math.Min(opacity + 0.04, 1.0);
+        logo_sprite.SetOpacity(opacity);
+        bar_sprite.SetOpacity(opacity);
+        bar_bg_sprite.SetOpacity(opacity * 0.5);
+    }
+
+    // Progress balk breedte bijwerken
+    fill_w = Math.Int(bar_total_w * progress);
+    if (fill_w < 1) { fill_w = 1; }
+    bar_sprite.SetImage(bar_fill.Scale(fill_w, bar_h));
+}
+
+fun progress_callback(duration, progress_in) {
+    progress = progress_in;
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetBootProgressFunction(progress_callback);
