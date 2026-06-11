@@ -137,27 +137,39 @@ export default function StandbyScreen({ onWake }) {
         />
 
         {/* Aan-knop */}
-        <button
-          onClick={() => btnVisible && setPhase(P.WAKING)}
-          style={{
-            width: '80px', height: '80px', borderRadius: '50%',
-            background: `rgba(${fg},0.07)`,
-            border: `1px solid rgba(${fg},0.16)`,
-            cursor: btnVisible ? 'pointer' : 'default',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: btnVisible ? 1 : 0,
-            pointerEvents: btnVisible ? 'auto' : 'none',
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => btnVisible && setPhase(P.WAKING)}
+            style={{
+              width: '100px', height: '100px', borderRadius: '50%',
+              background: `rgba(${fg},0.07)`,
+              border: `1px solid rgba(${fg},0.5)`,
+              cursor: btnVisible ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: btnVisible ? 1 : 0,
+              pointerEvents: btnVisible ? 'auto' : 'none',
+              transition: 'opacity 0.7s ease',
+            }}
+            onMouseEnter={e => { if (btnVisible) e.currentTarget.style.background = `rgba(${fg},0.2)` }}
+            onMouseLeave={e => e.currentTarget.style.background = `rgba(${fg},0.07)`}
+          >
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+              stroke={accentCol} strokeWidth="1.8" strokeLinecap="round">
+              <path d="M12 2v6"/>
+              <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
+            </svg>
+          </button>
+          <span style={{
+            color: `rgba(${fg},0.6)`, fontSize: '10px',
+            letterSpacing: '3px', textTransform: 'uppercase',
+            fontFamily: 'system-ui, sans-serif',
+            opacity: btnVisible && !isWaking ? 1 : 0,
             transition: 'opacity 0.7s ease',
-          }}
-          onMouseEnter={e => { if (btnVisible) e.currentTarget.style.background = `rgba(${fg},0.15)` }}
-          onMouseLeave={e => e.currentTarget.style.background = `rgba(${fg},0.07)`}
-        >
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-            stroke={accentCol} strokeWidth="1.8" strokeLinecap="round">
-            <path d="M12 2v6"/>
-            <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
-          </svg>
-        </button>
+            pointerEvents: 'none',
+          }}>
+            Druk om te starten
+          </span>
+        </div>
 
         {/* Progress + label */}
         <div style={{
@@ -169,7 +181,7 @@ export default function StandbyScreen({ onWake }) {
           transition: 'opacity 0.8s ease',
           pointerEvents: 'none',
         }}>
-          <div style={{ width: '100%', height: '2px', background: `rgba(${fg},0.08)`, borderRadius: '1px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '3px', background: `rgba(${fg},0.15)`, borderRadius: '1px', overflow: 'hidden' }}>
             <div style={{
               height: '100%', width: `${progress}%`,
               background: accentCol, borderRadius: '1px',
@@ -177,7 +189,7 @@ export default function StandbyScreen({ onWake }) {
             }} />
           </div>
           <span style={{
-            color: `rgba(${fg},0.25)`, fontSize: '10px',
+            color: `rgba(${fg},0.5)`, fontSize: '12px',
             letterSpacing: '3.5px', textTransform: 'uppercase',
             fontFamily: 'system-ui, sans-serif',
           }}>

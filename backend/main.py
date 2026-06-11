@@ -25,6 +25,7 @@ from sqlalchemy import func
 from .hardware import loadcell, gpio
 from .pouring import pour_recipe, cancel_pour
 from .updater import get_version_info, check_updates_available, run_update
+from .seed import seed_demo_data
 
 
 def _load_env():
@@ -724,6 +725,16 @@ button{background:#fff;color:#000;border:none;padding:12px 24px;border-radius:12
 <p style="color:rgba(255,255,255,.6);font-size:14px">Interface wordt gebouwd...</p>
 <button onclick="setTimeout(()=>location.reload(),1000)">Opnieuw proberen</button>
 </body></html>"""
+
+@app.post("/api/seed-demo")
+def seed_demo(session: Session = Depends(get_session)):
+    from sqlmodel import select
+    from .models import Recipe
+    if session.exec(select(Recipe)).first():
+        return {"status": "skipped", "message": "Database bevat al data"}
+    seed_demo_data(session)
+    return {"status": "ok", "message": "Demo data aangemaakt"}
+
 
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):

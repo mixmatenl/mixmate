@@ -1,5 +1,11 @@
 # MIXMATE OS — Changelog
 
+## [4.0.5] - 2026-06-11
+### Verbeterd
+- Standby scherm: grotere knop, duidelijkere tekst en progress bar
+- Backoffice: hoger contrast voor labels, inputs en navigatie
+- Demo data: POST /api/seed-demo endpoint voor testomgeving
+
 ## [4.0.4] - 2026-06-11
 ### Gefixt
 - Lichte achtergrond (#f2f2f2) terug voor hoofdcontent

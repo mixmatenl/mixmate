@@ -37,7 +37,7 @@ function AdminLogin({ onUnlock }) {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center">
-      <p className="text-white/70 text-sm tracking-widest uppercase mb-10">Backoffice toegang</p>
+      <p className="text-white/90 text-sm tracking-widest uppercase mb-10">Backoffice toegang</p>
       <div className={`flex gap-5 mb-10 ${shake ? 'animate-shake' : ''}`}>
         {Array.from({ length: PIN_LENGTH }).map((_, i) => (
           <div key={i} className={`w-4 h-4 rounded-full transition-all ${i < input.length ? 'bg-white' : 'bg-white/20'}`} />
@@ -81,21 +81,21 @@ function PinManager() {
     }
   }
 
-  const inp = "w-full border border-white/20 rounded-xl px-4 py-3 bg-white/10 text-white text-base focus:outline-none focus:border-white/50 placeholder-white/40"
+  const inp = "w-full border border-white/30 rounded-xl px-4 py-3 bg-white/15 text-white text-base focus:outline-none focus:border-white/50 placeholder-white/40"
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-sm">
       <h3 className="text-white font-bold text-lg">Bartender PIN wijzigen</h3>
       <div>
-        <label className="text-white/70 text-sm mb-2 block font-medium">Admin PIN (verificatie)</label>
+        <label className="text-white/90 text-sm mb-2 block font-medium">Admin PIN (verificatie)</label>
         <input type="password" value={adminPin} onChange={e => setAdminPin(e.target.value)} placeholder="••••" className={inp} />
       </div>
       <div>
-        <label className="text-white/70 text-sm mb-2 block font-medium">Nieuwe bartender PIN</label>
+        <label className="text-white/90 text-sm mb-2 block font-medium">Nieuwe bartender PIN</label>
         <input type="password" value={newPin} onChange={e => setNewPin(e.target.value)} placeholder="••••" className={inp} />
       </div>
       <div>
-        <label className="text-white/70 text-sm mb-2 block font-medium">Bevestig nieuwe PIN</label>
+        <label className="text-white/90 text-sm mb-2 block font-medium">Bevestig nieuwe PIN</label>
         <input type="password" value={confirmPin} onChange={e => setConfirmPin(e.target.value)} placeholder="••••" className={inp} />
       </div>
       {msg && <p className={`text-sm font-medium ${msg.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>{msg.text}</p>}
@@ -129,18 +129,18 @@ function PumpRow({ pump, ingredients, onUpdate, onDelete, onCalibrate }) {
     setOpen(false)
   }
 
-  const inp = "w-full border border-white/20 rounded-lg px-3 py-2.5 bg-white/10 text-white text-sm focus:outline-none focus:border-white/40"
+  const inp = "w-full border border-white/30 rounded-lg px-3 py-2.5 bg-white/15 text-white text-sm focus:outline-none focus:border-white/40"
   const sel = `${inp} cursor-pointer`
 
   return (
-    <div className="bg-white/10 border border-white/20 rounded-2xl overflow-hidden">
+    <div className="bg-white/12 border border-white/25 rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setOpen(!open)}>
         <div className="flex items-center gap-3">
-          <span className="text-white/60 font-mono text-sm w-7 font-semibold">#{pump.slot}</span>
+          <span className="text-white/75 font-mono text-sm w-7 font-semibold">#{pump.slot}</span>
           <span className="text-white text-base font-semibold">
             {pump.ingredient?.name ?? <span className="text-white/40 italic font-normal text-sm">Niet toegewezen</span>}
           </span>
-          <span className="text-white/60 text-sm">GPIO {pump.gpio_pin} · {pump.pump_type} · {pump.ml_per_second}ml/s</span>
+          <span className="text-white/75 text-sm">GPIO {pump.gpio_pin} · {pump.pump_type} · {pump.ml_per_second}ml/s</span>
         </div>
         <svg className={`w-5 h-5 text-white/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -148,20 +148,20 @@ function PumpRow({ pump, ingredients, onUpdate, onDelete, onCalibrate }) {
       </div>
       {open && (
         <div className="px-5 pb-5 border-t border-white/10 pt-4 grid grid-cols-2 gap-3">
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">Slot</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">Slot</label>
             <input type="number" value={form.slot} onChange={e => change('slot', e.target.value)} className={inp} /></div>
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">GPIO Pin</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">GPIO Pin</label>
             <select value={form.gpio_pin} onChange={e => change('gpio_pin', e.target.value)} className={sel}>
               {GPIO_PINS.map(p => <option key={p} value={p}>{p}</option>)}
             </select></div>
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">Type</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">Type</label>
             <select value={form.pump_type} onChange={e => change('pump_type', e.target.value)} className={sel}>
               <option value="peristaltic">Peristaltisch</option>
               <option value="valve">Valve</option>
             </select></div>
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">ml/sec</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">ml/sec</label>
             <input type="number" step="0.1" value={form.ml_per_second} onChange={e => change('ml_per_second', e.target.value)} className={inp} /></div>
-          <div className="col-span-2"><label className="text-white/70 text-sm mb-2 block font-medium">Ingrediënt</label>
+          <div className="col-span-2"><label className="text-white/90 text-sm mb-2 block font-medium">Ingrediënt</label>
             <select value={form.ingredient_id} onChange={e => change('ingredient_id', e.target.value)} className={sel}>
               <option value="">-- Geen --</option>
               {ingredients.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
@@ -171,10 +171,10 @@ function PumpRow({ pump, ingredients, onUpdate, onDelete, onCalibrate }) {
               <div className={`w-10 h-6 rounded-full relative transition-colors ${form.enabled ? 'bg-white' : 'bg-white/15'}`}>
                 <div className={`absolute top-1 w-4 h-4 rounded-full shadow transition-transform ${form.enabled ? 'bg-black translate-x-5' : 'bg-white/60 translate-x-1'}`} />
               </div>
-              <span className="text-white/70 text-sm font-medium">Ingeschakeld</span>
+              <span className="text-white/90 text-sm font-medium">Ingeschakeld</span>
             </label>
             <div className="flex gap-2">
-              <button onClick={() => onCalibrate(pump)} className="text-sm px-3 py-2 border border-white/20 rounded-lg text-white/60 hover:border-white/40 hover:text-white transition-all">Kalibreer</button>
+              <button onClick={() => onCalibrate(pump)} className="text-sm px-3 py-2 border border-white/30 rounded-lg text-white/75 hover:border-white/40 hover:text-white transition-all">Kalibreer</button>
               <button onClick={() => onDelete(pump.id)} className="text-sm text-red-400/80 hover:text-red-400 transition-colors px-2 py-2">Verwijder</button>
               <button onClick={save} className="text-sm bg-white text-black font-bold rounded-lg px-4 py-2 hover:bg-white/90 transition-all">Opslaan</button>
             </div>
@@ -200,7 +200,7 @@ function PumpsManager({ ingredients }) {
     setAdding(false); load()
   }
 
-  const inp = "w-full border border-white/20 rounded-lg px-3 py-2.5 bg-white/10 text-white text-sm focus:outline-none focus:border-white/40"
+  const inp = "w-full border border-white/30 rounded-lg px-3 py-2.5 bg-white/15 text-white text-sm focus:outline-none focus:border-white/40"
 
   return (
     <div className="space-y-4">
@@ -210,32 +210,32 @@ function PumpsManager({ ingredients }) {
         <button onClick={() => setAdding(!adding)} className="text-sm bg-white text-black font-bold rounded-lg px-4 py-2 hover:bg-white/90 transition-all">+ Toevoegen</button>
       </div>
       {adding && (
-        <form onSubmit={handleAdd} className="bg-white/10 border border-white/20 rounded-xl p-4 grid grid-cols-2 gap-3">
+        <form onSubmit={handleAdd} className="bg-white/15 border border-white/30 rounded-xl p-4 grid grid-cols-2 gap-3">
           {[['Slot','slot','number'],['ml/sec','ml_per_second','number']].map(([l,k,t]) => (
-            <div key={k}><label className="text-white/70 text-sm mb-2 block font-medium">{l}</label>
+            <div key={k}><label className="text-white/90 text-sm mb-2 block font-medium">{l}</label>
               <input type={t} value={form[k]} onChange={e => setForm(f => ({...f,[k]:e.target.value}))} className={inp} step={k === 'ml_per_second' ? '0.1' : undefined} /></div>
           ))}
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">GPIO Pin</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">GPIO Pin</label>
             <select value={form.gpio_pin} onChange={e => setForm(f => ({...f,gpio_pin:e.target.value}))} className={`${inp} cursor-pointer`}>
               {GPIO_PINS.map(p => <option key={p} value={p}>{p}</option>)}
             </select></div>
-          <div><label className="text-white/70 text-sm mb-2 block font-medium">Type</label>
+          <div><label className="text-white/90 text-sm mb-2 block font-medium">Type</label>
             <select value={form.pump_type} onChange={e => setForm(f => ({...f,pump_type:e.target.value}))} className={`${inp} cursor-pointer`}>
               <option value="peristaltic">Peristaltisch</option>
               <option value="valve">Valve</option>
             </select></div>
-          <div className="col-span-2"><label className="text-white/70 text-sm mb-2 block font-medium">Ingrediënt</label>
+          <div className="col-span-2"><label className="text-white/90 text-sm mb-2 block font-medium">Ingrediënt</label>
             <select value={form.ingredient_id} onChange={e => setForm(f => ({...f,ingredient_id:e.target.value}))} className={`${inp} cursor-pointer`}>
               <option value="">-- Geen --</option>
               {ingredients.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
             </select></div>
           <div className="col-span-2 flex justify-end gap-2">
-            <button type="button" onClick={() => setAdding(false)} className="text-sm text-white/60 hover:text-white/90 px-3 py-2 transition-colors">Annuleer</button>
+            <button type="button" onClick={() => setAdding(false)} className="text-sm text-white/75 hover:text-white/90 px-3 py-2 transition-colors">Annuleer</button>
             <button type="submit" className="text-sm bg-white text-black font-bold rounded-lg px-4 py-2 hover:bg-white/90 transition-all">Opslaan</button>
           </div>
         </form>
       )}
-      {pumps.length === 0 && !adding && <p className="text-white/60 text-base text-center py-8">Geen pompen geconfigureerd.</p>}
+      {pumps.length === 0 && !adding && <p className="text-white/75 text-base text-center py-8">Geen pompen geconfigureerd.</p>}
       {[...pumps].sort((a,b) => a.slot - b.slot).map(pump => (
         <PumpRow key={pump.id} pump={pump} ingredients={ingredients}
           onUpdate={async (id, data) => { await api.updatePump(id, data); load() }}
@@ -279,8 +279,8 @@ export default function Backoffice({ onClose }) {
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   tab === t.id
-                    ? 'bg-white/15 text-white'
-                    : 'text-white/60 hover:text-white/90 hover:bg-white/10'
+                    ? 'bg-white/25 text-white'
+                    : 'text-white/75 hover:text-white/90 hover:bg-white/15'
                 }`}>
                 {t.label}
               </button>
@@ -288,8 +288,8 @@ export default function Backoffice({ onClose }) {
           </nav>
         </div>
         <div className="flex gap-4">
-          <button onClick={lock} className="text-sm text-white/60 hover:text-white/80 transition-colors font-medium">Vergrendel</button>
-          <button onClick={onClose} className="text-sm text-white/60 hover:text-white/80 transition-colors font-medium">← Terug</button>
+          <button onClick={lock} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">Vergrendel</button>
+          <button onClick={onClose} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">← Terug</button>
         </div>
       </header>
       <div className="flex-1 px-8 py-8 max-w-2xl">
