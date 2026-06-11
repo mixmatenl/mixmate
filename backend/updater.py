@@ -211,7 +211,7 @@ async def run_update():
         ),
         (
             "Frontend — dependencies",
-            [npm, "install", "--prefer-offline", "--no-audit", "--no-fund"],
+            [npm, "ci", "--prefer-offline", "--no-audit", "--no-fund", "--silent"],
             APP_DIR / "frontend",
         ),
         (
@@ -245,6 +245,29 @@ async def run_update():
                     "message": f"Stap mislukt: {label} (exit {proc.returncode})"
                 }
                 return
+
+        # Controleer of uvicorn binary nog aanwezig is na git reset
+        # (git reset --hard kan de venv verwijderen als die eerder getrackt was)
+        uvicorn_bin = APP_DIR / ".venv" / "bin" / "uvicorn"
+        if not uvicorn_bin.exists():
+            yield {"type": "step", "label": "Python — venv herstellen"}
+            yield {"type": "log", "line": "uvicorn binary ontbreekt na git reset — force-reinstall..."}
+            proc = await asyncio.create_subprocess_exec(
+                str(VENV_PIP), "install", "--quiet", "--force-reinstall", "uvicorn[standard]",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(APP_DIR),
+                env=env_extra,
+            )
+            async for raw in proc.stdout:
+                line = raw.decode(errors="replace").rstrip()
+                if line:
+                    yield {"type": "log", "line": line}
+            await proc.wait()
+            if not uvicorn_bin.exists():
+                yield {"type": "error", "message": "uvicorn binary nog steeds ontbrekend na reinstall."}
+                return
+            yield {"type": "log", "line": "uvicorn hersteld."}
 
         # Stuur "done" EERST zodat de browser het ontvangt,
         # dan herstart de service na een korte vertraging.

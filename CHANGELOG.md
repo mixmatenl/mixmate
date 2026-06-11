@@ -1,5 +1,11 @@
 # MIXMATE OS — Changelog
 
+## [4.0.2] - 2026-06-11
+### Gefixt
+- Installer herschreven voor Raspberry Pi OS Lite 64-bit (X11 + openbox kiosk)
+- OTA updater: uvicorn binary wordt gecontroleerd en hersteld na git reset
+- OTA updater: npm install vervangen door npm ci voor reproduceerbare builds
+
 ## [4.0.1] - 2026-06-11
 ### Gefixt
 - Thema-wisseling verwijderd — alleen donker thema beschikbaar
