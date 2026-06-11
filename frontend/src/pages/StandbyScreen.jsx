@@ -6,11 +6,9 @@ const WAKE_MS    = 12000  // totale opstarttijd
 const FADE_START = 8000   // ms na start waking dat het logo begint te vervagen
 const FADE_DUR   = 3500   // ms dat de fade duurt
 
-export default function StandbyScreen({ onWake, theme }) {
-  const isLight = theme === 'light'
-  const panelBg   = isLight ? '#ffffff' : '#000'
-  // In licht thema gebruiken we donkere tinten voor contrast op wit
-  const fg        = isLight ? '0,0,0' : '255,255,255'
+export default function StandbyScreen({ onWake }) {
+  const panelBg   = '#000'
+  const fg        = '255,255,255'
   const accentCol = 'var(--accent)'
   const [phase,      setPhase]      = useState(P.ENTRY)
   const [mounted,    setMounted]    = useState(false)  // triggt de instap-animatie

@@ -401,7 +401,7 @@ function SearchBar({ value, onChange }) {
 }
 
 /* ── Dashboard ───────────────────────────────────────────────────────── */
-export default function Dashboard({ onStandby, theme, onThemeChange }) {
+export default function Dashboard({ onStandby }) {
   const [recipes,    setRecipes]    = useState([])
   const [categories, setCategories] = useState([])
   const [glasses,    setGlasses]    = useState([])
@@ -478,8 +478,6 @@ export default function Dashboard({ onStandby, theme, onThemeChange }) {
         onSelect={(v) => { setSearch(''); setActiveCategory(v) }}
         onLogout={handleLogout}
         onStandby={onStandby}
-        theme={theme}
-        onThemeChange={onThemeChange}
       />
 
       <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>

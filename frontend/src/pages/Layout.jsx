@@ -7,7 +7,7 @@ const NAV = [
   { to: '/rapporten', label: 'RAPPORTEN' },
 ]
 
-export default function Layout({ children, onLogout, onStandby, theme, onThemeChange }) {
+export default function Layout({ children, onLogout, onStandby }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Top bar */}
@@ -38,11 +38,10 @@ export default function Layout({ children, onLogout, onStandby, theme, onThemeCh
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────── */
-export function Sidebar({ categories, active, onSelect, onLogout, onStandby, theme, onThemeChange }) {
+export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
   const itemRefs = useRef({})
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 })
 
-  // Bereken positie van het actieve item
   useEffect(() => {
     const el = itemRefs.current[active]
     if (!el) return
@@ -56,8 +55,6 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby, the
       opacity: 1,
     })
   }, [active, categories])
-
-  const isDark = theme !== 'light'
 
   return (
     <aside className="w-52 flex flex-col shrink-0 h-full select-none"
@@ -105,7 +102,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby, the
         </div>
       </div>
 
-      {/* Standby + thema + uitloggen */}
+      {/* Standby + uitloggen */}
       <div className="shrink-0 px-5 pb-8 pt-4 space-y-1" style={{ borderTop: '1px solid var(--border)' }}>
         <button
           onClick={onStandby}
@@ -118,16 +115,6 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby, the
           </svg>
           Stand-by
         </button>
-        {onThemeChange && (
-          <button
-            onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all duration-150"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span className="text-base leading-none">{isDark ? '☀' : '🌙'}</span>
-            {isDark ? 'Licht thema' : 'Donker thema'}
-          </button>
-        )}
         <button
           onClick={onLogout}
           className="w-full text-left px-3 py-2 text-sm transition-colors duration-150"
