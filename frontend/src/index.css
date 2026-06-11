@@ -2,22 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Thema variabelen ───────────────────────────────────────────────── */
+/* ── Kleurenpalet ───────────────────────────────────────────────────── */
 :root {
   --bg: #0a0a0a;
-  --bg-secondary: #141414;
-  --bg-card: #1a1a1a;
-  --bg-card-hover: #222;
-  --border: #2a2a2a;
-  --border-subtle: #1f1f1f;
-  --text: #f0f0f0;
-  --text-secondary: #888;
-  --text-muted: #555;
-  --accent: #c9a96e;
-  --accent-light: #e8c98a;
-  --accent-bg: rgba(201,169,110,0.1);
-  --sidebar-bg: #0d0d0d;
-  --input-bg: #1a1a1a;
+  --bg-secondary: #111111;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.08);
+  --border-subtle: rgba(255,255,255,0.04);
+  --text: #ffffff;
+  --text-secondary: rgba(255,255,255,0.5);
+  --text-muted: rgba(255,255,255,0.25);
+  --accent: #ffffff;
+  --accent-light: rgba(255,255,255,0.8);
+  --accent-bg: rgba(255,255,255,0.08);
+  --sidebar-bg: #1a1a1a;
+  --input-bg: rgba(255,255,255,0.05);
 }
 
 * {
@@ -59,58 +59,45 @@ html, body, #root {
 .overflow-y-auto input, .overflow-y-auto select,
 .overflow-y-auto textarea { touch-action: manipulation; }
 
-/* Select dropdown dark */
+/* Select dropdown */
 select option {
   background: #1a1a1a;
   color: #ffffff;
 }
 
-/* ── Thema-bewuste helpers ──────────────────────────────────────────── */
+/* ── Helpers ────────────────────────────────────────────────────────── */
 .theme-bg       { background-color: var(--bg); }
 .theme-card     { background-color: var(--bg-card); }
 .theme-text     { color: var(--text); }
 .theme-text-sec { color: var(--text-secondary); }
 .theme-border   { border-color: var(--border); }
 
-/* ── Pagina fade-transitie (keyframe, geen state flip) ──────────────── */
+/* ── Pagina fade ────────────────────────────────────────────────────── */
 @keyframes pageFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-.page-fade {
-  animation: pageFadeIn 0.3s ease forwards;
-}
+.page-fade { animation: pageFadeIn 0.3s ease forwards; }
 
-/* ── Ambient dashboard achtergrond ──────────────────────────────────── */
-@keyframes ambientShift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.ambient-bg {
-  background: var(--bg);
-}
-
-/* ── Zwarte knop glow bij press ─────────────────────────────────────── */
+/* ── Knop stijl ─────────────────────────────────────────────────────── */
 .btn-dark {
-  background: #111;
-  color: #fff;
-  transition: box-shadow 0.15s ease, transform 0.12s ease, background 0.15s ease;
+  background: #ffffff;
+  color: #000000;
+  transition: opacity 0.15s ease, transform 0.12s ease;
 }
 .btn-dark:active {
   transform: scale(0.97);
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.15), 0 0 20px rgba(0,0,0,0.3);
-  background: #222;
+  opacity: 0.85;
 }
 
 /* ── Kaart press-effect ─────────────────────────────────────────────── */
 .card-pressable {
-  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease;
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
   cursor: pointer;
 }
 .card-pressable:active {
   transform: scale(0.97);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  opacity: 0.8;
 }
 
 /* ── Skeleton shimmer ───────────────────────────────────────────────── */
@@ -119,7 +106,7 @@ select option {
   100% { background-position: 400px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: 12px;
@@ -136,18 +123,14 @@ select option {
 
 /* ── Pour progress pulse ────────────────────────────────────────────── */
 @keyframes pourPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(17,17,17,0.2); }
-  50%       { box-shadow: 0 0 0 6px rgba(17,17,17,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.15); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
 }
-.pour-pulse {
-  animation: pourPulse 1.8s ease-in-out infinite;
-}
+.pour-pulse { animation: pourPulse 1.8s ease-in-out infinite; }
 
 /* ── Done celebration ring ───────────────────────────────────────────── */
 @keyframes ringExpand {
   0%   { transform: scale(0.6); opacity: 0.8; }
   100% { transform: scale(2.2); opacity: 0; }
 }
-.done-ring {
-  animation: ringExpand 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
+.done-ring { animation: ringExpand 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
