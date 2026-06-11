@@ -1,5 +1,15 @@
 # MIXMATE OS — Changelog
 
+## [5.0.0] - 2026-06-11
+### Nieuw
+- Stabiele release voor MATE.1 PRO
+- Lichte achtergrond met donkere navigatie
+- Plymouth boot splash met MIXMATE logo
+- Robuuste installer voor Raspberry Pi OS Lite 64-bit
+- OTA updates verbeterd (geen lokale conflicten meer)
+- Demo data via /api/seed-demo
+- Betere leesbaarheid in backoffice en standby scherm
+
 ## [4.0.5] - 2026-06-11
 ### Verbeterd
 - Standby scherm: grotere knop, duidelijkere tekst en progress bar
