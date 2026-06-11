@@ -52,7 +52,7 @@ apt-get update -qq
 
 # ── Verplichte packages ───────────────────────
 log "Basis dependencies installeren..."
-apt-get install -y -qq git python3 python3-pip python3-venv python3-full curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
+apt-get install -y -qq git python3 python3-full curl || fail "Kan basispackages niet installeren. Controleer de internetverbinding."
 
 # ── Optionele packages ────────────────────────
 log "Optionele packages installeren..."
@@ -92,17 +92,31 @@ fi
 
 # ── Python venv + dependencies ────────────────
 log "Python omgeving instellen..."
-# Installeer het versie-specifieke venv package (vereist op Debian trixie)
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-apt-get install -y -qq "python${PYVER}-venv" || apt-get install -y -qq python3-venv python3-full
+log "Python versie: ${PYVER}"
 
-# Maak venv aan als root, chown daarna naar pi
+# Installeer versie-specifiek venv package (vereist op Debian trixie / Raspberry Pi OS)
+if apt-cache show "python${PYVER}-venv" &>/dev/null; then
+  apt-get install -y -qq "python${PYVER}-venv" || warn "python${PYVER}-venv installatie mislukt — probeer door te gaan"
+else
+  apt-get install -y -qq python3-venv python3-full || warn "python3-venv installatie mislukt — probeer door te gaan"
+fi
+
+# Maak venv aan zonder pip (--without-pip vermijdt PEP 668 bootstrap-conflict op Debian trixie)
 rm -rf "$INSTALL_DIR/.venv"
-python3 -m venv "$INSTALL_DIR/.venv" || fail "Kan Python venv niet aanmaken (python${PYVER}-venv geïnstalleerd?)"
+python3 -m venv --without-pip "$INSTALL_DIR/.venv" \
+  || fail "Kan Python venv niet aanmaken. Probeer handmatig: sudo apt install python${PYVER}-venv"
+
+# Bootstrap pip via get-pip.py — werkt altijd, ook als systeem-pip geblokkeerd is door PEP 668
+log "pip installeren in venv..."
+curl -sSL https://bootstrap.pypa.io/get-pip.py | "$INSTALL_DIR/.venv/bin/python3" --quiet \
+  || fail "Kan pip niet installeren in venv"
+
 chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
 
-# Installeer packages in de venv (--ignore-installed voorkomt conflict met Debian system packages)
-sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --ignore-installed -r "$INSTALL_DIR/backend/requirements.txt" \
+# Installeer requirements in de schone venv (geen --ignore-installed nodig)
+log "Python packages installeren..."
+sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet -r "$INSTALL_DIR/backend/requirements.txt" \
   || fail "Kan Python packages niet installeren"
 UVICORN_BIN="$INSTALL_DIR/.venv/bin/uvicorn"
 
