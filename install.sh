@@ -6,8 +6,6 @@
 #  Gebruik: curl -sSL https://raw.githubusercontent.com/mixmatenl/mixmate/main/install.sh | sudo bash
 # ─────────────────────────────────────────────
 
-set -euo pipefail
-
 REPO="https://github.com/mixmatenl/mixmate.git"
 INSTALL_DIR="/home/pi/mixmate"
 SERVICE_NAME="mixmate"
@@ -53,8 +51,12 @@ apt-get install -y -qq \
   xinit \
   openbox \
   x11-xserver-utils \
+  xdg-utils \
   unclutter \
   || fail "Kan X11 packages niet installeren."
+
+# xset zit in x11-xserver-utils, controleer of het beschikbaar is
+command -v xset &>/dev/null || apt-get install -y -qq x11-utils 2>/dev/null || true
 
 # ── Chromium ──────────────────────────────────
 log "Chromium installeren..."
@@ -133,8 +135,8 @@ log "uvicorn: OK"
 # ── Frontend bouwen ───────────────────────────
 log "Frontend bouwen (dit duurt even)..."
 rm -rf "$INSTALL_DIR/frontend/node_modules" "$INSTALL_DIR/frontend/dist"
-sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" ci --silent \
-  || fail "npm ci mislukt."
+sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" install --silent \
+  || fail "npm install mislukt."
 sudo -u $USER npm --prefix "$INSTALL_DIR/frontend" run build \
   || fail "Frontend build mislukt."
 [ ! -f "$INSTALL_DIR/frontend/dist/index.html" ] && fail "Frontend build heeft geen index.html opgeleverd."
@@ -168,14 +170,14 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin ${USER} --noclear %I \$TERM
 EOF
 
-# ── Kiosk autostart via .bash_profile ─────────
-# Wordt uitgevoerd bij console-login → start X11
-cat > /home/${USER}/.bash_profile <<'PROFILE'
+# ── Kiosk autostart via .profile ─────────────
+# .profile werkt voor zowel bash als sh op Debian/Pi OS Lite
+cat > /home/${USER}/.profile <<'PROFILE'
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
   exec startx -- -nocursor 2>/dev/null
 fi
 PROFILE
-chown ${USER}:${USER} /home/${USER}/.bash_profile
+chown ${USER}:${USER} /home/${USER}/.profile
 
 # ── X11 sessie: openbox + chromium ───────────
 cat > /home/${USER}/.xinitrc <<XINITRC
