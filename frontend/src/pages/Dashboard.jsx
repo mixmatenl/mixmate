@@ -83,8 +83,7 @@ function PourModal({ recipe, glasses, onClose }) {
         }
       `}</style>
 
-      <div className="rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl"
-        style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl bg-white">
         {/* Header */}
         <div className="h-48 relative overflow-hidden">
           {recipe.image_url
@@ -97,12 +96,12 @@ function PourModal({ recipe, glasses, onClose }) {
             ✕
           </button>
           <div className="absolute bottom-4 left-5 right-14">
-            <p className="text-white/50 text-xs font-semibold tracking-[0.2em] uppercase mb-0.5">
+            <p className="text-white/60 text-xs font-semibold tracking-[0.2em] uppercase mb-0.5">
               {recipe.category_name || ''}
             </p>
             <h2 className="text-white font-bold text-2xl tracking-tight leading-tight">{recipe.name}</h2>
             {selectedGlass && (
-              <span className="text-xs text-white/45 mt-1 inline-block">
+              <span className="text-xs text-white/55 mt-1 inline-block">
                 {selectedGlass.name} · {selectedGlass.volume_ml} ml
                 {scale !== 1.0 && <span className="ml-1">({scale > 1 ? '+' : ''}{Math.round((scale-1)*100)}%)</span>}
               </span>
@@ -115,14 +114,14 @@ function PourModal({ recipe, glasses, onClose }) {
           {/* Glasselect */}
           {status === PS.GLASS && (
             <>
-              <p className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">Kies een glasformaat</p>
+              <p className="text-gray-500 text-xs font-semibold tracking-[0.18em] uppercase">Kies een glasformaat</p>
               <div className="grid grid-cols-2 gap-2.5">
                 {glasses.map(g => (
                   <button key={g.id} onClick={() => setSelectedGlass(g)}
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all text-left active:scale-[0.97] ${
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] ${
                       selectedGlass?.id === g.id
-                        ? 'bg-white text-black border-white'
-                        : 'border-white/10 text-white/60 hover:border-white/25'
+                        ? 'bg-[#111] border-[#111] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}>
                     <svg viewBox="0 0 24 32" className="w-5 h-6 shrink-0" fill="none">
                       <path d="M4 2 L2 20 L22 20 L20 2 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -131,12 +130,12 @@ function PourModal({ recipe, glasses, onClose }) {
                     </svg>
                     <div>
                       <p className="text-sm font-semibold leading-tight">{g.name}</p>
-                      <p className={`text-xs ${selectedGlass?.id === g.id ? 'text-black/50' : 'text-white/30'}`}>{g.volume_ml} ml</p>
+                      <p className={`text-xs ${selectedGlass?.id === g.id ? 'text-white/50' : 'text-gray-400'}`}>{g.volume_ml} ml</p>
                     </div>
                   </button>
                 ))}
                 <button onClick={() => { setSelectedGlass(null); afterGlass() }}
-                  className="flex items-center justify-center px-4 py-3.5 rounded-2xl border border-dashed border-white/15 text-white/35 text-sm active:scale-[0.97] transition-all">
+                  className="flex items-center justify-center px-4 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm active:scale-[0.97] transition-all">
                   Standaard
                 </button>
               </div>
@@ -150,19 +149,18 @@ function PourModal({ recipe, glasses, onClose }) {
           {/* Handmatige ingrediënten */}
           {status === PS.MANUAL && (
             <>
-              <p className="text-white/40 text-xs font-semibold tracking-[0.18em] uppercase">Handmatig toevoegen</p>
-              <div className="rounded-2xl p-4 space-y-2.5"
-                style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <p className="text-gray-500 text-xs font-semibold tracking-[0.18em] uppercase">Handmatig toevoegen</p>
+              <div className="rounded-2xl p-4 space-y-2.5 bg-amber-50 border border-amber-100">
                 {manualIngredients.map(ing => (
                   <div key={ing.ingredient_id} className="flex items-center gap-3">
-                    <span className="w-14 text-right font-bold text-amber-400 text-base shrink-0">{scaledMl(ing.amount_ml)}<span className="text-xs font-normal ml-0.5">ml</span></span>
-                    <span className="text-amber-200 text-sm font-medium">{ing.ingredient_name}</span>
+                    <span className="w-14 text-right font-bold text-amber-600 text-base shrink-0">{scaledMl(ing.amount_ml)}<span className="text-xs font-normal ml-0.5">ml</span></span>
+                    <span className="text-amber-900 text-sm font-medium">{ing.ingredient_name}</span>
                   </div>
                 ))}
               </div>
-              {hasAuto && <p className="text-white/30 text-xs text-center">De machine vult de rest automatisch aan.</p>}
+              {hasAuto && <p className="text-gray-400 text-xs text-center">De machine vult de rest automatisch aan.</p>}
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-white/10 text-white/35 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
+                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
                 <button onClick={() => setStatus(PS.CONFIRM)} className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
                   {hasAuto ? 'Gedaan →' : 'Gereed'}
                 </button>
@@ -176,21 +174,19 @@ function PourModal({ recipe, glasses, onClose }) {
               <div className="flex flex-wrap gap-2">
                 {recipe.ingredients.map(ing => (
                   <span key={ing.ingredient_id} className={`text-xs px-3 py-1.5 rounded-full border font-medium ${
-                    ing.has_pump
-                      ? 'text-white/50 border-white/10 bg-white/5'
-                      : 'text-amber-300 border-amber-400/30 bg-amber-400/10'
+                    ing.has_pump ? 'bg-gray-50 text-gray-500 border-gray-100' : 'bg-amber-50 text-amber-700 border-amber-100'
                   }`}>
-                    {ing.ingredient_name} <span className="opacity-40">{scaledMl(ing.amount_ml)}ml</span>
-                    {!ing.has_pump && <span className="ml-1 text-amber-400">✓</span>}
+                    {ing.ingredient_name} <span className="opacity-50">{scaledMl(ing.amount_ml)}ml</span>
+                    {!ing.has_pump && <span className="ml-1 text-amber-500">✓</span>}
                   </span>
                 ))}
               </div>
               {!hasAuto
-                ? <p className="text-white/30 text-sm text-center py-1">Alle ingrediënten zijn handmatig toegevoegd.</p>
-                : <p className="text-white/30 text-xs text-center">Zet het glas onder de machine en druk op maken.</p>
+                ? <p className="text-gray-400 text-sm text-center py-1">Alle ingrediënten zijn handmatig toegevoegd.</p>
+                : <p className="text-gray-400 text-xs text-center">Zet het glas onder de machine en druk op maken.</p>
               }
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-white/10 text-white/35 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
+                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
                 <button onClick={hasAuto ? startPour : finishDone}
                   className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
                   {hasAuto ? '🍸 Maken' : 'Klaar!'}
@@ -203,12 +199,12 @@ function PourModal({ recipe, glasses, onClose }) {
           {status === PS.POURING && (
             <>
               <div className="text-center py-2">
-                <p className="text-white/35 text-xs tracking-[0.2em] uppercase font-medium mb-1">Bezig met</p>
-                <p className="text-white text-2xl font-bold tracking-tight transition-all duration-500">
+                <p className="text-gray-400 text-xs tracking-[0.2em] uppercase font-medium mb-1">Bezig met</p>
+                <p className="text-gray-900 text-2xl font-bold tracking-tight transition-all duration-500">
                   {progress?.step_name || '…'}
                 </p>
                 {progress?.mode === 'weight' && (
-                  <p className="text-green-400 text-xs mt-1 tracking-wide">⚖ Weegmodus actief</p>
+                  <p className="text-green-500 text-xs mt-1 tracking-wide">⚖ Weegmodus actief</p>
                 )}
               </div>
 
@@ -216,8 +212,8 @@ function PourModal({ recipe, glasses, onClose }) {
                 {autoIngredients.map(ing => (
                   <span key={ing.ingredient_id} className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all duration-400 ${
                     progress?.step_name === ing.ingredient_name
-                      ? 'bg-white text-black border-white scale-105 pour-pulse'
-                      : 'bg-white/5 text-white/30 border-white/10'
+                      ? 'bg-[#111] text-white border-[#111] scale-105 pour-pulse'
+                      : 'bg-gray-50 text-gray-300 border-gray-100'
                   }`}>
                     {ing.ingredient_name}
                     <span className="opacity-40 ml-1">{scaledMl(ing.amount_ml)}ml</span>
@@ -227,16 +223,16 @@ function PourModal({ recipe, glasses, onClose }) {
 
               <div>
                 <div className="flex justify-between text-xs mb-2">
-                  <span className="text-white/35 font-medium">Voortgang</span>
-                  <span className="text-white font-bold tabular-nums">{pct}%</span>
+                  <span className="text-gray-400 font-medium">Voortgang</span>
+                  <span className="text-gray-700 font-bold tabular-nums">{pct}%</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <div className="h-full bg-white rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#111] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
                 </div>
               </div>
 
               <button onClick={cancel}
-                className="w-full py-3.5 rounded-2xl border border-white/10 text-white/35 text-sm font-medium active:scale-[0.97] transition-all">
+                className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">
                 Stoppen
               </button>
             </>
@@ -246,19 +242,16 @@ function PourModal({ recipe, glasses, onClose }) {
           {status === PS.DONE && (
             <div className="text-center space-y-5 py-3">
               <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-                {showDoneRing && (
-                  <div className="absolute inset-0 rounded-full done-ring" style={{ background: 'rgba(255,255,255,0.1)' }} />
-                )}
-                <div className="w-20 h-20 rounded-full flex items-center justify-center relative z-10"
-                  style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                {showDoneRing && <div className="absolute inset-0 rounded-full bg-green-100 done-ring" />}
+                <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center relative z-10">
+                  <svg className="w-9 h-9 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               </div>
               <div>
-                <p className="text-white font-bold text-xl tracking-tight">{recipe.name}</p>
-                <p className="text-white/40 text-sm mt-1">Smakelijk! 🥂</p>
+                <p className="text-gray-800 font-bold text-xl tracking-tight">{recipe.name}</p>
+                <p className="text-gray-400 text-sm mt-1">Smakelijk! 🥂</p>
               </div>
               <button onClick={onClose} className="btn-dark w-full py-4 rounded-2xl text-sm font-bold tracking-wide">
                 Sluiten
@@ -268,9 +261,9 @@ function PourModal({ recipe, glasses, onClose }) {
 
           {status === PS.ERROR && (
             <div className="space-y-4">
-              <p className="text-red-400 text-sm text-center">{progress?.error}</p>
+              <p className="text-red-500 text-sm text-center">{progress?.error}</p>
               <button onClick={onClose}
-                className="w-full py-3 rounded-2xl border border-white/10 text-white/35 text-sm transition-all">
+                className="w-full py-3 rounded-2xl border border-gray-200 text-gray-400 text-sm transition-all">
                 Sluiten
               </button>
             </div>
@@ -315,12 +308,10 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
     <div
       onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
       className={`card-pressable relative w-full text-left rounded-3xl border overflow-hidden ${
-        canMake
-          ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/20'
-          : 'border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed'
+        canMake ? '' : 'opacity-40 cursor-not-allowed'
       }`}
+      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
     >
-      {/* Foto bovenaan als beschikbaar */}
       {recipe.image_url && (
         <div className="w-full h-40 overflow-hidden">
           <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
@@ -329,30 +320,31 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
 
       <div className="p-5">
         {recipe.category_name && (
-          <p className="text-white/35 text-[10px] font-semibold tracking-[0.22em] uppercase mb-1">
+          <p className="text-[10px] font-semibold tracking-[0.22em] uppercase mb-1"
+            style={{ color: 'var(--text-muted)' }}>
             {recipe.category_name}
           </p>
         )}
-        <h3 className="font-semibold text-white text-lg tracking-tight leading-tight mb-2">
+        <h3 className="font-semibold text-lg tracking-tight leading-tight mb-2"
+          style={{ color: 'var(--text)' }}>
           {recipe.name}
         </h3>
         <div className="flex flex-wrap gap-1.5">
           {(recipe.ingredients || []).slice(0, 4).map(ing => (
             <span key={ing.ingredient_id}
-              className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 text-white/40 border border-white/8">
+              className="text-[11px] px-2.5 py-1 rounded-full border"
+              style={{ color: 'var(--text-secondary)', background: 'var(--accent-bg)', borderColor: 'var(--border)' }}>
               {ing.ingredient_name}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Hartje */}
       <HeartButton active={isFavorite} onToggle={() => onToggleFavorite(recipe.id)} />
 
-      {/* Status badge */}
       {canMake && !recipe.fully_automatic && (
         <div className="absolute top-3 left-3 text-[10px] font-bold px-2 py-1 rounded-full tracking-wide"
-          style={{ background: 'rgba(245,158,11,0.85)', color: '#451a03' }}>
+          style={{ background: 'rgba(245,158,11,0.15)', color: '#92400e', border: '1px solid rgba(245,158,11,0.3)' }}>
           Deels handmatig
         </div>
       )}

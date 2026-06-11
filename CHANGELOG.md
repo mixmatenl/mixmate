@@ -1,5 +1,12 @@
 # MIXMATE OS — Changelog
 
+## [4.0.4] - 2026-06-11
+### Gefixt
+- Lichte achtergrond (#f2f2f2) terug voor hoofdcontent
+- Cocktailkaarten wit met donkere tekst
+- Modal wit met donkere tekst en kleuren
+- Donkere sidebar en topbar blijven behouden als contrast
+
 ## [4.0.3] - 2026-06-11
 ### Gefixt
 - Stijl teruggezet naar origineel donker thema (zwarte topbar, transparante kaarten, geen goud accent)
