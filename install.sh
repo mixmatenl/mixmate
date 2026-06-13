@@ -34,6 +34,67 @@ echo ""
 # ── Root check ────────────────────────────────
 [ "$EUID" -ne 0 ] && fail "Voer de installer uit als root:\n  curl -sSL https://raw.githubusercontent.com/mixmatenl/mixmate/main/install.sh | sudo bash"
 
+# ── Machine model selecteren ──────────────────
+echo ""
+echo "  Selecteer het machine model:"
+echo ""
+echo "  [1] MATE.1"
+echo "  [2] MATE.1 CO2"
+echo "  [3] MATE.1 PRO"
+echo ""
+while true; do
+  read -rp "  Keuze (1/2/3): " MODEL_CHOICE </dev/tty
+  case "$MODEL_CHOICE" in
+    1) MACHINE_MODEL="MATE.1"; break ;;
+    2) MACHINE_MODEL="MATE.1 CO2"; break ;;
+    3) MACHINE_MODEL="MATE.1 PRO"; break ;;
+    *) echo "  Ongeldige keuze — voer 1, 2 of 3 in." ;;
+  esac
+done
+log "Machine model: $MACHINE_MODEL"
+
+# ── Versie ophalen en compatibiliteit controleren ──
+APP_VERSION=$(curl -sSL "https://raw.githubusercontent.com/mixmatenl/mixmate/main/frontend/package.json" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('version','?'))" 2>/dev/null || echo "?")
+COMPAT_JSON=$(curl -sSL "https://raw.githubusercontent.com/mixmatenl/mixmate/main/compat.json" 2>/dev/null || echo "{}")
+
+COMPAT_OK=$(python3 - <<PYEOF
+import json, sys
+try:
+    data = json.loads('''$COMPAT_JSON''')
+    versions = data.get("versions", {})
+    app_ver = "$APP_VERSION"
+    model = "$MACHINE_MODEL"
+    # Bepaal minor-lijn (x.y) van de te installeren versie
+    parts = app_ver.split(".")
+    minor = f"{parts[0]}.{parts[1]}" if len(parts) >= 2 else app_ver
+    allowed = versions.get(minor) or versions.get(app_ver)
+    if allowed is None:
+        print("ok")  # geen restrictie bekend → toestaan
+    elif model in allowed:
+        print("ok")
+    else:
+        print(",".join(allowed))
+except Exception:
+    print("ok")  # bij twijfel toestaan
+PYEOF
+)
+
+if [ "$COMPAT_OK" != "ok" ]; then
+  echo ""
+  echo -e "${RED}╔════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${RED}║   INSTALLATIE GEBLOKKEERD                              ║${NC}"
+  echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "${RED}  v${APP_VERSION} is niet beschikbaar voor ${MACHINE_MODEL}.${NC}"
+  echo -e "${RED}  Beschikbaar voor: ${COMPAT_OK}${NC}"
+  echo ""
+  echo "  Neem contact op met MIXMATE voor meer informatie."
+  echo ""
+  exit 1
+fi
+log "Compatibiliteit: OK (v${APP_VERSION} voor ${MACHINE_MODEL})"
+
 # ── Systeem updaten ───────────────────────────
 log "Pakketlijsten bijwerken..."
 apt-get update -qq
@@ -90,6 +151,16 @@ else
   sudo -u $USER git clone "$REPO" "$INSTALL_DIR" \
     || fail "Kan repository niet downloaden."
 fi
+
+# ── Machine model opslaan in .env ────────────
+ENV_FILE="$INSTALL_DIR/.env"
+if [ -f "$ENV_FILE" ] && grep -q "^MACHINE_MODEL=" "$ENV_FILE"; then
+  sed -i "s/^MACHINE_MODEL=.*/MACHINE_MODEL=${MACHINE_MODEL}/" "$ENV_FILE"
+else
+  echo "MACHINE_MODEL=${MACHINE_MODEL}" >> "$ENV_FILE"
+fi
+chown ${USER}:${USER} "$ENV_FILE"
+log "Machine model opgeslagen in .env"
 
 # ── Python venv ───────────────────────────────
 log "Python omgeving instellen..."
@@ -265,9 +336,8 @@ echo -e "${GREEN}║   MIXMATE OS succesvol geïnstalleerd!  ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
 echo ""
 log "Versie  : v${VERSION}"
+log "Model   : ${MACHINE_MODEL}"
 log "Backend : http://localhost:8000"
-echo ""
-warn "Vergeet niet: stel het machine model in via Backoffice → Machine"
 echo ""
 log "Pi herstart over 5 seconden..."
 sleep 5
