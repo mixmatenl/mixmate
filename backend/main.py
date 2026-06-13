@@ -43,7 +43,10 @@ def _load_env():
 async def lifespan(app: FastAPI):
     _load_env()
     create_db()
+    from .cloud_client import cloud_loop
+    cloud_task = asyncio.create_task(cloud_loop())
     yield
+    cloud_task.cancel()
     gpio.cleanup()
 
 
@@ -533,6 +536,24 @@ def _set_machine_model(model: str):
     if not replaced:
         lines.append(f"MACHINE_MODEL={model}")
     env_path.write_text("\n".join(lines) + "\n")
+
+# ── Cloud koppeling ───────────────────────────────────────────────────────────
+
+_cloud_pair: dict = {"code": None, "paired": False}
+
+@app.post("/api/cloud/pair-code")
+def set_pair_code(body: dict):
+    """Intern endpoint — cloud_client.py schrijft de koppelcode hierheen."""
+    _cloud_pair["code"]   = body.get("code")
+    _cloud_pair["paired"] = body.get("paired", False)
+    return {"ok": True}
+
+@app.get("/api/cloud/pair-code")
+def get_pair_code():
+    """Frontend leest hieruit de koppelcode om op het standby-scherm te tonen."""
+    return _cloud_pair
+
+# ── Machine instellingen ──────────────────────────────────────────────────────
 
 @app.get("/api/system/machine")
 def get_machine():
