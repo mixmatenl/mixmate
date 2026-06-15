@@ -1,3 +1,12 @@
+## [1.3.0] - 2026-06-15
+### Nieuw
+- Premium UX redesign: Cloud koppeling op de machine volledig vernieuwd (losse cijferblokjes, account-avatar, groene statusbadge)
+- Portaal dashboard opnieuw gebouwd: frosted glass header, machine cards met live groene stip, stap-voor-stap koppelwizard met successanimatie
+- Portaal machine-detailpagina: sticky header met breadcrumb-navigatie en verfijnde tabs
+- Fabrieksgegevens (GPIO-pinnen, weegschaalconfiguratie, model) worden nu altijd bewaard bij fabrieksreset
+- Account naam en e-mail blijven zichtbaar na herstart (persistent in database)
+- WiFi verbinden werkt nu betrouwbaarder (bestaand profiel wordt eerst verwijderd)
+
 ## [1.2.2] - 2026-06-15
 ### Nieuw
 - Wachtwoord vergeten via de machine: verificatiecode verschijnt op het machinescherm
