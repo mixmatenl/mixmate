@@ -10,6 +10,144 @@ import AppUpdate from './AppUpdate'
 import WifiSetup from './WifiSetup'
 import CloudPairing from './CloudPairing'
 
+// ── Factory Reset animatiescherm ──────────────────────────────────────────────
+const RESET_STEPS = [
+  { label: 'Koppeling met portaal verbreken',    duration: 2200 },
+  { label: 'Recepten wissen',                    duration: 1800 },
+  { label: 'Ingrediënten wissen',                duration: 1600 },
+  { label: 'Glazen en categorieën wissen',       duration: 1400 },
+  { label: 'Pompinstellingen wissen',            duration: 1200 },
+  { label: 'Configuratie terugzetten',           duration: 1800 },
+  { label: 'Systeem opschonen',                  duration: 2000 },
+  { label: 'Machine herstarten',                 duration: 3000 },
+]
+
+function FactoryResetScreen() {
+  const [stepIndex, setStepIndex] = useState(0)
+  const [done,      setDone]      = useState(false)
+  const [progress,  setProgress]  = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    const totalMs = RESET_STEPS.reduce((s, x) => s + x.duration, 0)
+    let elapsed = 0
+
+    async function run() {
+      for (let i = 0; i < RESET_STEPS.length; i++) {
+        if (cancelled) return
+        setStepIndex(i)
+        const stepMs = RESET_STEPS[i].duration
+        const tick = 30
+        const start = elapsed
+        for (let t = 0; t < stepMs; t += tick) {
+          if (cancelled) return
+          await new Promise(r => setTimeout(r, tick))
+          elapsed = start + t
+          setProgress(Math.min(99, Math.round((elapsed / totalMs) * 100)))
+        }
+        elapsed = start + stepMs
+      }
+      setProgress(100)
+      setDone(true)
+    }
+
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: '#111',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, fontFamily: 'system-ui, sans-serif',
+    }}>
+      {/* Pulserend icoon */}
+      <div style={{
+        width: 80, height: 80, borderRadius: 40,
+        background: done ? '#1c1c1e' : '#2c1c1c',
+        border: `2px solid ${done ? '#30d158' : '#ff3b30'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 32,
+        animation: done ? 'none' : 'mm-pulse 1.4s ease-in-out infinite',
+      }}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+          stroke={done ? '#30d158' : '#ff3b30'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          {done
+            ? <polyline points="20 6 9 17 4 12"/>
+            : <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>
+          }
+        </svg>
+      </div>
+
+      {/* Titel */}
+      <div style={{ color: '#fff', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
+        {done ? 'Klaar' : 'Terugzetten naar fabrieksinstellingen'}
+      </div>
+      <div style={{ color: '#636366', fontSize: 13, marginBottom: 40, textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
+        {done
+          ? 'De machine herstart nu automatisch. Dit duurt ongeveer 30 seconden.'
+          : 'Zet de machine niet uit. Dit duurt even.'
+        }
+      </div>
+
+      {/* Voortgangsbalk */}
+      <div style={{ width: 280, background: '#2c2c2e', borderRadius: 8, height: 6, marginBottom: 20, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', borderRadius: 8,
+          background: done ? '#30d158' : '#ff3b30',
+          width: `${progress}%`,
+          transition: 'width .12s linear, background .4s',
+        }} />
+      </div>
+
+      {/* Stappen */}
+      <div style={{ width: 280 }}>
+        {RESET_STEPS.map((step, i) => {
+          const isActive = i === stepIndex && !done
+          const isDone   = i < stepIndex || done
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 0',
+              opacity: isDone ? 1 : isActive ? 1 : 0.3,
+              transition: 'opacity .3s',
+            }}>
+              <div style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isDone ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" strokeWidth="2.5" strokeLinecap="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                ) : isActive ? (
+                  <div style={{
+                    width: 8, height: 8, borderRadius: 4, background: '#ff3b30',
+                    animation: 'mm-blink .8s ease-in-out infinite',
+                  }} />
+                ) : (
+                  <div style={{ width: 6, height: 6, borderRadius: 3, background: '#3a3a3c' }} />
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: isDone ? '#ebebf5' : isActive ? '#fff' : '#636366', fontWeight: isActive ? 600 : 400 }}>
+                {step.label}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <style>{`
+        @keyframes mm-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,.4); }
+          50%       { box-shadow: 0 0 0 12px rgba(255,59,48,0); }
+        }
+        @keyframes mm-blink {
+          0%, 100% { opacity: 1; } 50% { opacity: .3; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // ── Iconen ────────────────────────────────────────────────────────────────────
 const IconChevron = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c7c7cc" strokeWidth="2.5" strokeLinecap="round">
@@ -147,8 +285,9 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
 
 function SettingsHome() {
   const navigate = useNavigate()
-  const [confirm,    setConfirm]   = useState(null)
-  const [actionBusy, setActionBusy] = useState(false)
+  const [confirm,         setConfirm]         = useState(null)
+  const [actionBusy,      setActionBusy]      = useState(false)
+  const [factoryResetting, setFactoryResetting] = useState(false)
 
   async function doRestart() {
     setActionBusy(true)
@@ -158,11 +297,12 @@ function SettingsHome() {
   }
 
   async function doFactoryReset() {
-    setActionBusy(true)
-    await fetch('/api/system/factory-reset', { method: 'POST' }).catch(() => {})
-    setActionBusy(false)
     setConfirm(null)
+    setFactoryResetting(true)
+    await fetch('/api/system/factory-reset', { method: 'POST' }).catch(() => {})
   }
+
+  if (factoryResetting) return <FactoryResetScreen />
 
   return (
     <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
