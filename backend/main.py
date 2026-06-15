@@ -903,6 +903,106 @@ async def system_version():
     info = await get_version_info()
     return info
 
+
+@app.get("/api/system/info")
+async def system_info():
+    """Uitgebreide machine-informatie: serienummer, netwerk, hardware, opslag."""
+    from .cloud_client import get_machine_id
+    import socket, time
+
+    info: dict = {}
+
+    # Serienummer / machine-ID
+    info["machine_id"] = get_machine_id()
+
+    # Software versie
+    try:
+        v = await get_version_info()
+        info["version"] = v.get("version", "—")
+    except Exception:
+        info["version"] = "—"
+
+    # Model
+    info["model"] = _get_machine_model() or "—"
+
+    # Hostnaam
+    try:
+        info["hostname"] = socket.gethostname()
+    except Exception:
+        info["hostname"] = "—"
+
+    # IP-adres (wlan0 of eth0)
+    try:
+        import socket as _s
+        with _s.socket(_s.AF_INET, _s.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            info["ip_address"] = sock.getsockname()[0]
+    except Exception:
+        info["ip_address"] = "—"
+
+    # MAC-adres wlan0
+    try:
+        mac = Path("/sys/class/net/wlan0/address").read_text().strip()
+        info["mac_address"] = mac.upper()
+    except Exception:
+        try:
+            mac = Path("/sys/class/net/eth0/address").read_text().strip()
+            info["mac_address"] = mac.upper()
+        except Exception:
+            info["mac_address"] = "—"
+
+    # Uptime
+    try:
+        uptime_secs = float(Path("/proc/uptime").read_text().split()[0])
+        h, rem = divmod(int(uptime_secs), 3600)
+        m = rem // 60
+        info["uptime"] = f"{h}u {m}m"
+        info["uptime_seconds"] = int(uptime_secs)
+    except Exception:
+        info["uptime"] = "—"
+
+    # CPU-temperatuur
+    try:
+        temp_raw = Path("/sys/class/thermal/thermal_zone0/temp").read_text().strip()
+        info["cpu_temp"] = round(int(temp_raw) / 1000, 1)
+    except Exception:
+        info["cpu_temp"] = None
+
+    # Opslag (SD-kaart)
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "df", "-h", "/",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        lines = out.decode().splitlines()
+        if len(lines) > 1:
+            parts = lines[1].split()
+            info["disk_total"]  = parts[1] if len(parts) > 1 else "—"
+            info["disk_used"]   = parts[2] if len(parts) > 2 else "—"
+            info["disk_free"]   = parts[3] if len(parts) > 3 else "—"
+            info["disk_pct"]    = parts[4] if len(parts) > 4 else "—"
+    except Exception:
+        pass
+
+    # RAM
+    try:
+        mem = Path("/proc/meminfo").read_text()
+        meminfo = {}
+        for line in mem.splitlines():
+            k, v = line.split(":", 1)
+            meminfo[k.strip()] = v.strip()
+        total_kb = int(meminfo.get("MemTotal", "0").split()[0])
+        avail_kb = int(meminfo.get("MemAvailable", "0").split()[0])
+        used_kb  = total_kb - avail_kb
+        info["ram_total"] = f"{total_kb // 1024} MB"
+        info["ram_used"]  = f"{used_kb  // 1024} MB"
+        info["ram_free"]  = f"{avail_kb // 1024} MB"
+    except Exception:
+        pass
+
+    return info
+
 @app.get("/api/system/check-updates")
 async def system_check_updates():
     has_updates, changelog = await check_updates_available()

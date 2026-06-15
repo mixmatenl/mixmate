@@ -182,6 +182,11 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.post(f"{LOCAL}/api/system/machine", json=message.get("data", {}))
                 return {"req_id": req_id, "ok": r.status_code < 300}
 
+            # ── Machine info ──────────────────────────────────────────────────
+            elif msg_type == "get_info":
+                r = await c.get(f"{LOCAL}/api/system/info")
+                return {"req_id": req_id, **r.json()}
+
     except Exception as e:
         log.error("Fout bij verwerken commando %s: %s", msg_type, e)
         if req_id:

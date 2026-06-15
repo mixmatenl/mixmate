@@ -71,6 +71,11 @@ const IconRestart = () => (
     <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
   </svg>
 )
+const IconInfo = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>
+)
 
 // ── Hulpcomponenten ───────────────────────────────────────────────────────────
 
@@ -166,6 +171,7 @@ function SettingsHome() {
 
       <Section title="Systeem">
         <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie" onClick={() => navigate('/instellingen/update')} />
+        <SettingsRow icon={<IconInfo />}    iconBg="#8e8e93" label="Over deze machine"  sublabel="Serienummer, netwerk en hardware" onClick={() => navigate('/instellingen/info')} />
         <SettingsRow icon={<IconRestart />} iconBg="#ff3b30" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} last />
       </Section>
 
@@ -197,6 +203,77 @@ function SubPage({ children }) {
   )
 }
 
+// ── Over deze machine ─────────────────────────────────────────────────────────
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 16px', borderBottom: '1px solid #f2f2f7' }}>
+      <span style={{ fontSize: 15, color: '#111' }}>{label}</span>
+      <span style={{ fontSize: 15, color: '#8e8e93', fontFamily: label === 'Serienummer' || label === 'MAC-adres' || label === 'IP-adres' ? 'monospace' : 'inherit', letterSpacing: label === 'Serienummer' ? 0.5 : 0 }}>{value || '—'}</span>
+    </div>
+  )
+}
+
+function MachineInfo() {
+  const [info, setInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/system/info')
+      .then(r => r.json())
+      .then(d => { setInfo(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const serial = info?.machine_id?.startsWith('pi-') ? info.machine_id.replace('pi-', '').toUpperCase() : info?.machine_id
+
+  return (
+    <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
+      {loading ? (
+        <div style={{ textAlign: 'center', color: '#8e8e93', paddingTop: 40 }}>Laden...</div>
+      ) : (
+        <>
+          <Section title="Identificatie">
+            <InfoRow label="Serienummer"  value={serial} />
+            <InfoRow label="Hostnaam"     value={info?.hostname} />
+            <InfoRow label="Model"        value={info?.model} />
+            <div style={{ padding: '11px 16px', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 15, color: '#111' }}>Softwareversie</span>
+                <span style={{ fontSize: 15, color: '#8e8e93' }}>{info?.version ? `v${info.version}` : '—'}</span>
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Netwerk">
+            <InfoRow label="IP-adres"   value={info?.ip_address} />
+            <div style={{ padding: '11px 16px', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 15, color: '#111' }}>MAC-adres</span>
+                <span style={{ fontSize: 15, color: '#8e8e93', fontFamily: 'monospace' }}>{info?.mac_address || '—'}</span>
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Hardware">
+            <InfoRow label="Uptime"        value={info?.uptime} />
+            <InfoRow label="CPU-temp."     value={info?.cpu_temp != null ? `${info.cpu_temp} °C` : null} />
+            <InfoRow label="RAM gebruikt"  value={info?.ram_used && info?.ram_total ? `${info.ram_used} / ${info.ram_total}` : null} />
+            <div style={{ padding: '11px 16px', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 15, color: '#111' }}>Opslag</span>
+                <span style={{ fontSize: 15, color: '#8e8e93' }}>
+                  {info?.disk_used && info?.disk_total ? `${info.disk_used} / ${info.disk_total} (${info.disk_pct} vol)` : '—'}
+                </span>
+              </div>
+            </div>
+          </Section>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Hoofd export ──────────────────────────────────────────────────────────────
 
 export default function Instellingen() {
@@ -214,6 +291,7 @@ export default function Instellingen() {
         <Route path="categorieen"  element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminCategories /></div></SubPage>} />
         <Route path="recepten"     element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminRecipes /></div></SubPage>} />
         <Route path="update"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AppUpdate /></div></SubPage>} />
+        <Route path="info"         element={<SubPage><MachineInfo /></SubPage>} />
       </Routes>
     </div>
   )
