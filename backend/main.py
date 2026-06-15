@@ -719,12 +719,11 @@ async def wifi_connect(body: dict):
             cmd = [
                 "nmcli", "dev", "wifi", "connect", ssid,
                 "password", password,
+                "wifi-sec.key-mgmt", "wpa-psk",
             ]
         else:
-            # Open netwerk: expliciet geen beveiliging meegeven
             cmd = [
                 "nmcli", "dev", "wifi", "connect", ssid,
-                "--", "+802-11-wireless-security.key-mgmt", "none",
             ]
         proc = await asyncio.create_subprocess_exec(
             *cmd,

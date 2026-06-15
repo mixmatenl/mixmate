@@ -1,3 +1,8 @@
+## [6.2.4] - 2026-06-14
+### Gefixt
+- WiFi verbinden: key-mgmt wpa-psk expliciet meegegeven aan nmcli
+- WiFi opmaak verbeterd: uitklapbaar per netwerk, betere lay-out
+
 ## [6.2.3] - 2026-06-14
 ### Gefixt
 - WiFi verbinden: 802-11-wireless-security key property fout opgelost
