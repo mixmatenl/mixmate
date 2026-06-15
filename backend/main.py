@@ -553,6 +553,12 @@ def get_pair_code():
     """Frontend leest hieruit de koppelcode om op het standby-scherm te tonen."""
     return _cloud_pair
 
+@app.post("/api/cloud/unpair")
+def unpair_cloud():
+    _cloud_pair["code"] = None
+    _cloud_pair["paired"] = False
+    return {"ok": True}
+
 
 # ── Systeem beheer ────────────────────────────────────────────────────────────
 
