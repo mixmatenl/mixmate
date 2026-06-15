@@ -1,4 +1,4 @@
-## [6.3.0] - 2026-06-14
+## [6.2.1] - 2026-06-14
 ### Gefixt
 - WiFi scan en verbinden werkt nu zonder insufficient privileges fout
 - Sudoers bestand toegevoegd voor WiFi en systeembeheer rechten
