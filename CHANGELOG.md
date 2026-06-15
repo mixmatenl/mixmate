@@ -1,3 +1,11 @@
+## [1.1.0] - 2026-06-15
+### Gefixt
+- Machine vergeet model en cloud-URL niet meer na herstart — beide worden nu opgeslagen in de database (overleeft git-updates en herinstallaties)
+- "Over deze machine" pagina toegevoegd in instellingen (serienummer, IP, MAC, uptime, temperatuur, opslag)
+- Info-tab toegevoegd in het portaal met live hardware-info van de machine
+- WiFi-scan detecteert nu ook persoonlijke hotspots (langere scantijd, betere SSID-parser)
+- Machines kunnen verwijderd worden vanuit het portaal
+
 ## [1.0.3] - 2026-06-15
 ### Gefixt
 - Reset-knop toegevoegd bij cloud koppeling — herstart de WebSocket-verbinding volledig zonder de machine te herstarten
