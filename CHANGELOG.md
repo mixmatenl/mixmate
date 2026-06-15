@@ -1,3 +1,7 @@
+## [6.4.1] - 2026-06-15
+### Gefixt
+- WiFi en Cloud koppeling openen nu correct binnen de hoofdlayout
+
 ## [6.4.0] - 2026-06-15
 ### Verbeterd
 - Alle instellingen openen nu consistent binnen de hoofdlayout met MIXMATE-balk zichtbaar

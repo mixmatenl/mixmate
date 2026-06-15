@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import AdminPumpsSimple from './AdminPumpsSimple'
 import AdminRecipes from './AdminRecipes'
 import AdminIngredients from './AdminIngredients'
@@ -72,7 +72,7 @@ const IconRestart = () => (
   </svg>
 )
 
-// ── Componenten ───────────────────────────────────────────────────────────────
+// ── Hulpcomponenten ───────────────────────────────────────────────────────────
 
 function SettingsRow({ icon, iconBg = '#007aff', label, sublabel, onClick, last }) {
   return (
@@ -104,14 +104,13 @@ function Section({ title, children }) {
   )
 }
 
-function SubPageHeader({ label, onBack }) {
+function SubPageHeader({ onBack }) {
   return (
     <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 16 }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 15 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
         Instellingen
       </button>
-      <span style={{ fontSize: 15, fontWeight: 600, color: '#111', marginLeft: 4 }}>{label}</span>
     </div>
   )
 }
@@ -133,12 +132,10 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
   )
 }
 
-// ── Hoofdpagina ───────────────────────────────────────────────────────────────
+// ── Root: overzichtsscherm ────────────────────────────────────────────────────
 
-export default function Instellingen() {
-  const navigate  = useNavigate()
-  const location  = useLocation()
-  const isRoot    = location.pathname === '/instellingen' || location.pathname === '/instellingen/'
+function SettingsHome() {
+  const navigate = useNavigate()
   const [confirm,    setConfirm]   = useState(null)
   const [actionBusy, setActionBusy] = useState(false)
 
@@ -150,43 +147,27 @@ export default function Instellingen() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {isRoot ? (
-        <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 24, paddingLeft: 4 }}>Instellingen</h1>
+    <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 24, paddingLeft: 4 }}>Instellingen</h1>
 
-          <Section title="Verbinding">
-            <SettingsRow icon={<IconWifi />}  iconBg="#007aff" label="WiFi instellen"  sublabel="Verbind met een ander netwerk"           onClick={() => navigate('/instellingen/wifi')} />
-            <SettingsRow icon={<IconCloud />} iconBg="#5856d6" label="Cloud koppeling" sublabel="Beheer op afstand via het portaal" onClick={() => navigate('/instellingen/koppeling')} last />
-          </Section>
+      <Section title="Verbinding">
+        <SettingsRow icon={<IconWifi />}  iconBg="#007aff" label="WiFi instellen"  sublabel="Verbind met een ander netwerk"      onClick={() => navigate('/instellingen/wifi')} />
+        <SettingsRow icon={<IconCloud />} iconBg="#5856d6" label="Cloud koppeling" sublabel="Beheer op afstand via het portaal"  onClick={() => navigate('/instellingen/koppeling')} last />
+      </Section>
 
-          <Section title="Beheer">
-            <SettingsRow icon={<IconPumps />}      iconBg="#34c759" label="Pompen"       onClick={() => navigate('/instellingen/pompen')} />
-            <SettingsRow icon={<IconCalibrate />}  iconBg="#ff9500" label="Kalibratie"   onClick={() => navigate('/instellingen/kalibratie')} />
-            <SettingsRow icon={<IconGlass />}      iconBg="#00c7be" label="Glazen"       onClick={() => navigate('/instellingen/glazen')} />
-            <SettingsRow icon={<IconIngredient />} iconBg="#ff2d55" label="Ingrediënten" onClick={() => navigate('/instellingen/ingredienten')} />
-            <SettingsRow icon={<IconCategory />}   iconBg="#af52de" label="Categorieën"  onClick={() => navigate('/instellingen/categorieen')} />
-            <SettingsRow icon={<IconRecipe />}     iconBg="#ff6b35" label="Recepten"     onClick={() => navigate('/instellingen/recepten')} last />
-          </Section>
+      <Section title="Beheer">
+        <SettingsRow icon={<IconPumps />}      iconBg="#34c759" label="Pompen"       onClick={() => navigate('/instellingen/pompen')} />
+        <SettingsRow icon={<IconCalibrate />}  iconBg="#ff9500" label="Kalibratie"   onClick={() => navigate('/instellingen/kalibratie')} />
+        <SettingsRow icon={<IconGlass />}      iconBg="#00c7be" label="Glazen"       onClick={() => navigate('/instellingen/glazen')} />
+        <SettingsRow icon={<IconIngredient />} iconBg="#ff2d55" label="Ingrediënten" onClick={() => navigate('/instellingen/ingredienten')} />
+        <SettingsRow icon={<IconCategory />}   iconBg="#af52de" label="Categorieën"  onClick={() => navigate('/instellingen/categorieen')} />
+        <SettingsRow icon={<IconRecipe />}     iconBg="#ff6b35" label="Recepten"     onClick={() => navigate('/instellingen/recepten')} last />
+      </Section>
 
-          <Section title="Systeem">
-            <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie"      onClick={() => navigate('/instellingen/update')} />
-            <SettingsRow icon={<IconRestart />} iconBg="#ff3b30" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden" onClick={() => setConfirm('restart')} last />
-          </Section>
-        </div>
-      ) : (
-        <Routes>
-          <Route path="wifi"         element={<SubPage label="WiFi instellen"  onBack={() => navigate('/instellingen')}><WifiSetup    onClose={() => navigate('/instellingen')} /></SubPage>} />
-          <Route path="koppeling"    element={<SubPage label="Cloud koppeling" onBack={() => navigate('/instellingen')}><CloudPairing onClose={() => navigate('/instellingen')} /></SubPage>} />
-          <Route path="pompen"       element={<SubPage label="Pompen"          onBack={() => navigate('/instellingen')}><AdminPumpsSimple /></SubPage>} />
-          <Route path="kalibratie"   element={<SubPage label="Kalibratie"      onBack={() => navigate('/instellingen')}><PumpCalibrationWizard /></SubPage>} />
-          <Route path="glazen"       element={<SubPage label="Glazen"          onBack={() => navigate('/instellingen')}><AdminGlasses /></SubPage>} />
-          <Route path="ingredienten" element={<SubPage label="Ingrediënten"    onBack={() => navigate('/instellingen')}><AdminIngredients /></SubPage>} />
-          <Route path="categorieen"  element={<SubPage label="Categorieën"     onBack={() => navigate('/instellingen')}><AdminCategories /></SubPage>} />
-          <Route path="recepten"     element={<SubPage label="Recepten"        onBack={() => navigate('/instellingen')}><AdminRecipes /></SubPage>} />
-          <Route path="update"       element={<SubPage label="Software update" onBack={() => navigate('/instellingen')}><AppUpdate /></SubPage>} />
-        </Routes>
-      )}
+      <Section title="Systeem">
+        <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie" onClick={() => navigate('/instellingen/update')} />
+        <SettingsRow icon={<IconRestart />} iconBg="#ff3b30" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} last />
+      </Section>
 
       {confirm === 'restart' && (
         <ConfirmDialog
@@ -202,10 +183,13 @@ export default function Instellingen() {
   )
 }
 
-function SubPage({ label, onBack, children }) {
+// ── Sub-pagina wrapper ────────────────────────────────────────────────────────
+
+function SubPage({ children }) {
+  const navigate = useNavigate()
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ height: '100%' }}>
-      <SubPageHeader label={label} onBack={onBack} />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <SubPageHeader onBack={() => navigate('/instellingen')} />
       <div style={{ flex: 1, overflowY: 'auto', background: '#f2f2f7' }}>
         {children}
       </div>
@@ -213,14 +197,24 @@ function SubPage({ label, onBack, children }) {
   )
 }
 
-function SubPageHeader({ label, onBack }) {
+// ── Hoofd export ──────────────────────────────────────────────────────────────
+
+export default function Instellingen() {
+  const navigate = useNavigate()
   return (
-    <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 16 }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-        Instellingen
-      </button>
-      <span style={{ fontSize: 15, fontWeight: 600, color: '#111', marginLeft: 4 }}>{label}</span>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Routes>
+        <Route path="/"            element={<SettingsHome />} />
+        <Route path="wifi"         element={<SubPage><WifiSetup    onClose={() => navigate('/instellingen')} /></SubPage>} />
+        <Route path="koppeling"    element={<SubPage><CloudPairing onClose={() => navigate('/instellingen')} /></SubPage>} />
+        <Route path="pompen"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminPumpsSimple /></div></SubPage>} />
+        <Route path="kalibratie"   element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><PumpCalibrationWizard /></div></SubPage>} />
+        <Route path="glazen"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminGlasses /></div></SubPage>} />
+        <Route path="ingredienten" element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminIngredients /></div></SubPage>} />
+        <Route path="categorieen"  element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminCategories /></div></SubPage>} />
+        <Route path="recepten"     element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminRecipes /></div></SubPage>} />
+        <Route path="update"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AppUpdate /></div></SubPage>} />
+      </Routes>
     </div>
   )
 }
