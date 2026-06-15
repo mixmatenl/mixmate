@@ -1,3 +1,9 @@
+## [1.0.0] - 2026-06-15
+### Nieuw
+- Machine-ID permanent opgeslagen in de database — overleeft git-updates, herinstallaties en stroomuitval
+- Machine-ID wordt afgeleid van het Raspberry Pi CPU-serienummer (hardware-permanent)
+- Verwijderbevestiging bij glazen en categorieën gebruikt nu een eigen dialoog i.p.v. de browser-popup
+
 ## [6.4.2] - 2026-06-15
 ### Gefixt
 - Verwijderbevestiging bij glazen en categorieën gebruikt nu een eigen dialoog i.p.v. de lelijke browser-popup
