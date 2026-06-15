@@ -1,3 +1,8 @@
+## [6.2.2] - 2026-06-14
+### Gefixt
+- WiFi wachtwoordveld staat nu direct onder het geselecteerde netwerk
+- WiFi setup en koppelscherm in lichte vormgeving
+
 ## [6.2.1] - 2026-06-14
 ### Gefixt
 - WiFi scan en verbinden werkt nu zonder insufficient privileges fout

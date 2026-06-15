@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
 
 export default function WifiSetup({ onClose }) {
-  const [networks,  setNetworks]  = useState([])
-  const [scanning,  setScanning]  = useState(true)
-  const [selected,  setSelected]  = useState(null)
-  const [password,  setPassword]  = useState('')
-  const [showPass,  setShowPass]  = useState(false)
-  const [connecting,setConnecting]= useState(false)
-  const [result,    setResult]    = useState(null)
-  const [status,    setStatus]    = useState(null)
+  const [networks,   setNetworks]   = useState([])
+  const [scanning,   setScanning]   = useState(true)
+  const [selected,   setSelected]   = useState(null)
+  const [password,   setPassword]   = useState('')
+  const [showPass,   setShowPass]   = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [result,     setResult]     = useState(null)
+  const [status,     setStatus]     = useState(null)
 
   useEffect(() => {
     fetch('/api/system/wifi/status').then(r => r.json()).then(setStatus).catch(() => {})
@@ -48,156 +48,173 @@ export default function WifiSetup({ onClose }) {
     setConnecting(false)
   }
 
-  function signalIcon(signal) {
-    if (signal > 70) return '▂▄▆█'
-    if (signal > 45) return '▂▄▆░'
-    if (signal > 20) return '▂▄░░'
-    return '▂░░░'
+  function signalBars(signal) {
+    const bars = signal > 70 ? 4 : signal > 45 ? 3 : signal > 20 ? 2 : 1
+    return (
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{
+            width: 4, borderRadius: 1,
+            height: 4 + i * 4,
+            background: i <= bars ? '#111' : '#d1d5db',
+          }} />
+        ))}
+      </div>
+    )
   }
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: '#0a0a0a', display: 'flex', flexDirection: 'column',
-      fontFamily: 'system-ui, sans-serif', color: '#fff',
+      background: '#f2f2f2', display: 'flex', flexDirection: 'column',
+      fontFamily: 'system-ui, sans-serif', color: '#111',
     }}>
       {/* Header */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)',
+        background: '#fff', borderBottom: '1px solid #e5e7eb',
+        padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontSize: '18px', fontWeight: 600 }}>WiFi instellen</div>
+          <div style={{ fontSize: 17, fontWeight: 600 }}>WiFi instellen</div>
           {status?.connected && (
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-              Verbonden met <strong style={{ color: '#4ade80' }}>{status.ssid}</strong>
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+              Verbonden met <strong style={{ color: '#16a34a' }}>{status.ssid}</strong>
             </div>
           )}
         </div>
         <button onClick={onClose} style={{
-          background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-          width: 40, height: 40, borderRadius: 20, cursor: 'pointer', fontSize: 18,
+          background: '#f3f4f6', border: 'none', color: '#111',
+          width: 36, height: 36, borderRadius: 18, cursor: 'pointer', fontSize: 16,
         }}>✕</button>
       </div>
 
       {/* Netwerken */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Beschikbare netwerken</div>
+          <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Beschikbare netwerken</div>
           <button onClick={scan} disabled={scanning} style={{
-            background: 'none', border: '1px solid rgba(255,255,255,0.2)',
-            color: 'rgba(255,255,255,0.6)', padding: '4px 12px', borderRadius: 8,
-            cursor: 'pointer', fontSize: 12,
+            background: '#fff', border: '1px solid #e5e7eb',
+            color: '#374151', padding: '5px 14px', borderRadius: 8,
+            cursor: 'pointer', fontSize: 12, fontWeight: 500,
           }}>
             {scanning ? 'Zoeken...' : 'Vernieuwen'}
           </button>
         </div>
 
         {scanning ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
             Netwerken zoeken...
           </div>
         ) : networks.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.3)' }}>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
             Geen netwerken gevonden
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {networks.map(n => (
-              <button
-                key={n.ssid}
-                onClick={() => { setSelected(n); setPassword(''); setResult(null) }}
-                style={{
-                  background: selected?.ssid === n.ssid
-                    ? 'rgba(255,255,255,0.15)'
-                    : n.active ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)',
-                  border: selected?.ssid === n.ssid
-                    ? '1px solid rgba(255,255,255,0.4)'
-                    : n.active ? '1px solid rgba(74,222,128,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 12, padding: '14px 16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', color: '#fff', textAlign: 'left',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 500 }}>{n.ssid}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-                    {n.secured ? '🔒 Beveiligd' : '🔓 Open'}{n.active ? ' · Verbonden' : ''}
+              <div key={n.ssid}>
+                <button
+                  onClick={() => {
+                    setSelected(selected?.ssid === n.ssid ? null : n)
+                    setPassword('')
+                    setResult(null)
+                  }}
+                  style={{
+                    width: '100%', background: selected?.ssid === n.ssid ? '#111' : '#fff',
+                    border: '1px solid ' + (selected?.ssid === n.ssid ? '#111' : '#e5e7eb'),
+                    borderRadius: selected?.ssid === n.ssid && !selected?.secured ? '12px 12px 0 0' : 12,
+                    padding: '14px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    color: selected?.ssid === n.ssid ? '#fff' : '#111',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 500 }}>{n.ssid}</div>
+                    <div style={{ fontSize: 12, marginTop: 2, opacity: 0.6 }}>
+                      {n.secured ? '🔒 Beveiligd' : '🔓 Open'}{n.active ? ' · Verbonden' : ''}
+                    </div>
                   </div>
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', letterSpacing: -1 }}>
-                  {signalIcon(n.signal)}
-                </div>
-              </button>
+                  <div style={{ opacity: selected?.ssid === n.ssid ? 0.7 : 1 }}>
+                    {signalBars(n.signal)}
+                  </div>
+                </button>
+
+                {/* Wachtwoord veld direct onder geselecteerd netwerk */}
+                {selected?.ssid === n.ssid && (
+                  <div style={{
+                    background: '#fff', border: '1px solid #111', borderTop: 'none',
+                    borderRadius: '0 0 12px 12px', padding: '14px 16px',
+                  }}>
+                    <form onSubmit={connect} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {n.secured && (
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showPass ? 'text' : 'password'}
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="WiFi wachtwoord"
+                            autoFocus
+                            style={{
+                              width: '100%', background: '#f9fafb',
+                              border: '1px solid #e5e7eb', borderRadius: 8,
+                              padding: '11px 44px 11px 12px', color: '#111', fontSize: 15,
+                              boxSizing: 'border-box', outline: 'none',
+                            }}
+                          />
+                          <button type="button" onClick={() => setShowPass(p => !p)} style={{
+                            position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                            background: 'none', border: 'none', color: '#9ca3af',
+                            cursor: 'pointer', fontSize: 16, padding: 0,
+                          }}>
+                            {showPass ? '🙈' : '👁'}
+                          </button>
+                        </div>
+                      )}
+
+                      {result && (
+                        <div style={{
+                          padding: '9px 12px', borderRadius: 8, fontSize: 13,
+                          background: result.ok ? '#f0fdf4' : '#fef2f2',
+                          border: `1px solid ${result.ok ? '#bbf7d0' : '#fecaca'}`,
+                          color: result.ok ? '#16a34a' : '#dc2626',
+                        }}>
+                          {result.message}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          type="submit"
+                          disabled={connecting || (n.secured && !password)}
+                          style={{
+                            flex: 1, background: '#111', color: '#fff', border: 'none',
+                            borderRadius: 8, padding: '11px', fontSize: 14, fontWeight: 600,
+                            cursor: 'pointer', opacity: (connecting || (n.secured && !password)) ? 0.4 : 1,
+                          }}
+                        >
+                          {connecting ? 'Verbinden...' : 'Verbinden'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setSelected(null); setResult(null) }}
+                          style={{
+                            background: '#f3f4f6', border: 'none', color: '#374151',
+                            borderRadius: 8, padding: '11px 16px', cursor: 'pointer', fontSize: 14,
+                          }}
+                        >
+                          Annuleren
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Verbinden formulier */}
-      {selected && (
-        <div style={{
-          padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.1)',
-          background: 'rgba(255,255,255,0.03)',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12 }}>
-            Verbinden met <span style={{ color: '#fff' }}>{selected.ssid}</span>
-          </div>
-          <form onSubmit={connect} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {selected.secured && (
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="WiFi wachtwoord"
-                  autoFocus
-                  style={{
-                    width: '100%', background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10,
-                    padding: '12px 48px 12px 14px', color: '#fff', fontSize: 15,
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <button type="button" onClick={() => setShowPass(p => !p)} style={{
-                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer', fontSize: 16,
-                }}>
-                  {showPass ? '🙈' : '👁'}
-                </button>
-              </div>
-            )}
-
-            {result && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 8, fontSize: 13,
-                background: result.ok ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)',
-                border: `1px solid ${result.ok ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                color: result.ok ? '#4ade80' : '#f87171',
-              }}>
-                {result.message}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="submit" disabled={connecting || (selected.secured && !password)} style={{
-                flex: 1, background: '#fff', color: '#111', border: 'none',
-                borderRadius: 10, padding: '13px', fontSize: 15, fontWeight: 600,
-                cursor: 'pointer', opacity: (connecting || (selected.secured && !password)) ? 0.5 : 1,
-              }}>
-                {connecting ? 'Verbinden...' : 'Verbinden'}
-              </button>
-              <button type="button" onClick={() => setSelected(null)} style={{
-                background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
-                borderRadius: 10, padding: '13px 18px', cursor: 'pointer', fontSize: 15,
-              }}>
-                Annuleren
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   )
 }
