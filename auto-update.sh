@@ -39,8 +39,16 @@ log "$BEHIND nieuwe commit(s) gevonden — update starten..."
 # Houd huidige major versie bij vóór de update
 OLD_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\([0-9]*\).*/\1/' || echo "0")
 
+# Sla database en .env op — git reset --hard mag deze nooit overschrijven
+cp "$APP_DIR/mixmate.db" /tmp/mixmate_db_backup.db 2>/dev/null || true
+cp "$APP_DIR/.env"       /tmp/mixmate_env_backup   2>/dev/null || true
+
 # Code ophalen
 git reset --hard origin/main --quiet || { log "Git reset mislukt"; exit 1; }
+
+# Herstel database en .env direct na de reset
+[ -f /tmp/mixmate_db_backup.db ] && cp /tmp/mixmate_db_backup.db "$APP_DIR/mixmate.db"
+[ -f /tmp/mixmate_env_backup   ] && cp /tmp/mixmate_env_backup   "$APP_DIR/.env"
 log "Code bijgewerkt naar $(git rev-parse --short HEAD)"
 
 # Python dependencies
