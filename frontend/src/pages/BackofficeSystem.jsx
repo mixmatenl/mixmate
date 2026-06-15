@@ -18,7 +18,7 @@ function ConfirmButton({ label, description, icon, danger, onConfirm }) {
   return (
     <div className="bg-white/10 border border-white/20 rounded-2xl px-5 py-4 space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{icon}</span>
+        <span className="text-white">{icon}</span>
         <div>
           <p className="text-white text-base font-semibold">{label}</p>
           <p className="text-white/60 text-sm mt-0.5">{description}</p>
@@ -68,7 +68,7 @@ function ActionButton({ label, description, icon, onClick }) {
       onClick={onClick}
       className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 flex items-center gap-3 hover:bg-white/15 transition-all text-left"
     >
-      <span className="text-2xl">{icon}</span>
+      <span className="text-white">{icon}</span>
       <div>
         <p className="text-white text-base font-semibold">{label}</p>
         <p className="text-white/60 text-sm mt-0.5">{description}</p>
@@ -96,21 +96,21 @@ export default function BackofficeSystem({ onShowWifi, onShowPairing }) {
       <ActionButton
         label="WiFi instellen"
         description="Verbind de machine met een ander WiFi netwerk."
-        icon="📶"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>}
         onClick={onShowWifi}
       />
 
       <ActionButton
         label="Machine koppelen"
         description="Toon de koppelcode voor het MIXMATE portaal."
-        icon="🔗"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>}
         onClick={onShowPairing}
       />
 
       <ConfirmButton
         label="Herstart"
         description="Start de machine opnieuw op. Duurt ongeveer 30 seconden."
-        icon="🔄"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>}
         danger={false}
         onConfirm={reboot}
       />
@@ -118,7 +118,7 @@ export default function BackofficeSystem({ onShowWifi, onShowPairing }) {
       <ConfirmButton
         label="Afsluiten"
         description="Zet de machine volledig uit."
-        icon="⏻"
+        icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>}
         danger={true}
         onConfirm={shutdown}
       />
