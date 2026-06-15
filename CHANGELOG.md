@@ -1,3 +1,8 @@
+## [1.2.1] - 2026-06-15
+### Gefixt
+- Machine vergeet model, cloud-URL en PIN niet meer na update — database en .env worden nu bewaard tijdens git reset
+- Automatische herstart bij major versiesprong (bijv. 1.x → 2.x)
+
 ## [1.2.0] - 2026-06-15
 ### Nieuw
 - Cloud koppeling toont welk account gekoppeld is (naam + e-mailadres)
