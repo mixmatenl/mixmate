@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react'
 
 const P = { ENTRY: 0, LOGO_IN: 1, STANDBY: 2, WAKING: 3, REVEALING: 4 }
 
-const WAKE_MS    = 12000  // totale opstarttijd
-const FADE_START = 8000   // ms na start waking dat het logo begint te vervagen
-const FADE_DUR   = 3500   // ms dat de fade duurt
+const WAKE_MS    = 6000   // totale opstarttijd
+const FADE_START = 3500   // ms na start waking dat het logo begint te vervagen
+const FADE_DUR   = 2000   // ms dat de fade duurt
 
 export default function StandbyScreen({ onWake }) {
   const panelBg   = '#000'
@@ -26,8 +26,9 @@ export default function StandbyScreen({ onWake }) {
       try {
         const r = await fetch('/api/cloud/pair-code')
         const d = await r.json()
-        setPairCode(d.code || null)
-        setPaired(d.paired || false)
+        const isPaired = d.paired || false
+        setPaired(isPaired)
+        setPairCode(isPaired ? null : (d.code || null))
       } catch {}
     }
     fetchPairCode()
@@ -77,7 +78,7 @@ export default function StandbyScreen({ onWake }) {
     if (phase !== P.REVEALING) return
     const t = setTimeout(() => {
       if (!calledWake.current) { calledWake.current = true; onWake() }
-    }, 2300)
+    }, 1200)
     return () => clearTimeout(t)
   }, [phase])
 
@@ -171,7 +172,7 @@ export default function StandbyScreen({ onWake }) {
             onMouseLeave={e => e.currentTarget.style.background = `rgba(${fg},0.07)`}
           >
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
-              stroke={accentCol} strokeWidth="1.8" strokeLinecap="round">
+              stroke="white" strokeWidth="1.8" strokeLinecap="round">
               <path d="M12 2v6"/>
               <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
             </svg>

@@ -107,7 +107,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
             <path d="M12 2v6"/>
             <path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
           </svg>
-          Stand-by
+          Uitschakelen
         </button>
         <button
           onClick={onLogout}
