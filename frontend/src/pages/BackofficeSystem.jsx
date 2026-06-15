@@ -62,9 +62,27 @@ function ConfirmButton({ label, description, icon, danger, onConfirm }) {
   )
 }
 
-export default function BackofficeSystem() {
+function ActionButton({ label, description, icon, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 flex items-center gap-3 hover:bg-white/15 transition-all text-left"
+    >
+      <span className="text-2xl">{icon}</span>
+      <div>
+        <p className="text-white text-base font-semibold">{label}</p>
+        <p className="text-white/60 text-sm mt-0.5">{description}</p>
+      </div>
+      <svg className="ml-auto text-white/30" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  )
+}
+
+export default function BackofficeSystem({ onShowWifi, onShowPairing }) {
   async function reboot() {
-    await fetch('/api/system/reboot', { method: 'POST' })
+    await fetch('/api/system/restart', { method: 'POST' })
   }
 
   async function shutdown() {
@@ -75,9 +93,23 @@ export default function BackofficeSystem() {
     <div className="space-y-5 max-w-xl">
       <h3 className="text-white font-bold text-lg">Systeem beheer</h3>
 
+      <ActionButton
+        label="WiFi instellen"
+        description="Verbind de machine met een ander WiFi netwerk."
+        icon="📶"
+        onClick={onShowWifi}
+      />
+
+      <ActionButton
+        label="Machine koppelen"
+        description="Toon de koppelcode voor het MIXMATE portaal."
+        icon="🔗"
+        onClick={onShowPairing}
+      />
+
       <ConfirmButton
         label="Herstart"
-        description="Start de Raspberry Pi opnieuw op. De app is daarna binnen 30 seconden weer beschikbaar."
+        description="Start de machine opnieuw op. Duurt ongeveer 30 seconden."
         icon="🔄"
         danger={false}
         onConfirm={reboot}
@@ -85,7 +117,7 @@ export default function BackofficeSystem() {
 
       <ConfirmButton
         label="Afsluiten"
-        description="Zet de Raspberry Pi volledig uit. Je moet hem daarna handmatig aanzetten."
+        description="Zet de machine volledig uit."
         icon="⏻"
         danger={true}
         onConfirm={shutdown}

@@ -553,6 +553,102 @@ def get_pair_code():
     """Frontend leest hieruit de koppelcode om op het standby-scherm te tonen."""
     return _cloud_pair
 
+
+# ── Systeem beheer ────────────────────────────────────────────────────────────
+
+@app.post("/api/system/restart")
+async def system_restart():
+    """Herstart de Raspberry Pi."""
+    async def _reboot():
+        await asyncio.sleep(2)
+        await asyncio.create_subprocess_exec("sudo", "reboot")
+    asyncio.create_task(_reboot())
+    return {"ok": True, "message": "Machine herstart over 2 seconden..."}
+
+@app.get("/api/system/wifi/status")
+async def wifi_status():
+    """Huidige WiFi verbinding."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,SECURITY", "dev", "wifi",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        for line in out.decode().splitlines():
+            parts = line.split(":")
+            if parts and parts[0] == "yes":
+                return {
+                    "connected": True,
+                    "ssid": parts[1] if len(parts) > 1 else "",
+                    "signal": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
+                }
+    except Exception:
+        pass
+    return {"connected": False, "ssid": "", "signal": 0}
+
+@app.get("/api/system/wifi/networks")
+async def wifi_networks():
+    """Beschikbare WiFi netwerken."""
+    try:
+        # Ververs de lijst eerst
+        await asyncio.create_subprocess_exec(
+            "nmcli", "dev", "wifi", "rescan",
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await asyncio.sleep(2)
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        seen = set()
+        networks = []
+        for line in out.decode().splitlines():
+            parts = line.split(":")
+            if len(parts) < 4:
+                continue
+            ssid = parts[0].strip()
+            if not ssid or ssid in seen:
+                continue
+            seen.add(ssid)
+            networks.append({
+                "ssid": ssid,
+                "signal": int(parts[1]) if parts[1].isdigit() else 0,
+                "secured": bool(parts[2]),
+                "active": parts[3] == "*",
+            })
+        networks.sort(key=lambda x: -x["signal"])
+        return {"networks": networks}
+    except Exception as e:
+        return {"networks": [], "error": str(e)}
+
+@app.post("/api/system/wifi/connect")
+async def wifi_connect(body: dict):
+    """Verbind met een WiFi netwerk."""
+    ssid     = str(body.get("ssid", "")).strip()
+    password = str(body.get("password", "")).strip()
+    if not ssid:
+        raise HTTPException(400, "SSID ontbreekt")
+    try:
+        cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+        if password:
+            cmd += ["password", password]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=20)
+        output = (out + err).decode()
+        if proc.returncode == 0:
+            return {"ok": True, "message": f"Verbonden met {ssid}"}
+        else:
+            return {"ok": False, "message": output.strip() or "Verbinding mislukt"}
+    except asyncio.TimeoutError:
+        return {"ok": False, "message": "Verbinding time-out — controleer het wachtwoord"}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
 # ── Machine instellingen ──────────────────────────────────────────────────────
 
 @app.get("/api/system/machine")

@@ -1,3 +1,11 @@
+## [6.0.0] - 2026-06-14
+### Nieuw
+- WiFi instellen via eigen scherm op de machine (backoffice → Systeem → WiFi instellen)
+- Koppelcode scherm voor MIXMATE portaalkoppeling (backoffice → Systeem → Machine koppelen)
+- Koppelcode zichtbaar rechtsboven op het standby scherm
+- Herstart knop in backoffice systeem beheer
+- Cloud verbinding: machine verbindt automatisch met MIXMATE portaal via WebSocket
+
 # MIXMATE OS — Changelog
 
 ## [5.0.0] - 2026-06-11

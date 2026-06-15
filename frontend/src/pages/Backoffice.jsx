@@ -6,6 +6,8 @@ import BackofficeUpdate from './BackofficeUpdate'
 import BackofficeSystem from './BackofficeSystem'
 import BackofficeHistory from './BackofficeHistory'
 import BackofficeMachine from './BackofficeMachine'
+import WifiSetup from './WifiSetup'
+import CloudPairing from './CloudPairing'
 
 const PIN_LENGTH = 4
 const BO_SESSION = 'mixmate_bo_auth'
@@ -250,7 +252,9 @@ function PumpsManager({ ingredients }) {
 /* ── Backoffice shell ─────────────────────────────────────────────────────── */
 export default function Backoffice({ onClose }) {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(BO_SESSION) === '1')
-  const [tab, setTab] = useState('pin')
+  const [tab,         setTab]         = useState('pin')
+  const [showWifi,    setShowWifi]    = useState(false)
+  const [showPairing, setShowPairing] = useState(false)
   const [ingredients, setIngredients] = useState([])
 
   useEffect(() => { if (authed) api.getIngredients().then(setIngredients) }, [authed])
@@ -299,8 +303,11 @@ export default function Backoffice({ onClose }) {
         {tab === 'loadcell' && <BackofficeLoadcell />}
         {tab === 'history' && <BackofficeHistory />}
         {tab === 'update' && <BackofficeUpdate />}
-        {tab === 'system' && <BackofficeSystem />}
+        {tab === 'system' && <BackofficeSystem onShowWifi={() => setShowWifi(true)} onShowPairing={() => setShowPairing(true)} />}
       </div>
+
+      {showWifi    && <WifiSetup    onClose={() => setShowWifi(false)} />}
+      {showPairing && <CloudPairing onClose={() => setShowPairing(false)} />}
     </div>
   )
 }
