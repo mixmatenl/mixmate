@@ -645,71 +645,83 @@ async def wifi_status():
         pass
     return {"connected": False, "ssid": "", "signal": 0}
 
+def _parse_nmcli_networks(raw: str) -> list:
+    """
+    Parseer nmcli terse output. Kolommen: SSID,SIGNAL,SECURITY,IN-USE
+    nmcli escaped dubbele punten in waarden als r'\:', wij zetten die terug.
+    """
+    seen = set()
+    result = []
+    for line in raw.splitlines():
+        # Splits op ':' maar niet op '\:' (escaped door nmcli)
+        parts = []
+        current = []
+        i = 0
+        while i < len(line):
+            if line[i] == '\\' and i + 1 < len(line) and line[i+1] == ':':
+                current.append(':')
+                i += 2
+            elif line[i] == ':':
+                parts.append(''.join(current))
+                current = []
+                i += 1
+            else:
+                current.append(line[i])
+                i += 1
+        parts.append(''.join(current))
+
+        if len(parts) < 4:
+            continue
+        ssid = parts[0].strip()
+        if not ssid or ssid == '--' or ssid in seen:
+            continue
+        seen.add(ssid)
+        try:
+            signal = int(parts[1])
+        except ValueError:
+            signal = 0
+        result.append({
+            "ssid": ssid,
+            "signal": signal,
+            "secured": bool(parts[2] and parts[2] not in ('', '--')),
+            "active": parts[3].strip() in ('*', 'yes'),
+        })
+    result.sort(key=lambda x: -x["signal"])
+    return result
+
+
 @app.get("/api/system/wifi/networks")
 async def wifi_networks():
-    """Beschikbare WiFi netwerken — probeert nmcli, valt terug op iwlist."""
+    """Beschikbare WiFi netwerken — probeert nmcli met --rescan yes, valt terug op wpa_cli."""
     networks = []
 
-    # Probeer nmcli (NetworkManager)
+    # Primair: nmcli met --rescan yes (wacht intern tot scan klaar is, max ~10s)
     try:
-        await asyncio.create_subprocess_exec(
-            "nmcli", "dev", "wifi", "rescan",
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        await asyncio.sleep(2)
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi",
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
+            "dev", "wifi", "list", "--rescan", "yes",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
-        out, err = await proc.communicate()
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
         if proc.returncode == 0 and out:
-            seen = set()
-            for line in out.decode().splitlines():
-                parts = line.split(":")
-                if len(parts) < 4:
-                    continue
-                ssid = parts[0].strip()
-                if not ssid or ssid in seen:
-                    continue
-                seen.add(ssid)
-                networks.append({
-                    "ssid": ssid,
-                    "signal": int(parts[1]) if parts[1].isdigit() else 0,
-                    "secured": bool(parts[2]),
-                    "active": parts[3].strip() == "*",
-                })
-            networks.sort(key=lambda x: -x["signal"])
-            return {"networks": networks, "method": "nmcli"}
+            networks = _parse_nmcli_networks(out.decode())
+            if networks:
+                return {"networks": networks, "method": "nmcli"}
     except Exception:
         pass
 
-    # Fallback: nmcli zonder rescan (soms werkt rescan niet maar list wel)
+    # Fallback: nmcli zonder rescan (cached resultaten)
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "--terse", "--fields", "SSID,SIGNAL,SECURITY,ACTIVE",
-            "device", "wifi", "list",
+            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
+            "dev", "wifi", "list",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         out, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
         if out:
-            seen = set()
-            for line in out.decode().splitlines():
-                parts = line.split(":")
-                if len(parts) < 4:
-                    continue
-                ssid = parts[0].strip()
-                if not ssid or ssid == "--" or ssid in seen:
-                    continue
-                seen.add(ssid)
-                networks.append({
-                    "ssid": ssid,
-                    "signal": int(parts[1]) if parts[1].isdigit() else 50,
-                    "secured": bool(parts[2] and parts[2] != "--"),
-                    "active": parts[3].strip() == "yes",
-                })
+            networks = _parse_nmcli_networks(out.decode())
             if networks:
-                networks.sort(key=lambda x: -x["signal"])
-                return {"networks": networks, "method": "nmcli-list"}
+                return {"networks": networks, "method": "nmcli-cached"}
     except Exception:
         pass
 
