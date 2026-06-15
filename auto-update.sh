@@ -36,6 +36,9 @@ fi
 
 log "$BEHIND nieuwe commit(s) gevonden — update starten..."
 
+# Houd huidige major versie bij vóór de update
+OLD_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\([0-9]*\).*/\1/' || echo "0")
+
 # Code ophalen
 git reset --hard origin/main --quiet || { log "Git reset mislukt"; exit 1; }
 log "Code bijgewerkt naar $(git rev-parse --short HEAD)"
@@ -54,5 +57,15 @@ if git diff HEAD~"$BEHIND" HEAD --name-only | grep -q "frontend/"; then
     cd "$APP_DIR"
 fi
 
-log "Update klaar (v$(cat frontend/package.json | grep '"version"' | head -1 | sed 's/.*: *"\(.*\)".*/\1/'))"
+NEW_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\([0-9]*\).*/\1/' || echo "0")
+FULL_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
+
+log "Update klaar (v$FULL_VERSION)"
+
+# Bij een major versiesprong: vlag aanmaken zodat de service na opstarten herstart
+if [ "$NEW_VERSION" != "$OLD_VERSION" ] && [ "$OLD_VERSION" != "0" ]; then
+    log "Major versiesprong gedetecteerd ($OLD_VERSION → $NEW_VERSION) — machine herstart na opstarten"
+    touch /tmp/mixmate_major_update
+fi
+
 exit 0

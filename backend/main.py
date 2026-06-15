@@ -128,10 +128,23 @@ async def lifespan(app: FastAPI):
     _load_env()
     from .cloud_client import cloud_loop
     _cloud_task = asyncio.create_task(cloud_loop())
+    _schedule_major_update_reboot()
     yield
     if _cloud_task:
         _cloud_task.cancel()
     gpio.cleanup()
+
+
+def _schedule_major_update_reboot():
+    flag = Path("/tmp/mixmate_major_update")
+    if not flag.exists():
+        return
+    flag.unlink()
+    async def _reboot():
+        await asyncio.sleep(15)
+        log.info("Major update — machine herstart nu")
+        await asyncio.create_subprocess_exec("sudo", "reboot")
+    asyncio.create_task(_reboot())
 
 
 app = FastAPI(title="Mixmate", lifespan=lifespan)
