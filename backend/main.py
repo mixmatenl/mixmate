@@ -742,19 +742,10 @@ async def wifi_connect(body: dict):
     except Exception as e:
         return {"ok": False, "message": str(e)}
 
-    # Fallback: wpa_passphrase + wpa_cli
+    # Fallback: wpa_cli
     try:
-        iface = "wlan0"
-        conf_line = f'network={{
-    ssid="{ssid}"
-    psk="{password}"
-    key_mgmt=WPA-PSK
-}}'
-        wpa_conf = f"/tmp/wpa_{ssid.replace(' ','_')}.conf"
-        Path(wpa_conf).write_text(conf_line)
-
         proc = await asyncio.create_subprocess_exec(
-            "sudo", "wpa_cli", "-i", iface, "reconfigure",
+            "wpa_cli", "-i", "wlan0", "reconfigure",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         await asyncio.wait_for(proc.communicate(), timeout=10)
