@@ -74,25 +74,21 @@ const IconRestart = () => (
 
 // ── Componenten ───────────────────────────────────────────────────────────────
 
-function SettingsRow({ icon, iconBg = '#007aff', label, sublabel, onClick, danger, last }) {
+function SettingsRow({ icon, iconBg = '#007aff', label, sublabel, onClick, last }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%', background: '#fff', border: 'none', textAlign: 'left',
-        padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
-        cursor: onClick ? 'pointer' : 'default',
-        borderBottom: last ? 'none' : '1px solid #f2f2f7',
-      }}
-    >
+    <button onClick={onClick} style={{
+      width: '100%', background: '#fff', border: 'none', textAlign: 'left',
+      padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      cursor: 'pointer', borderBottom: last ? 'none' : '1px solid #f2f2f7',
+    }}>
       <div style={{ width: 32, height: 32, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, color: danger ? '#dc2626' : '#111', fontWeight: 400 }}>{label}</div>
+        <div style={{ fontSize: 15, color: '#111', fontWeight: 400 }}>{label}</div>
         {sublabel && <div style={{ fontSize: 12, color: '#8e8e93', marginTop: 1 }}>{sublabel}</div>}
       </div>
-      {onClick && <IconChevron />}
+      <IconChevron />
     </button>
   )
 }
@@ -108,19 +104,27 @@ function Section({ title, children }) {
   )
 }
 
-// ── Bevestigingsdialoog ───────────────────────────────────────────────────────
+function SubPageHeader({ label, onBack }) {
+  return (
+    <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 16 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Instellingen
+      </button>
+      <span style={{ fontSize: 15, fontWeight: 600, color: '#111', marginLeft: 4 }}>{label}</span>
+    </div>
+  )
+}
 
-function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel, loading }) {
+function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, loading }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 320, textAlign: 'center' }}>
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{title}</div>
         <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.5, marginBottom: 20 }}>{message}</div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, background: '#f3f4f6', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 15, cursor: 'pointer', color: '#374151' }}>
-            Annuleren
-          </button>
-          <button onClick={onConfirm} disabled={loading} style={{ flex: 1, background: danger ? '#dc2626' : '#111', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#fff', opacity: loading ? 0.6 : 1 }}>
+          <button onClick={onCancel} style={{ flex: 1, background: '#f3f4f6', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 15, cursor: 'pointer', color: '#374151' }}>Annuleren</button>
+          <button onClick={onConfirm} disabled={loading} style={{ flex: 1, background: '#dc2626', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 15, fontWeight: 600, cursor: 'pointer', color: '#fff', opacity: loading ? 0.6 : 1 }}>
             {loading ? 'Bezig...' : confirmLabel}
           </button>
         </div>
@@ -132,14 +136,11 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCanc
 // ── Hoofdpagina ───────────────────────────────────────────────────────────────
 
 export default function Instellingen() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const isRoot = location.pathname === '/instellingen' || location.pathname === '/instellingen/'
-
-  const [showWifi,    setShowWifi]    = useState(false)
-  const [showPairing, setShowPairing] = useState(false)
-  const [confirm,     setConfirm]     = useState(null)
-  const [actionBusy,  setActionBusy]  = useState(false)
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const isRoot    = location.pathname === '/instellingen' || location.pathname === '/instellingen/'
+  const [confirm,    setConfirm]   = useState(null)
+  const [actionBusy, setActionBusy] = useState(false)
 
   async function doRestart() {
     setActionBusy(true)
@@ -150,25 +151,13 @@ export default function Instellingen() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header — alleen op rootniveau */}
       {isRoot ? (
         <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 24, paddingLeft: 4 }}>Instellingen</h1>
 
           <Section title="Verbinding">
-            <SettingsRow
-              icon={<IconWifi />} iconBg="#007aff"
-              label="WiFi instellen"
-              sublabel="Verbind met een ander netwerk"
-              onClick={() => setShowWifi(true)}
-            />
-            <SettingsRow
-              icon={<IconCloud />} iconBg="#5856d6"
-              label="Cloud koppeling"
-              sublabel="Beheer op afstand via het portaal"
-              onClick={() => setShowPairing(true)}
-              last
-            />
+            <SettingsRow icon={<IconWifi />}  iconBg="#007aff" label="WiFi instellen"  sublabel="Verbind met een ander netwerk"           onClick={() => navigate('/instellingen/wifi')} />
+            <SettingsRow icon={<IconCloud />} iconBg="#5856d6" label="Cloud koppeling" sublabel="Beheer op afstand via het portaal" onClick={() => navigate('/instellingen/koppeling')} last />
           </Section>
 
           <Section title="Beheer">
@@ -181,61 +170,57 @@ export default function Instellingen() {
           </Section>
 
           <Section title="Systeem">
-            <SettingsRow
-              icon={<IconUpdate />} iconBg="#636366"
-              label="Software update"
-              sublabel="Controleer op nieuwe versie"
-              onClick={() => navigate('/instellingen/update')}
-            />
-            <SettingsRow
-              icon={<IconRestart />} iconBg="#ff3b30"
-              label="Machine herstarten"
-              sublabel="Duurt ongeveer 30 seconden"
-              onClick={() => setConfirm('restart')}
-              last
-            />
+            <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie"      onClick={() => navigate('/instellingen/update')} />
+            <SettingsRow icon={<IconRestart />} iconBg="#ff3b30" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden" onClick={() => setConfirm('restart')} last />
           </Section>
         </div>
       ) : (
-        <>
-          {/* Sub-pagina header met terugknop */}
-          <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => navigate('/instellingen')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 16 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-              Instellingen
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto px-8 py-8">
-              <Routes>
-                <Route path="pompen"       element={<AdminPumpsSimple />} />
-                <Route path="kalibratie"   element={<PumpCalibrationWizard />} />
-                <Route path="glazen"       element={<AdminGlasses />} />
-                <Route path="ingredienten" element={<AdminIngredients />} />
-                <Route path="categorieen"  element={<AdminCategories />} />
-                <Route path="recepten"     element={<AdminRecipes />} />
-                <Route path="update"       element={<AppUpdate />} />
-              </Routes>
-            </div>
-          </div>
-        </>
+        <Routes>
+          <Route path="wifi"         element={<SubPage label="WiFi instellen"  onBack={() => navigate('/instellingen')}><WifiSetup    onClose={() => navigate('/instellingen')} /></SubPage>} />
+          <Route path="koppeling"    element={<SubPage label="Cloud koppeling" onBack={() => navigate('/instellingen')}><CloudPairing onClose={() => navigate('/instellingen')} /></SubPage>} />
+          <Route path="pompen"       element={<SubPage label="Pompen"          onBack={() => navigate('/instellingen')}><AdminPumpsSimple /></SubPage>} />
+          <Route path="kalibratie"   element={<SubPage label="Kalibratie"      onBack={() => navigate('/instellingen')}><PumpCalibrationWizard /></SubPage>} />
+          <Route path="glazen"       element={<SubPage label="Glazen"          onBack={() => navigate('/instellingen')}><AdminGlasses /></SubPage>} />
+          <Route path="ingredienten" element={<SubPage label="Ingrediënten"    onBack={() => navigate('/instellingen')}><AdminIngredients /></SubPage>} />
+          <Route path="categorieen"  element={<SubPage label="Categorieën"     onBack={() => navigate('/instellingen')}><AdminCategories /></SubPage>} />
+          <Route path="recepten"     element={<SubPage label="Recepten"        onBack={() => navigate('/instellingen')}><AdminRecipes /></SubPage>} />
+          <Route path="update"       element={<SubPage label="Software update" onBack={() => navigate('/instellingen')}><AppUpdate /></SubPage>} />
+        </Routes>
       )}
-
-      {/* Overlays */}
-      {showWifi    && <WifiSetup    onClose={() => setShowWifi(false)} />}
-      {showPairing && <CloudPairing onClose={() => setShowPairing(false)} />}
 
       {confirm === 'restart' && (
         <ConfirmDialog
           title="Machine herstarten"
           message="De machine start opnieuw op. Dit duurt ongeveer 30 seconden."
           confirmLabel="Herstarten"
-          danger
           loading={actionBusy}
           onConfirm={doRestart}
           onCancel={() => setConfirm(null)}
         />
       )}
+    </div>
+  )
+}
+
+function SubPage({ label, onBack, children }) {
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ height: '100%' }}>
+      <SubPageHeader label={label} onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', background: '#f2f2f7' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function SubPageHeader({ label, onBack }) {
+  return (
+    <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', display: 'flex', alignItems: 'center', gap: 4, padding: 0, fontSize: 16 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Instellingen
+      </button>
+      <span style={{ fontSize: 15, fontWeight: 600, color: '#111', marginLeft: 4 }}>{label}</span>
     </div>
   )
 }

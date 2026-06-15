@@ -107,12 +107,9 @@ export default function WifiSetup({ onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#f9fafb', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, -apple-system, sans-serif', height: '100%' }}>
       {/* Header */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', padding: 4 }}>
-          <IconBack />
-        </button>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#111' }}>WiFi instellen</div>
           {status?.connected && (
