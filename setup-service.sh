@@ -12,18 +12,23 @@ echo ""
 
 SERVICE_FILE="/etc/systemd/system/mixmate.service"
 
+chmod +x "$APP_DIR/auto-update.sh"
+
 sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
 Description=Mixmate Cocktailmachine
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=$USER
 WorkingDirectory=$APP_DIR
+ExecStartPre=$APP_DIR/auto-update.sh
 ExecStart=$APP_DIR/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=on-failure
 RestartSec=5
+TimeoutStartSec=300
 StandardOutput=journal
 StandardError=journal
 

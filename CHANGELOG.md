@@ -1,3 +1,9 @@
+## [1.1.2] - 2026-06-15
+### Nieuw
+- Machines updaten zichzelf automatisch bij elke opstart als er nieuwe code beschikbaar is
+- Nieuwe versie wordt alleen gebouwd als er daadwerkelijk commits zijn (geen onnodige wachttijd)
+- Updater installeert auto-update mechanisme automatisch op bestaande machines
+
 ## [1.1.1] - 2026-06-15
 ### Gefixt
 - Cloud-URL ingebakken als fallback in de code — machine maakt altijd verbinding met de cloud ook als .env en database leeg zijn

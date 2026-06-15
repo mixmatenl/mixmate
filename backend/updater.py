@@ -291,22 +291,44 @@ async def run_update():
                     )
                 except Exception:
                     pass
-            # Zorg dat .env geladen wordt door de service
+
+            # Zorg dat auto-update.sh uitvoerbaar is
+            auto_update = APP_DIR / "auto-update.sh"
+            if auto_update.exists():
+                try:
+                    await asyncio.create_subprocess_exec("chmod", "+x", str(auto_update))
+                except Exception:
+                    pass
+
+            # Voeg ExecStartPre toe aan service als dat nog ontbreekt
             service_path = "/etc/systemd/system/mixmate.service"
+            reload_needed = False
             try:
                 with open(service_path, "r") as f:
                     svc = f.read()
-                env_file_line = f"EnvironmentFile=-{APP_DIR}/.env"
-                if env_file_line not in svc:
+                pre_line = f"ExecStartPre={auto_update}"
+                if "ExecStartPre" not in svc and auto_update.exists():
                     svc = svc.replace(
-                        "Restart=always",
-                        f"{env_file_line}\nRestart=always"
+                        f"ExecStart=",
+                        f"{pre_line}\nExecStart=",
                     )
+                    # Wacht op netwerk voor de update werkt
+                    svc = svc.replace(
+                        "After=network.target",
+                        "After=network-online.target\nWants=network-online.target",
+                    )
+                    # TimeoutStartSec zodat de build niet te vroeg afbreekt
+                    if "TimeoutStartSec" not in svc:
+                        svc = svc.replace("Restart=on-failure", "TimeoutStartSec=300\nRestart=on-failure")
                     with open(service_path, "w") as f:
                         f.write(svc)
-                    await asyncio.create_subprocess_exec("sudo", "systemctl", "daemon-reload")
+                    reload_needed = True
             except Exception:
                 pass
+
+            if reload_needed:
+                await asyncio.create_subprocess_exec("sudo", "systemctl", "daemon-reload")
+
             await asyncio.create_subprocess_exec(
                 "sudo", "systemctl", "restart", "mixmate"
             )
