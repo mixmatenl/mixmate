@@ -715,9 +715,17 @@ async def wifi_connect(body: dict):
 
     # Probeer nmcli
     try:
-        cmd = ["nmcli", "dev", "wifi", "connect", ssid]
         if password:
-            cmd += ["password", password]
+            cmd = [
+                "nmcli", "dev", "wifi", "connect", ssid,
+                "password", password,
+            ]
+        else:
+            # Open netwerk: expliciet geen beveiliging meegeven
+            cmd = [
+                "nmcli", "dev", "wifi", "connect", ssid,
+                "--", "+802-11-wireless-security.key-mgmt", "none",
+            ]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -727,7 +735,6 @@ async def wifi_connect(body: dict):
         output = (out + err).decode()
         if proc.returncode == 0:
             return {"ok": True, "message": f"Verbonden met {ssid}"}
-        # nmcli beschikbaar maar verbinding mislukt
         return {"ok": False, "message": output.strip() or "Verbinding mislukt — controleer het wachtwoord"}
     except FileNotFoundError:
         pass

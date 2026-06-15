@@ -1,3 +1,7 @@
+## [6.2.3] - 2026-06-14
+### Gefixt
+- WiFi verbinden: 802-11-wireless-security key property fout opgelost
+
 ## [6.2.2] - 2026-06-14
 ### Gefixt
 - WiFi wachtwoordveld staat nu direct onder het geselecteerde netwerk
