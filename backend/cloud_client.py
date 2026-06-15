@@ -98,7 +98,7 @@ async def handle_message(message: dict) -> dict | None:
     req_id   = message.get("req_id")
 
     try:
-        async with httpx.AsyncClient() as c:
+        async with httpx.AsyncClient(timeout=15.0) as c:
 
             # ── Recepten ──────────────────────────────────────────────────────
             if msg_type == "get_recipes":
@@ -206,9 +206,11 @@ async def cloud_loop():
         except Exception:
             await asyncio.sleep(2)
 
+    backoff = 5
     while True:
         try:
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
+                backoff = 5  # reset na succesvolle verbinding
                 log.info("Cloud verbonden")
                 try:
                     async with httpx.AsyncClient() as c:
@@ -257,17 +259,26 @@ async def cloud_loop():
                         if msg_type in ("paired", "heartbeat_ack"):
                             continue
 
-                        response = await handle_message(message)
+                        # Verwerk commando met timeout zodat één traag verzoek de loop niet blokkeert
+                        try:
+                            response = await asyncio.wait_for(handle_message(message), timeout=20)
+                        except asyncio.TimeoutError:
+                            req_id = message.get("req_id")
+                            log.warning("Timeout bij verwerken commando %s", msg_type)
+                            response = {"req_id": req_id, "type": "error", "detail": "timeout"} if req_id else None
                         if response:
                             await ws.send(json.dumps(response))
                 finally:
                     hb_task.cancel()
 
         except Exception as e:
-            log.warning("Cloud verbinding verbroken: %s — herverbinden in 10s", e)
+            log.warning("Cloud verbinding verbroken: %s — herverbinden in %ds", e, backoff)
+
         try:
             async with httpx.AsyncClient() as c:
                 await c.post(f"{LOCAL}/api/cloud/pair-code", json={"connected": False}, timeout=3)
         except Exception:
             pass
-        await asyncio.sleep(10)
+
+        await asyncio.sleep(backoff)
+        backoff = min(backoff * 2, 120)  # 5 → 10 → 20 → 40 → 80 → 120s max

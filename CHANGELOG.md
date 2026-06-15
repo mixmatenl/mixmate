@@ -1,3 +1,14 @@
+## [1.0.2] - 2026-06-15
+### Gefixt
+- SQLite WAL-mode ingeschakeld — voorkomt "readonly database" fout bij gelijktijdige lees/schrijfoperaties
+- Cloud WebSocket herverbindt nu met exponential backoff (5→10→20→40→80→120s) i.p.v. altijd 10s
+- Cloud commando's hebben nu een timeout van 20s — één traag verzoek blokkeert de verbinding niet meer
+- WiFi- en cloud-statusicoontjes toegevoegd aan de bovenste balk
+
+## [1.0.1] - 2026-06-15
+### Nieuw
+- WiFi- en cloud-statusicoontjes in de bovenste balk (groen = verbonden, oranje = zwak/gekoppeld maar offline, grijs = niet verbonden)
+
 ## [1.0.0] - 2026-06-15
 ### Nieuw
 - Machine-ID permanent opgeslagen in de database — overleeft git-updates, herinstallaties en stroomuitval

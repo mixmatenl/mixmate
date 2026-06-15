@@ -1,8 +1,19 @@
 from sqlmodel import SQLModel, create_engine, Session
-from sqlalchemy import text, inspect
+from sqlalchemy import text, inspect, event
 
 DATABASE_URL = "sqlite:///./mixmate.db"
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
+
+# WAL-mode: staat gelijktijdige lees- en schrijfoperaties toe zonder blokkering.
+@event.listens_for(engine, "connect")
+def _set_wal_mode(dbapi_conn, _):
+    dbapi_conn.execute("PRAGMA journal_mode=WAL")
+    dbapi_conn.execute("PRAGMA synchronous=NORMAL")
+    dbapi_conn.execute("PRAGMA busy_timeout=5000")
 
 
 def _migrate():
