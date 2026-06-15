@@ -14,20 +14,22 @@ export default function AdminCategories() {
     e.preventDefault()
     if (!name.trim()) return
     setLoading(true)
-    await api.createCategory({ name: name.trim(), sort_order: categories.length })
-    setName(''); load(); setLoading(false)
+    try {
+      await api.createCategory({ name: name.trim(), sort_order: categories.length })
+      setName(''); load()
+    } catch (err) { alert('Fout: ' + err.message) }
+    finally { setLoading(false) }
   }
 
   async function handleRename(id) {
     if (!editing?.name?.trim()) return
-    await api.updateCategory(id, { name: editing.name.trim() })
-    setEditing(null); load()
+    try { await api.updateCategory(id, { name: editing.name.trim() }); setEditing(null); load() }
+    catch (err) { alert('Fout: ' + err.message) }
   }
 
   async function handleDelete(id) {
     if (!confirm('Categorie verwijderen? Recepten worden niet verwijderd.')) return
-    await api.deleteCategory(id)
-    load()
+    try { await api.deleteCategory(id); load() } catch (err) { alert('Fout: ' + err.message) }
   }
 
   return (

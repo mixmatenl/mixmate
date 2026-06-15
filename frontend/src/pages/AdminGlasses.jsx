@@ -36,22 +36,22 @@ export default function AdminGlasses() {
   async function handleAdd(e) {
     e.preventDefault()
     if (!form.name || !form.volume_ml) return
-    await api.createGlass({ name: form.name, volume_ml: parseFloat(form.volume_ml) })
-    setForm({ name: '', volume_ml: '' })
-    setAdding(false)
-    load()
+    try {
+      await api.createGlass({ name: form.name, volume_ml: parseFloat(form.volume_ml) })
+      setForm({ name: '', volume_ml: '' }); setAdding(false); load()
+    } catch (err) { alert('Fout: ' + err.message) }
   }
 
   async function handleSave(id) {
-    await api.updateGlass(id, { name: editForm.name, volume_ml: parseFloat(editForm.volume_ml) })
-    setEditId(null)
-    load()
+    try {
+      await api.updateGlass(id, { name: editForm.name, volume_ml: parseFloat(editForm.volume_ml) })
+      setEditId(null); load()
+    } catch (err) { alert('Fout: ' + err.message) }
   }
 
   async function handleDelete(id) {
     if (!confirm('Glas verwijderen?')) return
-    await api.deleteGlass(id)
-    load()
+    try { await api.deleteGlass(id); load() } catch (err) { alert('Fout: ' + err.message) }
   }
 
   function startEdit(g) {

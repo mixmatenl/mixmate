@@ -14,9 +14,11 @@ export default function AdminPumpsSimple() {
 
   async function assign(pumpId, ingredientId) {
     setSaving(pumpId)
-    await api.assignIngredient(pumpId, ingredientId === '' ? null : parseInt(ingredientId))
-    load()
-    setSaving(null)
+    try {
+      await api.assignIngredient(pumpId, ingredientId === '' ? null : parseInt(ingredientId))
+      load()
+    } catch (err) { alert('Fout: ' + err.message) }
+    finally { setSaving(null) }
   }
 
   if (pumps.length === 0) {

@@ -14,8 +14,14 @@ export default function AdminIngredients() {
     e.preventDefault()
     if (!name.trim()) return
     setLoading(true)
-    await api.createIngredient({ name: name.trim(), is_carbonated: isCarbonated })
-    setName(''); setIsCarbonated(false); load(); setLoading(false)
+    try {
+      await api.createIngredient({ name: name.trim(), is_carbonated: isCarbonated })
+      setName(''); setIsCarbonated(false); load()
+    } catch (err) {
+      alert('Fout: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

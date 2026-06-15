@@ -554,9 +554,20 @@ def get_pair_code():
     return _cloud_pair
 
 @app.post("/api/cloud/unpair")
-def unpair_cloud():
+async def unpair_cloud():
+    import httpx
+    from .cloud_client import get_machine_id, CLOUD_URL
     _cloud_pair["code"] = None
     _cloud_pair["paired"] = False
+    # Stuur ook ontkoppeling door naar de cloud server
+    if CLOUD_URL:
+        try:
+            machine_id = get_machine_id()
+            cloud_http = CLOUD_URL.replace("wss://", "https://").replace("ws://", "http://")
+            async with httpx.AsyncClient() as c:
+                await c.post(f"{cloud_http}/api/machines/{machine_id}/unpair", timeout=5)
+        except Exception:
+            pass
     return {"ok": True}
 
 
