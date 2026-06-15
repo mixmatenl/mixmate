@@ -129,6 +129,12 @@ async def lifespan(app: FastAPI):
     from .cloud_client import cloud_loop
     _cloud_task = asyncio.create_task(cloud_loop())
     _schedule_major_update_reboot()
+    # Herstel account-info uit DB (overleeft herstart)
+    _cloud_pair["account_name"]  = _db_get("account_name")  or None
+    _cloud_pair["account_email"] = _db_get("account_email") or None
+    paired_val = _db_get("paired")
+    if paired_val == "1":
+        _cloud_pair["paired"] = True
     yield
     if _cloud_task:
         _cloud_task.cancel()
@@ -635,12 +641,19 @@ _cloud_pair: dict = {
 def set_pair_code(body: dict):
     """Intern endpoint — cloud_client.py schrijft de koppelcode en verbindingsstatus hierheen."""
     if "code"             in body: _cloud_pair["code"]             = body.get("code")
-    if "paired"           in body: _cloud_pair["paired"]           = body.get("paired")
+    if "paired" in body:
+        _cloud_pair["paired"] = body.get("paired")
+        _db_set("paired", "1" if body.get("paired") else "0")
     if "connected"        in body: _cloud_pair["connected"]        = body.get("connected")
-    if "account_name"     in body: _cloud_pair["account_name"]     = body.get("account_name")
-    if "account_email"    in body: _cloud_pair["account_email"]    = body.get("account_email")
     if "reset_code"       in body: _cloud_pair["reset_code"]       = body.get("reset_code")
     if "reset_code_email" in body: _cloud_pair["reset_code_email"] = body.get("reset_code_email")
+    # Account info ook in DB opslaan zodat het herstart overleeft
+    if "account_name" in body:
+        _cloud_pair["account_name"] = body.get("account_name")
+        _db_set("account_name", body.get("account_name") or "")
+    if "account_email" in body:
+        _cloud_pair["account_email"] = body.get("account_email")
+        _db_set("account_email", body.get("account_email") or "")
     return {"ok": True}
 
 @app.get("/api/cloud/pair-code")
@@ -857,6 +870,16 @@ async def wifi_connect(body: dict):
     if not ssid:
         raise HTTPException(400, "SSID ontbreekt")
 
+    # Verwijder bestaand nmcli-profiel voor dit SSID (voorkomt "connection exists" fout)
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "connection", "delete", ssid,
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=5)
+    except Exception:
+        pass
+
     # Probeer nmcli
     try:
         if password:
@@ -866,19 +889,24 @@ async def wifi_connect(body: dict):
                 "wifi-sec.key-mgmt", "wpa-psk",
             ]
         else:
-            cmd = [
-                "nmcli", "dev", "wifi", "connect", ssid,
-            ]
+            cmd = ["nmcli", "dev", "wifi", "connect", ssid]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        out, err = await asyncio.wait_for(proc.communicate(), timeout=25)
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=30)
         output = (out + err).decode()
         if proc.returncode == 0:
             return {"ok": True, "message": f"Verbonden met {ssid}"}
-        return {"ok": False, "message": output.strip() or "Verbinding mislukt — controleer het wachtwoord"}
+        # Geef leesbare foutmelding
+        if "Secrets were required" in output or "password" in output.lower():
+            msg = "Wachtwoord onjuist — controleer en probeer opnieuw"
+        elif "No network with SSID" in output:
+            msg = f"Netwerk '{ssid}' niet gevonden — scan opnieuw"
+        else:
+            msg = output.strip() or "Verbinding mislukt"
+        return {"ok": False, "message": msg}
     except FileNotFoundError:
         pass
     except asyncio.TimeoutError:
@@ -977,19 +1005,34 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
 @app.post("/api/system/factory-reset")
 async def factory_reset():
     """
-    Zet de machine terug naar fabrieksinstellingen:
-    - Ontkoppel van cloud (meldt dit aan de cloud server)
-    - Wis alle gebruikersdata uit de database (glazen, ingrediënten, recepten, pompen, etc.)
-    - Wis MACHINE_MODEL en ADMIN_PIN uit .env en database
-    - Herstart de service
+    Zet de machine terug naar fabrieksinstellingen.
+    Fabrieksgegevens blijven ALTIJD bewaard:
+      - machine_id, MACHINE_MODEL, MIXMATE_CLOUD_URL
+      - LOADCELL_DOUT, LOADCELL_SCK, LOADCELL_SCALE (weegschaal)
+      - GPIO-pinnen van pompen (slot/gpio_pin/pump_type blijven)
+    Gebruikersinstellingen worden gewist:
+      - Glazen, ingrediënten, recepten, categorieën
+      - Ingredient-koppeling op pompen (maar de pompen zelf blijven)
+      - Cloud-koppeling (account)
+      - ADMIN_PIN en MIXMATE_PIN
     """
     import sqlite3
 
+    # Fabriekssleutels die NOOIT gewist worden
+    _FACTORY_KEYS = {
+        'machine_id', 'MIXMATE_CLOUD_URL', 'MACHINE_MODEL',
+        'LOADCELL_DOUT', 'LOADCELL_SCK', 'LOADCELL_SCALE',
+    }
+    _FACTORY_ENV_PREFIXES = (
+        'MACHINE_MODEL=', 'MIXMATE_CLOUD_URL=',
+        'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
+    )
+
     # 1. Ontkoppel van cloud
-    _cloud_pair["code"] = None
-    _cloud_pair["paired"] = False
-    _cloud_pair["connected"] = False
-    _cloud_pair["account_name"] = None
+    _cloud_pair["code"]          = None
+    _cloud_pair["paired"]        = False
+    _cloud_pair["connected"]     = False
+    _cloud_pair["account_name"]  = None
     _cloud_pair["account_email"] = None
     cloud_url = os.environ.get("MIXMATE_CLOUD_URL", "")
     if cloud_url:
@@ -1002,30 +1045,42 @@ async def factory_reset():
         except Exception:
             pass
 
-    # 2. Wis gebruikersdata uit database (maar behoud machine_id in config)
+    # 2. Wis gebruikersdata uit database
     try:
         con = sqlite3.connect(str(_DB_PATH))
+        # Verwijder gebruikersdata-tabellen volledig
         for table in ["recipeingredient", "recipe", "pour", "favorite",
-                      "pump", "ingredient", "glass", "category"]:
+                      "ingredient", "glass", "category"]:
             try:
                 con.execute(f'DELETE FROM "{table}"')
             except Exception:
                 pass
-        # Wis instellingen uit config behalve machine_id en cloud URL
-        con.execute("DELETE FROM config WHERE key NOT IN ('machine_id', 'MIXMATE_CLOUD_URL', 'MACHINE_MODEL')")
+        # Pompen: behoud GPIO/slot/type, wis alleen de ingredient-koppeling
+        try:
+            con.execute("UPDATE pump SET ingredient_id = NULL, enabled = 1")
+        except Exception:
+            pass
+        # Config: bewaar alleen fabriekssleutels
+        placeholders = ",".join("?" * len(_FACTORY_KEYS))
+        con.execute(
+            f"DELETE FROM config WHERE key NOT IN ({placeholders})",
+            list(_FACTORY_KEYS),
+        )
         con.commit()
         con.close()
     except Exception:
         pass
 
-    # 3. Wis alleen ADMIN_PIN uit .env (model blijft bewaard)
+    # 3. Wis gebruikers-env-variabelen (bewaar fabriekswaarden)
     if _ENV_PATH.exists():
         lines = [
             line for line in _ENV_PATH.read_text().splitlines()
-            if not line.startswith("ADMIN_PIN=")
+            if not line or line.startswith("#")
+               or any(line.startswith(p) for p in _FACTORY_ENV_PREFIXES)
         ]
         _ENV_PATH.write_text("\n".join(lines) + "\n")
-    os.environ.pop("ADMIN_PIN", None)
+    os.environ.pop("ADMIN_PIN",    None)
+    os.environ.pop("MIXMATE_PIN",  None)
 
     # 4. Herstart service na korte vertraging
     async def _restart():
