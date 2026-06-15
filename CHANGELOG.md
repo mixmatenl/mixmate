@@ -1,3 +1,8 @@
+## [1.1.3] - 2026-06-15
+### Gefixt
+- Machine vergat model na herstart door verkeerde opstartvolgorde: database werd uitgelezen vóórdat de tabellen aangemaakt waren — nu wordt de database eerst aangemaakt, dan pas uitgelezen
+- Config-tabel wordt nu ook aangemaakt als die nog niet bestaat bij het lezen/schrijven, zodat dit nooit meer stil faalt
+
 ## [1.1.2] - 2026-06-15
 ### Nieuw
 - Machines updaten zichzelf automatisch bij elke opstart als er nieuwe code beschikbaar is

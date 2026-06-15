@@ -42,6 +42,10 @@ def _db_get(key: str) -> str | None:
         if not _DB_PATH.exists():
             return None
         con = sqlite3.connect(str(_DB_PATH))
+        # Tabel kan nog niet bestaan op eerste boot vóór create_db()
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')"
+        )
         row = con.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
         con.close()
         return row[0] if row and row[0] else None
@@ -56,6 +60,9 @@ def _db_set(key: str, value: str):
         if not _DB_PATH.exists():
             return
         con = sqlite3.connect(str(_DB_PATH))
+        con.execute(
+            "CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')"
+        )
         con.execute(
             "INSERT INTO config (key, value) VALUES (?, ?) "
             "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -117,8 +124,8 @@ _cloud_task: asyncio.Task | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _cloud_task
+    create_db()   # eerst tabel aanmaken, dan pas uit DB lezen
     _load_env()
-    create_db()
     from .cloud_client import cloud_loop
     _cloud_task = asyncio.create_task(cloud_loop())
     yield
