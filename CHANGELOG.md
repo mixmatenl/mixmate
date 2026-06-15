@@ -1,3 +1,27 @@
+## [6.3.1] - 2026-06-15
+### Gefixt
+- Aanknop icoon nu wit zichtbaar op standby scherm
+- Opstartanimatie verkort naar 6 seconden
+- Koppelcode verborgen als machine al gekoppeld is aan cloud
+- "Stand-by" knop hernoemd naar "Uitschakelen"
+
+## [6.3.0] - 2026-06-15
+### Nieuw
+- Instellingen volledig herbouwd in iPhone-stijl (secties, gekleurde icoontjes, terugknop)
+- Cloud koppeling: knop om koppeling te verwijderen vanuit de machine
+
+## [6.2.7] - 2026-06-15
+### Nieuw
+- Recepten, ingrediënten, glazen, categorieën en pompen beheerbaar via MIXMATE portaal
+
+## [6.2.6] - 2026-06-15
+### Gefixt
+- SyntaxError in WiFi verbinden fallback (unterminated f-string) opgelost
+
+## [6.2.5] - 2026-06-15
+### Gefixt
+- Alle emoji vervangen door SVG-iconen (zichtbaar op Pi OS Lite zonder emoji-font)
+
 ## [6.2.4] - 2026-06-14
 ### Gefixt
 - WiFi verbinden: key-mgmt wpa-psk expliciet meegegeven aan nmcli
