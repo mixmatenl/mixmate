@@ -1,3 +1,8 @@
+## [6.3.0] - 2026-06-14
+### Gefixt
+- WiFi scan en verbinden werkt nu zonder insufficient privileges fout
+- Sudoers bestand toegevoegd voor WiFi en systeembeheer rechten
+
 ## [6.2.0] - 2026-06-14
 ### Gefixt
 - .env altijd geladen bij opstart (cloud URL werkt nu zonder service file aanpassing)

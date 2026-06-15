@@ -279,6 +279,18 @@ async def run_update():
         # dan herstart de service als achtergrondtaak.
         async def _delayed_restart():
             await asyncio.sleep(3)
+            # Installeer sudoers voor WiFi rechten
+            sudoers_src = APP_DIR / "mixmate-sudoers"
+            if sudoers_src.exists():
+                try:
+                    await asyncio.create_subprocess_exec(
+                        "sudo", "cp", str(sudoers_src), "/etc/sudoers.d/mixmate"
+                    )
+                    await asyncio.create_subprocess_exec(
+                        "sudo", "chmod", "440", "/etc/sudoers.d/mixmate"
+                    )
+                except Exception:
+                    pass
             # Zorg dat .env geladen wordt door de service
             service_path = "/etc/systemd/system/mixmate.service"
             try:

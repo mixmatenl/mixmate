@@ -568,20 +568,38 @@ async def system_restart():
 @app.get("/api/system/wifi/status")
 async def wifi_status():
     """Huidige WiFi verbinding."""
+    # Probeer nmcli
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL,SECURITY", "dev", "wifi",
+            "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         out, _ = await proc.communicate()
         for line in out.decode().splitlines():
             parts = line.split(":")
             if parts and parts[0] == "yes":
-                return {
-                    "connected": True,
-                    "ssid": parts[1] if len(parts) > 1 else "",
-                    "signal": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
-                }
+                return {"connected": True, "ssid": parts[1] if len(parts) > 1 else "", "signal": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0}
+    except Exception:
+        pass
+    # Fallback: lees /proc/net/wireless
+    try:
+        text = Path("/proc/net/wireless").read_text()
+        for line in text.splitlines()[2:]:
+            parts = line.split()
+            if parts:
+                iface = parts[0].rstrip(":")
+                # Lees SSID via wpa_cli
+                proc2 = await asyncio.create_subprocess_exec(
+                    "wpa_cli", "-i", iface, "status",
+                    stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+                )
+                out2, _ = await proc2.communicate()
+                ssid = ""
+                for l in out2.decode().splitlines():
+                    if l.startswith("ssid="):
+                        ssid = l.split("=", 1)[1]
+                    if l.startswith("wpa_state=COMPLETED"):
+                        return {"connected": True, "ssid": ssid, "signal": 0}
     except Exception:
         pass
     return {"connected": False, "ssid": "", "signal": 0}

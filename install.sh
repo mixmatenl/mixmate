@@ -316,6 +316,11 @@ XINITRC
 chown ${USER}:${USER} /home/${USER}/.xinitrc
 chmod +x /home/${USER}/.xinitrc
 
+# ── Sudoers voor WiFi en systeembeheer ──────────────────
+log "Sudoers instellen..."
+cp "$INSTALL_DIR/mixmate-sudoers" /etc/sudoers.d/mixmate
+chmod 440 /etc/sudoers.d/mixmate
+
 # ── Services starten ──────────────────────────
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME

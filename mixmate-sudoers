@@ -1,0 +1,8 @@
+# MIXMATE — WiFi en systeem beheer zonder wachtwoord
+pi ALL=(ALL) NOPASSWD: /usr/sbin/iwlist
+pi ALL=(ALL) NOPASSWD: /sbin/iwlist
+pi ALL=(ALL) NOPASSWD: /usr/bin/nmcli
+pi ALL=(ALL) NOPASSWD: /sbin/reboot
+pi ALL=(ALL) NOPASSWD: /sbin/shutdown
+pi ALL=(ALL) NOPASSWD: /bin/systemctl restart mixmate
+pi ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload
