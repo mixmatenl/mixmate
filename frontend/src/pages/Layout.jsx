@@ -7,7 +7,55 @@ const NAV = [
   { to: '/rapporten', label: 'RAPPORTEN' },
 ]
 
+function WifiIcon({ signal }) {
+  // signal: -1 = unknown/off, 0-33 = weak, 34-66 = medium, 67-100 = strong
+  const bars = signal < 0 ? 0 : signal < 34 ? 1 : signal < 67 ? 2 : 3
+  const color = signal < 0 ? 'rgba(255,255,255,0.2)' : bars === 1 ? '#ff9f0a' : '#ffffff'
+  return (
+    <svg width="18" height="14" viewBox="0 0 24 18" fill="none">
+      <path d="M12 14.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill={bars > 0 ? color : 'rgba(255,255,255,0.2)'} />
+      <path d="M7.5 11.5a6.5 6.5 0 0 1 9 0" stroke={bars > 1 ? color : 'rgba(255,255,255,0.2)'} strokeWidth="2" strokeLinecap="round" />
+      <path d="M3.5 7.5a11.5 11.5 0 0 1 17 0" stroke={bars > 2 ? color : 'rgba(255,255,255,0.2)'} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CloudIcon({ connected, paired }) {
+  const color = connected ? '#30d158' : paired ? '#ff9f0a' : 'rgba(255,255,255,0.2)'
+  return (
+    <svg width="20" height="14" viewBox="0 0 24 17" fill="none">
+      <path d="M6 13a5 5 0 0 1 0-10 5 5 0 0 1 9.9-1A5 5 0 1 1 17 13H6z"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function useStatusPoll() {
+  const [wifi, setWifi] = useState({ connected: false, signal: -1, ssid: '' })
+  const [cloud, setCloud] = useState({ connected: false, paired: false })
+
+  useEffect(() => {
+    async function poll() {
+      try {
+        const [w, c] = await Promise.all([
+          fetch('/api/system/wifi/status').then(r => r.json()),
+          fetch('/api/cloud/pair-code').then(r => r.json()),
+        ])
+        setWifi({ connected: w.connected, signal: w.connected ? (w.signal || 50) : -1, ssid: w.ssid || '' })
+        setCloud({ connected: c.connected || false, paired: c.paired || false })
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 10000)
+    return () => clearInterval(t)
+  }, [])
+
+  return { wifi, cloud }
+}
+
 export default function Layout({ children, onLogout, onStandby }) {
+  const { wifi, cloud } = useStatusPoll()
+
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       <header className="h-16 flex items-center px-8 gap-12 shrink-0 z-30 shadow-lg"
@@ -26,6 +74,15 @@ export default function Layout({ children, onLogout, onStandby }) {
             </NavLink>
           ))}
         </nav>
+
+        <div className="ml-auto flex items-center gap-4">
+          <div title={wifi.connected ? `WiFi: ${wifi.ssid}` : 'Geen WiFi'} className="flex items-center">
+            <WifiIcon signal={wifi.connected ? (wifi.signal || 50) : -1} />
+          </div>
+          <div title={cloud.connected ? 'Cloud verbonden' : cloud.paired ? 'Cloud gekoppeld, niet verbonden' : 'Niet gekoppeld'} className="flex items-center">
+            <CloudIcon connected={cloud.connected} paired={cloud.paired} />
+          </div>
+        </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">

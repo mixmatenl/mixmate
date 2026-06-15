@@ -210,6 +210,11 @@ async def cloud_loop():
         try:
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
                 log.info("Cloud verbonden")
+                try:
+                    async with httpx.AsyncClient() as c:
+                        await c.post(f"{LOCAL}/api/cloud/pair-code", json={"connected": True}, timeout=3)
+                except Exception:
+                    pass
 
                 try:
                     async with httpx.AsyncClient() as c:
@@ -260,4 +265,9 @@ async def cloud_loop():
 
         except Exception as e:
             log.warning("Cloud verbinding verbroken: %s — herverbinden in 10s", e)
-            await asyncio.sleep(10)
+        try:
+            async with httpx.AsyncClient() as c:
+                await c.post(f"{LOCAL}/api/cloud/pair-code", json={"connected": False}, timeout=3)
+        except Exception:
+            pass
+        await asyncio.sleep(10)
