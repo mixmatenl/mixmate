@@ -16,8 +16,9 @@ import websockets
 
 log = logging.getLogger("cloud_client")
 
-CLOUD_URL   = os.getenv("MIXMATE_CLOUD_URL", "")   # bijv. wss://mixmate-cloud.railway.app
+CLOUD_URL       = os.getenv("MIXMATE_CLOUD_URL", "")
 MACHINE_ID_FILE = Path(__file__).parent.parent / ".machine_id"
+LOCAL           = "http://localhost:8000"
 
 def get_machine_id() -> str:
     if MACHINE_ID_FILE.exists():
@@ -27,28 +28,93 @@ def get_machine_id() -> str:
     return machine_id
 
 async def handle_message(message: dict) -> dict | None:
-    """Verwerk een commando van de cloud server en stuur een antwoord terug."""
     msg_type = message.get("type")
     req_id   = message.get("req_id")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient() as c:
+
+            # ── Recepten ──────────────────────────────────────────────────────
             if msg_type == "get_recipes":
-                r = await client.get("http://localhost:8000/api/recipes")
-                return {"req_id": req_id, "type": "response", "items": r.json()}
+                r = await c.get(f"{LOCAL}/api/recipes")
+                return {"req_id": req_id, "items": r.json()}
 
+            elif msg_type == "create_recipe":
+                r = await c.post(f"{LOCAL}/api/recipes", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "update_recipe":
+                r = await c.patch(f"{LOCAL}/api/recipes/{message['id']}", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "delete_recipe":
+                r = await c.delete(f"{LOCAL}/api/recipes/{message['id']}")
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            # ── Ingrediënten ─────────────────────────────────────────────────
+            elif msg_type == "get_ingredients":
+                r = await c.get(f"{LOCAL}/api/ingredients")
+                return {"req_id": req_id, "items": r.json()}
+
+            elif msg_type == "create_ingredient":
+                r = await c.post(f"{LOCAL}/api/ingredients", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "delete_ingredient":
+                r = await c.delete(f"{LOCAL}/api/ingredients/{message['id']}")
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            # ── Glazen ───────────────────────────────────────────────────────
+            elif msg_type == "get_glasses":
+                r = await c.get(f"{LOCAL}/api/glasses")
+                return {"req_id": req_id, "items": r.json()}
+
+            elif msg_type == "create_glass":
+                r = await c.post(f"{LOCAL}/api/glasses", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "update_glass":
+                r = await c.patch(f"{LOCAL}/api/glasses/{message['id']}", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "delete_glass":
+                r = await c.delete(f"{LOCAL}/api/glasses/{message['id']}")
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            # ── Categorieën ──────────────────────────────────────────────────
+            elif msg_type == "get_categories":
+                r = await c.get(f"{LOCAL}/api/categories")
+                return {"req_id": req_id, "items": r.json()}
+
+            elif msg_type == "create_category":
+                r = await c.post(f"{LOCAL}/api/categories", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "update_category":
+                r = await c.patch(f"{LOCAL}/api/categories/{message['id']}", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "delete_category":
+                r = await c.delete(f"{LOCAL}/api/categories/{message['id']}")
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            # ── Pompen ───────────────────────────────────────────────────────
             elif msg_type == "get_pumps":
-                r = await client.get("http://localhost:8000/api/pumps/simple")
-                return {"req_id": req_id, "type": "response", "items": r.json()}
+                r = await c.get(f"{LOCAL}/api/pumps/simple")
+                return {"req_id": req_id, "items": r.json()}
 
+            elif msg_type == "update_pump":
+                r = await c.patch(f"{LOCAL}/api/pumps/{message['id']}/ingredient", json=message.get("data", {}))
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            # ── Instellingen ─────────────────────────────────────────────────
             elif msg_type == "get_settings":
-                r = await client.get("http://localhost:8000/api/system/machine")
-                return {"req_id": req_id, "type": "response", **r.json()}
+                r = await c.get(f"{LOCAL}/api/system/machine")
+                return {"req_id": req_id, **r.json()}
 
             elif msg_type == "update_settings":
-                data = message.get("data", {})
-                r = await client.post("http://localhost:8000/api/system/machine", json=data)
-                return {"req_id": req_id, "type": "response", "ok": r.status_code < 300}
+                r = await c.post(f"{LOCAL}/api/system/machine", json=message.get("data", {}))
+                return {"req_id": req_id, "ok": r.status_code < 300}
 
     except Exception as e:
         log.error("Fout bij verwerken commando %s: %s", msg_type, e)
@@ -66,11 +132,10 @@ async def cloud_loop():
     ws_url = f"{CLOUD_URL}/ws/machine/{machine_id}"
     log.info("Verbinden met cloud: %s", ws_url)
 
-    # Wacht eerst tot de lokale backend klaar is
     for _ in range(30):
         try:
             async with httpx.AsyncClient() as c:
-                await c.get("http://localhost:8000/api/system/version", timeout=2)
+                await c.get(f"{LOCAL}/api/system/version", timeout=2)
             break
         except Exception:
             await asyncio.sleep(2)
@@ -80,23 +145,17 @@ async def cloud_loop():
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
                 log.info("Cloud verbonden")
 
-                # Stuur versie + model info mee als eerste heartbeat
                 try:
                     async with httpx.AsyncClient() as c:
-                        v = await c.get("http://localhost:8000/api/system/version", timeout=3)
-                        m = await c.get("http://localhost:8000/api/system/machine", timeout=3)
+                        v = await c.get(f"{LOCAL}/api/system/version", timeout=3)
+                        m = await c.get(f"{LOCAL}/api/system/machine", timeout=3)
                     version = v.json().get("version", "")
                     model   = m.json().get("model", "")
                 except Exception:
                     version = model = ""
 
-                await ws.send(json.dumps({
-                    "type": "heartbeat",
-                    "version": version,
-                    "model": model,
-                }))
+                await ws.send(json.dumps({"type": "heartbeat", "version": version, "model": model}))
 
-                # Heartbeat elke 30 seconden
                 async def heartbeat():
                     while True:
                         await asyncio.sleep(30)
@@ -112,21 +171,21 @@ async def cloud_loop():
                         message = json.loads(raw)
                         msg_type = message.get("type")
 
-                        if msg_type in ("pair_code", "paired", "heartbeat_ack"):
-                            # Stuur koppelcode naar lokale backend zodat machine hem kan tonen
-                            if msg_type == "pair_code":
-                                try:
-                                    async with httpx.AsyncClient() as c:
-                                        await c.post(
-                                            "http://localhost:8000/api/cloud/pair-code",
-                                            json={"code": message.get("code"), "paired": message.get("paired")},
-                                            timeout=3,
-                                        )
-                                except Exception:
-                                    pass
+                        if msg_type == "pair_code":
+                            try:
+                                async with httpx.AsyncClient() as c:
+                                    await c.post(
+                                        f"{LOCAL}/api/cloud/pair-code",
+                                        json={"code": message.get("code"), "paired": message.get("paired")},
+                                        timeout=3,
+                                    )
+                            except Exception:
+                                pass
                             continue
 
-                        # Verwerk commando en stuur antwoord
+                        if msg_type in ("paired", "heartbeat_ack"):
+                            continue
+
                         response = await handle_message(message)
                         if response:
                             await ws.send(json.dumps(response))
