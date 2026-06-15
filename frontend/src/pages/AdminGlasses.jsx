@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const PRESET_GLASSES = [
   { name: 'Shot', volume_ml: 40 },
@@ -29,6 +30,7 @@ export default function AdminGlasses() {
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState({ name: '', volume_ml: '' })
   const [editForm, setEditForm] = useState({})
+  const [confirmId, setConfirmId] = useState(null)
 
   function load() { api.getGlasses().then(setGlasses).catch(() => {}) }
   useEffect(load, [])
@@ -50,8 +52,8 @@ export default function AdminGlasses() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Glas verwijderen?')) return
     try { await api.deleteGlass(id); load() } catch (err) { alert('Fout: ' + err.message) }
+    setConfirmId(null)
   }
 
   function startEdit(g) {
@@ -63,6 +65,15 @@ export default function AdminGlasses() {
 
   return (
     <div className="space-y-6">
+      {confirmId && (
+        <ConfirmDialog
+          title="Glas verwijderen?"
+          message="Dit kan niet ongedaan worden gemaakt."
+          confirmLabel="Verwijderen"
+          onConfirm={() => handleDelete(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-gray-800 font-semibold text-lg">Glazen</h2>
@@ -140,7 +151,7 @@ export default function AdminGlasses() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l1.586 1.586a1 1 0 010 1.414L12 16H9v-3z" />
                     </svg>
                   </button>
-                  <button onClick={() => handleDelete(g.id)} className="text-gray-200 hover:text-red-400 transition-colors">
+                  <button onClick={() => setConfirmId(g.id)} className="text-gray-200 hover:text-red-400 transition-colors">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>

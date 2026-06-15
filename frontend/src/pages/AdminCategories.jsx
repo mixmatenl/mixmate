@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([])
   const [name, setName] = useState('')
-  const [editing, setEditing] = useState(null) // { id, name }
+  const [editing, setEditing] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [confirmId, setConfirmId] = useState(null)
 
   function load() { api.getCategories().then(setCategories) }
   useEffect(load, [])
@@ -28,12 +30,21 @@ export default function AdminCategories() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Categorie verwijderen? Recepten worden niet verwijderd.')) return
     try { await api.deleteCategory(id); load() } catch (err) { alert('Fout: ' + err.message) }
+    setConfirmId(null)
   }
 
   return (
     <div className="space-y-6">
+      {confirmId && (
+        <ConfirmDialog
+          title="Categorie verwijderen?"
+          message="Recepten in deze categorie worden niet verwijderd."
+          confirmLabel="Verwijderen"
+          onConfirm={() => handleDelete(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
+      )}
       <form onSubmit={handleAdd} className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3">
         <h2 className="text-xs font-semibold text-gray-400 tracking-widest uppercase">Nieuwe categorie</h2>
         <div className="flex gap-3">
@@ -76,7 +87,7 @@ export default function AdminCategories() {
               <>
                 <span className="flex-1 text-gray-800 text-sm font-medium">{cat.name}</span>
                 <button onClick={() => setEditing({ id: cat.id, name: cat.name })} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Hernoem</button>
-                <button onClick={() => handleDelete(cat.id)} className="text-xs text-gray-300 hover:text-red-400 transition-colors">Verwijder</button>
+                <button onClick={() => setConfirmId(cat.id)} className="text-xs text-gray-300 hover:text-red-400 transition-colors">Verwijder</button>
               </>
             )}
           </div>
