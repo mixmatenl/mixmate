@@ -1,3 +1,9 @@
+## [6.2.0] - 2026-06-14
+### Gefixt
+- .env altijd geladen bij opstart (cloud URL werkt nu zonder service file aanpassing)
+- WiFi scan: drie fallback methodes (nmcli rescan → nmcli list → wpa_cli)
+- WiFi verbinden robuuster
+
 ## [6.1.0] - 2026-06-14
 ### Gefixt
 - WiFi setup verplaatst naar Instellingen (niet meer in backoffice)

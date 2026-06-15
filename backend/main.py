@@ -36,7 +36,7 @@ def _load_env():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, _, val = line.partition("=")
-                os.environ.setdefault(key.strip(), val.strip())
+                os.environ[key.strip()] = val.strip()
 
 
 @asynccontextmanager
@@ -624,63 +624,66 @@ async def wifi_networks():
     except Exception:
         pass
 
-    # Fallback: iwlist scan
+    # Fallback: nmcli zonder rescan (soms werkt rescan niet maar list wel)
     try:
-        # Vind het WiFi interface
-        iface_proc = await asyncio.create_subprocess_exec(
-            "iw", "dev",
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
-        )
-        iface_out, _ = await iface_proc.communicate()
-        iface = "wlan0"
-        for line in iface_out.decode().splitlines():
-            if "Interface" in line:
-                iface = line.strip().split()[-1]
-                break
-
         proc = await asyncio.create_subprocess_exec(
-            "sudo", "iwlist", iface, "scan",
+            "nmcli", "--terse", "--fields", "SSID,SIGNAL,SECURITY,ACTIVE",
+            "device", "wifi", "list",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
-        out, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
+        if out:
+            seen = set()
+            for line in out.decode().splitlines():
+                parts = line.split(":")
+                if len(parts) < 4:
+                    continue
+                ssid = parts[0].strip()
+                if not ssid or ssid == "--" or ssid in seen:
+                    continue
+                seen.add(ssid)
+                networks.append({
+                    "ssid": ssid,
+                    "signal": int(parts[1]) if parts[1].isdigit() else 50,
+                    "secured": bool(parts[2] and parts[2] != "--"),
+                    "active": parts[3].strip() == "yes",
+                })
+            if networks:
+                networks.sort(key=lambda x: -x["signal"])
+                return {"networks": networks, "method": "nmcli-list"}
+    except Exception:
+        pass
+
+    # Laatste fallback: lees /proc/net/wireless + wpa_cli
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "wpa_cli", "-i", "wlan0", "scan_results",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=10)
         text = out.decode()
         seen = set()
-        current = {}
-        for line in text.splitlines():
-            line = line.strip()
-            if "ESSID:" in line:
-                ssid = line.split("ESSID:")[1].strip().strip('"')
-                current["ssid"] = ssid
-            elif "Signal level=" in line:
-                try:
-                    sig = line.split("Signal level=")[1].split(" ")[0]
-                    dbm = int(sig)
-                    pct = max(0, min(100, 2 * (dbm + 100)))
-                    current["signal"] = pct
-                except Exception:
-                    current["signal"] = 50
-            elif "Encryption key:" in line:
-                current["secured"] = "on" in line
-            elif line.startswith("Cell ") and current.get("ssid"):
-                ssid = current.get("ssid", "")
-                if ssid and ssid not in seen:
-                    seen.add(ssid)
-                    networks.append({
-                        "ssid": ssid,
-                        "signal": current.get("signal", 50),
-                        "secured": current.get("secured", False),
-                        "active": False,
-                    })
-                current = {}
-        if current.get("ssid") and current["ssid"] not in seen:
+        for line in text.splitlines()[1:]:
+            parts = line.split("\t")
+            if len(parts) < 5:
+                continue
+            ssid = parts[4].strip()
+            if not ssid or ssid in seen:
+                continue
+            seen.add(ssid)
+            try:
+                signal_dbm = int(parts[2])
+                signal_pct = max(0, min(100, 2 * (signal_dbm + 100)))
+            except Exception:
+                signal_pct = 50
             networks.append({
-                "ssid": current["ssid"],
-                "signal": current.get("signal", 50),
-                "secured": current.get("secured", False),
+                "ssid": ssid,
+                "signal": signal_pct,
+                "secured": "WPA" in parts[3] or "WEP" in parts[3],
                 "active": False,
             })
         networks.sort(key=lambda x: -x["signal"])
-        return {"networks": networks, "method": "iwlist"}
+        return {"networks": networks, "method": "wpa_cli"}
     except Exception as e:
         return {"networks": [], "error": str(e)}
 
