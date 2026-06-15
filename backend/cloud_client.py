@@ -16,15 +16,40 @@ import websockets
 
 log = logging.getLogger("cloud_client")
 
-CLOUD_URL       = os.getenv("MIXMATE_CLOUD_URL", "")
-MACHINE_ID_FILE = Path(__file__).parent.parent / ".machine_id"
-LOCAL           = "http://localhost:8000"
+CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "")
+LOCAL     = "http://localhost:8000"
+
+# Persistent machine ID — stored outside the git repo so it survives re-clones.
+# On a Raspberry Pi we prefer the hardware CPU serial (truly permanent).
+_MACHINE_ID_FILE = Path("/etc/mixmate_id")
 
 def get_machine_id() -> str:
-    if MACHINE_ID_FILE.exists():
-        return MACHINE_ID_FILE.read_text().strip()
+    # 1. Prefer Raspberry Pi hardware serial (immutable, survives reinstalls)
+    try:
+        cpuinfo = Path("/proc/cpuinfo").read_text()
+        for line in cpuinfo.splitlines():
+            if line.startswith("Serial"):
+                serial = line.split(":")[-1].strip().lstrip("0")
+                if serial:
+                    return f"pi-{serial}"
+    except Exception:
+        pass
+
+    # 2. Fall back to a UUID persisted in /etc/mixmate_id (outside repo)
+    if _MACHINE_ID_FILE.exists():
+        mid = _MACHINE_ID_FILE.read_text().strip()
+        if mid:
+            return mid
     machine_id = str(uuid.uuid4())
-    MACHINE_ID_FILE.write_text(machine_id)
+    try:
+        _MACHINE_ID_FILE.write_text(machine_id)
+    except PermissionError:
+        # Running in dev without root — use a temp file next to this script
+        fallback = Path(__file__).parent.parent / ".machine_id"
+        if not fallback.exists():
+            fallback.write_text(machine_id)
+        else:
+            return fallback.read_text().strip()
     return machine_id
 
 async def handle_message(message: dict) -> dict | None:

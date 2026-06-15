@@ -14,5 +14,8 @@ frontend/dist/
 # Environment
 .env
 
+# Machine identity (fallback, buiten repo opgeslagen op Pi)
+.machine_id
+
 # OS
 .DS_Store
