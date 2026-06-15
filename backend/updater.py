@@ -279,6 +279,22 @@ async def run_update():
         # dan herstart de service als achtergrondtaak.
         async def _delayed_restart():
             await asyncio.sleep(3)
+            # Zorg dat .env geladen wordt door de service
+            service_path = "/etc/systemd/system/mixmate.service"
+            try:
+                with open(service_path, "r") as f:
+                    svc = f.read()
+                env_file_line = f"EnvironmentFile=-{APP_DIR}/.env"
+                if env_file_line not in svc:
+                    svc = svc.replace(
+                        "Restart=always",
+                        f"{env_file_line}\nRestart=always"
+                    )
+                    with open(service_path, "w") as f:
+                        f.write(svc)
+                    await asyncio.create_subprocess_exec("sudo", "systemctl", "daemon-reload")
+            except Exception:
+                pass
             await asyncio.create_subprocess_exec(
                 "sudo", "systemctl", "restart", "mixmate"
             )

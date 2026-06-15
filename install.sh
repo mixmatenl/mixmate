@@ -252,6 +252,7 @@ ExecStart=${INSTALL_DIR}/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --por
 Restart=always
 RestartSec=5
 Environment=PYTHONPATH=${INSTALL_DIR}
+EnvironmentFile=-${INSTALL_DIR}/.env
 
 [Install]
 WantedBy=multi-user.target
