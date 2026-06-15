@@ -1,3 +1,7 @@
+## [6.4.2] - 2026-06-15
+### Gefixt
+- Verwijderbevestiging bij glazen en categorieën gebruikt nu een eigen dialoog i.p.v. de lelijke browser-popup
+
 ## [6.4.1] - 2026-06-15
 ### Gefixt
 - WiFi en Cloud koppeling openen nu correct binnen de hoofdlayout
