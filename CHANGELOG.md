@@ -1,3 +1,9 @@
+## [6.1.0] - 2026-06-14
+### Gefixt
+- WiFi setup verplaatst naar Instellingen (niet meer in backoffice)
+- WiFi scan robuuster: probeert nmcli, valt terug op iwlist
+- WiFi verbinden: probeert nmcli, valt terug op wpa_cli
+
 ## [6.0.0] - 2026-06-14
 ### Nieuw
 - WiFi instellen via eigen scherm op de machine (backoffice → Systeem → WiFi instellen)
