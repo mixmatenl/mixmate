@@ -1,3 +1,8 @@
+## [6.4.0] - 2026-06-15
+### Verbeterd
+- Alle instellingen openen nu consistent binnen de hoofdlayout met MIXMATE-balk zichtbaar
+- WiFi en Cloud koppeling zijn geen full-screen overlays meer
+
 ## [6.3.1] - 2026-06-15
 ### Gefixt
 - Aanknop icoon nu wit zichtbaar op standby scherm
