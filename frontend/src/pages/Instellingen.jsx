@@ -17,7 +17,7 @@ const RESET_STEPS = [
   { label: 'Ingrediënten wissen',                duration: 1600 },
   { label: 'Glazen en categorieën wissen',       duration: 1400 },
   { label: 'Pompinstellingen wissen',            duration: 1200 },
-  { label: 'Configuratie terugzetten',           duration: 1800 },
+  { label: 'Configuratie en PIN wissen',          duration: 1800 },
   { label: 'Systeem opschonen',                  duration: 2000 },
   { label: 'Machine herstarten',                 duration: 3000 },
 ]

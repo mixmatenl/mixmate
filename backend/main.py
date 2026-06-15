@@ -1012,20 +1012,19 @@ async def factory_reset():
             except Exception:
                 pass
         # Wis instellingen uit config behalve machine_id en cloud URL
-        con.execute("DELETE FROM config WHERE key NOT IN ('machine_id', 'MIXMATE_CLOUD_URL')")
+        con.execute("DELETE FROM config WHERE key NOT IN ('machine_id', 'MIXMATE_CLOUD_URL', 'MACHINE_MODEL')")
         con.commit()
         con.close()
     except Exception:
         pass
 
-    # 3. Wis MACHINE_MODEL en ADMIN_PIN uit .env
+    # 3. Wis alleen ADMIN_PIN uit .env (model blijft bewaard)
     if _ENV_PATH.exists():
         lines = [
             line for line in _ENV_PATH.read_text().splitlines()
-            if not line.startswith("MACHINE_MODEL=") and not line.startswith("ADMIN_PIN=")
+            if not line.startswith("ADMIN_PIN=")
         ]
         _ENV_PATH.write_text("\n".join(lines) + "\n")
-    os.environ.pop("MACHINE_MODEL", None)
     os.environ.pop("ADMIN_PIN", None)
 
     # 4. Herstart service na korte vertraging
