@@ -588,9 +588,11 @@ async def wifi_status():
 
 @app.get("/api/system/wifi/networks")
 async def wifi_networks():
-    """Beschikbare WiFi netwerken."""
+    """Beschikbare WiFi netwerken — probeert nmcli, valt terug op iwlist."""
+    networks = []
+
+    # Probeer nmcli (NetworkManager)
     try:
-        # Ververs de lijst eerst
         await asyncio.create_subprocess_exec(
             "nmcli", "dev", "wifi", "rescan",
             stderr=asyncio.subprocess.DEVNULL,
@@ -598,37 +600,99 @@ async def wifi_networks():
         await asyncio.sleep(2)
         proc = await asyncio.create_subprocess_exec(
             "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE", "dev", "wifi",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        out, err = await proc.communicate()
+        if proc.returncode == 0 and out:
+            seen = set()
+            for line in out.decode().splitlines():
+                parts = line.split(":")
+                if len(parts) < 4:
+                    continue
+                ssid = parts[0].strip()
+                if not ssid or ssid in seen:
+                    continue
+                seen.add(ssid)
+                networks.append({
+                    "ssid": ssid,
+                    "signal": int(parts[1]) if parts[1].isdigit() else 0,
+                    "secured": bool(parts[2]),
+                    "active": parts[3].strip() == "*",
+                })
+            networks.sort(key=lambda x: -x["signal"])
+            return {"networks": networks, "method": "nmcli"}
+    except Exception:
+        pass
+
+    # Fallback: iwlist scan
+    try:
+        # Vind het WiFi interface
+        iface_proc = await asyncio.create_subprocess_exec(
+            "iw", "dev",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
-        out, _ = await proc.communicate()
+        iface_out, _ = await iface_proc.communicate()
+        iface = "wlan0"
+        for line in iface_out.decode().splitlines():
+            if "Interface" in line:
+                iface = line.strip().split()[-1]
+                break
+
+        proc = await asyncio.create_subprocess_exec(
+            "sudo", "iwlist", iface, "scan",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
+        text = out.decode()
         seen = set()
-        networks = []
-        for line in out.decode().splitlines():
-            parts = line.split(":")
-            if len(parts) < 4:
-                continue
-            ssid = parts[0].strip()
-            if not ssid or ssid in seen:
-                continue
-            seen.add(ssid)
+        current = {}
+        for line in text.splitlines():
+            line = line.strip()
+            if "ESSID:" in line:
+                ssid = line.split("ESSID:")[1].strip().strip('"')
+                current["ssid"] = ssid
+            elif "Signal level=" in line:
+                try:
+                    sig = line.split("Signal level=")[1].split(" ")[0]
+                    dbm = int(sig)
+                    pct = max(0, min(100, 2 * (dbm + 100)))
+                    current["signal"] = pct
+                except Exception:
+                    current["signal"] = 50
+            elif "Encryption key:" in line:
+                current["secured"] = "on" in line
+            elif line.startswith("Cell ") and current.get("ssid"):
+                ssid = current.get("ssid", "")
+                if ssid and ssid not in seen:
+                    seen.add(ssid)
+                    networks.append({
+                        "ssid": ssid,
+                        "signal": current.get("signal", 50),
+                        "secured": current.get("secured", False),
+                        "active": False,
+                    })
+                current = {}
+        if current.get("ssid") and current["ssid"] not in seen:
             networks.append({
-                "ssid": ssid,
-                "signal": int(parts[1]) if parts[1].isdigit() else 0,
-                "secured": bool(parts[2]),
-                "active": parts[3] == "*",
+                "ssid": current["ssid"],
+                "signal": current.get("signal", 50),
+                "secured": current.get("secured", False),
+                "active": False,
             })
         networks.sort(key=lambda x: -x["signal"])
-        return {"networks": networks}
+        return {"networks": networks, "method": "iwlist"}
     except Exception as e:
         return {"networks": [], "error": str(e)}
 
 @app.post("/api/system/wifi/connect")
 async def wifi_connect(body: dict):
-    """Verbind met een WiFi netwerk."""
+    """Verbind met een WiFi netwerk via nmcli of wpa_passphrase."""
     ssid     = str(body.get("ssid", "")).strip()
     password = str(body.get("password", "")).strip()
     if not ssid:
         raise HTTPException(400, "SSID ontbreekt")
+
+    # Probeer nmcli
     try:
         cmd = ["nmcli", "dev", "wifi", "connect", ssid]
         if password:
@@ -638,16 +702,38 @@ async def wifi_connect(body: dict):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        out, err = await asyncio.wait_for(proc.communicate(), timeout=20)
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=25)
         output = (out + err).decode()
         if proc.returncode == 0:
             return {"ok": True, "message": f"Verbonden met {ssid}"}
-        else:
-            return {"ok": False, "message": output.strip() or "Verbinding mislukt"}
+        # nmcli beschikbaar maar verbinding mislukt
+        return {"ok": False, "message": output.strip() or "Verbinding mislukt — controleer het wachtwoord"}
+    except FileNotFoundError:
+        pass
     except asyncio.TimeoutError:
         return {"ok": False, "message": "Verbinding time-out — controleer het wachtwoord"}
     except Exception as e:
         return {"ok": False, "message": str(e)}
+
+    # Fallback: wpa_passphrase + wpa_cli
+    try:
+        iface = "wlan0"
+        conf_line = f'network={{
+    ssid="{ssid}"
+    psk="{password}"
+    key_mgmt=WPA-PSK
+}}'
+        wpa_conf = f"/tmp/wpa_{ssid.replace(' ','_')}.conf"
+        Path(wpa_conf).write_text(conf_line)
+
+        proc = await asyncio.create_subprocess_exec(
+            "sudo", "wpa_cli", "-i", iface, "reconfigure",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=10)
+        return {"ok": True, "message": f"Verbinding met {ssid} gestart — even geduld"}
+    except Exception as e2:
+        return {"ok": False, "message": f"Verbinding mislukt: {e2}"}
 
 # ── Machine instellingen ──────────────────────────────────────────────────────
 
