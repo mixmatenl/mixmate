@@ -195,12 +195,30 @@ async def handle_message(message: dict) -> dict | None:
     return None
 
 async def cloud_loop():
-    if not CLOUD_URL:
+    # Herlees CLOUD_URL uit omgeving — kan zijn bijgewerkt via _load_env() na import
+    cloud_url = os.getenv("MIXMATE_CLOUD_URL", "") or CLOUD_URL
+    if not cloud_url:
         log.info("MIXMATE_CLOUD_URL niet ingesteld — cloud verbinding uitgeschakeld")
         return
 
+    # Sla op in database zodat hij bewaard blijft na herinstallatie
+    try:
+        import sqlite3
+        db_path = Path(__file__).parent.parent / "mixmate.db"
+        if db_path.exists():
+            con = sqlite3.connect(str(db_path))
+            con.execute(
+                "INSERT INTO config (key, value) VALUES ('MIXMATE_CLOUD_URL', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (cloud_url,)
+            )
+            con.commit()
+            con.close()
+    except Exception:
+        pass
+
     machine_id = get_machine_id()
-    ws_url = f"{CLOUD_URL}/ws/machine/{machine_id}"
+    ws_url = f"{cloud_url}/ws/machine/{machine_id}"
     log.info("Verbinden met cloud: %s", ws_url)
 
     for _ in range(30):

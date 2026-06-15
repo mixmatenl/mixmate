@@ -28,15 +28,88 @@ from .updater import get_version_info, check_updates_available, run_update
 from .seed import seed_demo_data
 
 
+_DB_PATH = Path(__file__).parent.parent / "mixmate.db"
+_ENV_PATH = Path(__file__).parent.parent / ".env"
+
+# Sleutels die we persistent opslaan in zowel .env als de database.
+_PERSISTENT_KEYS = {"MACHINE_MODEL", "MIXMATE_CLOUD_URL", "ADMIN_PIN"}
+
+
+def _db_get(key: str) -> str | None:
+    """Lees een waarde uit de Config-tabel in de database."""
+    try:
+        import sqlite3
+        if not _DB_PATH.exists():
+            return None
+        con = sqlite3.connect(str(_DB_PATH))
+        row = con.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
+        con.close()
+        return row[0] if row and row[0] else None
+    except Exception:
+        return None
+
+
+def _db_set(key: str, value: str):
+    """Schrijf een waarde naar de Config-tabel in de database."""
+    try:
+        import sqlite3
+        if not _DB_PATH.exists():
+            return
+        con = sqlite3.connect(str(_DB_PATH))
+        con.execute(
+            "INSERT INTO config (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, value),
+        )
+        con.commit()
+        con.close()
+    except Exception:
+        pass
+
+
+def _env_set(key: str, value: str):
+    """Schrijf/update een waarde in het .env bestand."""
+    lines = []
+    replaced = False
+    if _ENV_PATH.exists():
+        for line in _ENV_PATH.read_text().splitlines():
+            if line.startswith(f"{key}="):
+                lines.append(f"{key}={value}")
+                replaced = True
+            else:
+                lines.append(line)
+    if not replaced:
+        lines.append(f"{key}={value}")
+    _ENV_PATH.write_text("\n".join(lines) + "\n")
+
+
 def _load_env():
-    """Laad .env bestand zodat PIN-wijzigingen na herstart behouden blijven."""
-    env_path = Path(__file__).parent.parent / ".env"
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
+    """
+    Laad instellingen op bij herstart. Prioriteit per sleutel:
+    1. Database (Config-tabel in mixmate.db) — overleeft alles
+    2. .env bestand — fallback voor handmatig ingestelde waarden
+    Waarden uit .env die nog niet in de database staan worden daarheen gekopieerd.
+    """
+    # Laad eerst .env in os.environ
+    if _ENV_PATH.exists():
+        for line in _ENV_PATH.read_text().splitlines():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, _, val = line.partition("=")
-                os.environ[key.strip()] = val.strip()
+                os.environ.setdefault(key.strip(), val.strip())
+
+    # Database-waarden hebben prioriteit en worden naar .env gespiegeld
+    for key in _PERSISTENT_KEYS:
+        db_val = _db_get(key)
+        if db_val:
+            os.environ[key] = db_val
+            # Zorg dat .env ook up-to-date is
+            env_val = os.environ.get(key)
+            if env_val != db_val:
+                _env_set(key, db_val)
+        elif key in os.environ:
+            # Waarde staat in .env maar nog niet in DB → naar DB kopiëren
+            _db_set(key, os.environ[key])
 
 
 _cloud_task: asyncio.Task | None = None
@@ -525,21 +598,10 @@ def _get_machine_model() -> str:
     return os.environ.get("MACHINE_MODEL", "")
 
 def _set_machine_model(model: str):
-    """Sla machine model op in .env en os.environ."""
+    """Sla machine model op in database én .env zodat het altijd behouden blijft."""
     os.environ["MACHINE_MODEL"] = model
-    env_path = Path(__file__).parent.parent / ".env"
-    lines = []
-    replaced = False
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
-            if line.startswith("MACHINE_MODEL="):
-                lines.append(f"MACHINE_MODEL={model}")
-                replaced = True
-            else:
-                lines.append(line)
-    if not replaced:
-        lines.append(f"MACHINE_MODEL={model}")
-    env_path.write_text("\n".join(lines) + "\n")
+    _db_set("MACHINE_MODEL", model)
+    _env_set("MACHINE_MODEL", model)
 
 # ── Cloud koppeling ───────────────────────────────────────────────────────────
 
@@ -562,14 +624,14 @@ def get_pair_code():
 @app.post("/api/cloud/unpair")
 async def unpair_cloud():
     import httpx
-    from .cloud_client import get_machine_id, CLOUD_URL
+    from .cloud_client import get_machine_id
     _cloud_pair["code"] = None
     _cloud_pair["paired"] = False
-    # Stuur ook ontkoppeling door naar de cloud server
-    if CLOUD_URL:
+    cloud_url = os.environ.get("MIXMATE_CLOUD_URL", "")
+    if cloud_url:
         try:
             machine_id = get_machine_id()
-            cloud_http = CLOUD_URL.replace("wss://", "https://").replace("ws://", "http://")
+            cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
             async with httpx.AsyncClient() as c:
                 await c.post(f"{cloud_http}/api/machines/{machine_id}/unpair", timeout=5)
         except Exception:
