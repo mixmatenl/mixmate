@@ -274,14 +274,35 @@ async def cloud_loop():
                                 async with httpx.AsyncClient() as c:
                                     await c.post(
                                         f"{LOCAL}/api/cloud/pair-code",
-                                        json={"code": message.get("code"), "paired": message.get("paired")},
+                                        json={
+                                            "code":          message.get("code"),
+                                            "paired":        message.get("paired"),
+                                            "account_name":  message.get("account_name"),
+                                            "account_email": message.get("account_email"),
+                                        },
                                         timeout=3,
                                     )
                             except Exception:
                                 pass
                             continue
 
-                        if msg_type in ("paired", "heartbeat_ack"):
+                        if msg_type == "paired":
+                            try:
+                                async with httpx.AsyncClient() as c:
+                                    await c.post(
+                                        f"{LOCAL}/api/cloud/pair-code",
+                                        json={
+                                            "paired":        True,
+                                            "account_name":  message.get("account_name"),
+                                            "account_email": message.get("account_email"),
+                                        },
+                                        timeout=3,
+                                    )
+                            except Exception:
+                                pass
+                            continue
+
+                        if msg_type == "heartbeat_ack":
                             continue
 
                         # Verwerk commando met timeout zodat één traag verzoek de loop niet blokkeert

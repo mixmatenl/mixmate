@@ -612,15 +612,16 @@ def _set_machine_model(model: str):
 
 # ── Cloud koppeling ───────────────────────────────────────────────────────────
 
-_cloud_pair: dict = {"code": None, "paired": False, "connected": False}
+_cloud_pair: dict = {"code": None, "paired": False, "connected": False, "account_name": None, "account_email": None}
 
 @app.post("/api/cloud/pair-code")
 def set_pair_code(body: dict):
     """Intern endpoint — cloud_client.py schrijft de koppelcode en verbindingsstatus hierheen."""
-    _cloud_pair["code"]      = body.get("code")
-    _cloud_pair["paired"]    = body.get("paired", False)
-    if "connected" in body:
-        _cloud_pair["connected"] = body.get("connected")
+    if "code"    in body: _cloud_pair["code"]    = body.get("code")
+    if "paired"  in body: _cloud_pair["paired"]  = body.get("paired")
+    if "connected" in body: _cloud_pair["connected"] = body.get("connected")
+    if "account_name"  in body: _cloud_pair["account_name"]  = body.get("account_name")
+    if "account_email" in body: _cloud_pair["account_email"] = body.get("account_email")
     return {"ok": True}
 
 @app.get("/api/cloud/pair-code")
@@ -632,8 +633,10 @@ def get_pair_code():
 async def unpair_cloud():
     import httpx
     from .cloud_client import get_machine_id
-    _cloud_pair["code"] = None
-    _cloud_pair["paired"] = False
+    _cloud_pair["code"]          = None
+    _cloud_pair["paired"]        = False
+    _cloud_pair["account_name"]  = None
+    _cloud_pair["account_email"] = None
     cloud_url = os.environ.get("MIXMATE_CLOUD_URL", "")
     if cloud_url:
         try:
@@ -951,6 +954,70 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
 
 
 # ── Systeem beheer ───────────────────────────────────────────────────────────
+
+@app.post("/api/system/factory-reset")
+async def factory_reset():
+    """
+    Zet de machine terug naar fabrieksinstellingen:
+    - Ontkoppel van cloud (meldt dit aan de cloud server)
+    - Wis alle gebruikersdata uit de database (glazen, ingrediënten, recepten, pompen, etc.)
+    - Wis MACHINE_MODEL en ADMIN_PIN uit .env en database
+    - Herstart de service
+    """
+    import sqlite3
+
+    # 1. Ontkoppel van cloud
+    _cloud_pair["code"] = None
+    _cloud_pair["paired"] = False
+    _cloud_pair["connected"] = False
+    _cloud_pair["account_name"] = None
+    _cloud_pair["account_email"] = None
+    cloud_url = os.environ.get("MIXMATE_CLOUD_URL", "")
+    if cloud_url:
+        try:
+            from .cloud_client import get_machine_id
+            machine_id = get_machine_id()
+            cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+            async with httpx.AsyncClient() as c:
+                await c.post(f"{cloud_http}/api/machines/{machine_id}/unpair", timeout=5)
+        except Exception:
+            pass
+
+    # 2. Wis gebruikersdata uit database (maar behoud machine_id in config)
+    try:
+        con = sqlite3.connect(str(_DB_PATH))
+        for table in ["recipeingredient", "recipe", "pour", "favorite",
+                      "pump", "ingredient", "glass", "category"]:
+            try:
+                con.execute(f'DELETE FROM "{table}"')
+            except Exception:
+                pass
+        # Wis instellingen uit config behalve machine_id en cloud URL
+        con.execute("DELETE FROM config WHERE key NOT IN ('machine_id', 'MIXMATE_CLOUD_URL')")
+        con.commit()
+        con.close()
+    except Exception:
+        pass
+
+    # 3. Wis MACHINE_MODEL en ADMIN_PIN uit .env
+    if _ENV_PATH.exists():
+        lines = [
+            line for line in _ENV_PATH.read_text().splitlines()
+            if not line.startswith("MACHINE_MODEL=") and not line.startswith("ADMIN_PIN=")
+        ]
+        _ENV_PATH.write_text("\n".join(lines) + "\n")
+    os.environ.pop("MACHINE_MODEL", None)
+    os.environ.pop("ADMIN_PIN", None)
+
+    # 4. Herstart service na korte vertraging
+    async def _restart():
+        await asyncio.sleep(2)
+        import subprocess
+        subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+    asyncio.create_task(_restart())
+
+    return {"ok": True}
+
 
 @app.post("/api/system/reboot")
 async def reboot_system():

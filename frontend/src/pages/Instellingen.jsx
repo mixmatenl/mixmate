@@ -76,6 +76,12 @@ const IconInfo = () => (
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
   </svg>
 )
+const IconFactory = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+)
 
 // ── Hulpcomponenten ───────────────────────────────────────────────────────────
 
@@ -151,6 +157,13 @@ function SettingsHome() {
     setConfirm(null)
   }
 
+  async function doFactoryReset() {
+    setActionBusy(true)
+    await fetch('/api/system/factory-reset', { method: 'POST' }).catch(() => {})
+    setActionBusy(false)
+    setConfirm(null)
+  }
+
   return (
     <div style={{ background: '#f2f2f7', flex: 1, overflowY: 'auto', padding: '24px 16px' }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 24, paddingLeft: 4 }}>Instellingen</h1>
@@ -172,7 +185,8 @@ function SettingsHome() {
       <Section title="Systeem">
         <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie" onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    iconBg="#8e8e93" label="Over deze machine"  sublabel="Serienummer, netwerk en hardware" onClick={() => navigate('/instellingen/info')} />
-        <SettingsRow icon={<IconRestart />} iconBg="#ff3b30" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} last />
+        <SettingsRow icon={<IconRestart />} iconBg="#ff9500" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} />
+        <SettingsRow icon={<IconFactory />} iconBg="#ff3b30" label="Fabrieksinstellingen" sublabel="Wist alle data en ontkoppelt de machine" onClick={() => setConfirm('factory')} last />
       </Section>
 
       {confirm === 'restart' && (
@@ -182,6 +196,17 @@ function SettingsHome() {
           confirmLabel="Herstarten"
           loading={actionBusy}
           onConfirm={doRestart}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {confirm === 'factory' && (
+        <ConfirmDialog
+          title="Fabrieksinstellingen herstellen?"
+          message="Alle glazen, ingrediënten, recepten en pompen worden gewist. De machine wordt losgekoppeld van het portaal en het model wordt gewist. Dit kan niet ongedaan worden gemaakt."
+          confirmLabel="Alles wissen"
+          loading={actionBusy}
+          onConfirm={doFactoryReset}
           onCancel={() => setConfirm(null)}
         />
       )}

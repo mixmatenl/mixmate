@@ -1,3 +1,9 @@
+## [1.2.0] - 2026-06-15
+### Nieuw
+- Cloud koppeling toont welk account gekoppeld is (naam + e-mailadres)
+- "Uitloggen" knop vervangt "Koppeling verwijderen" — duidelijkere taal
+- Fabrieksinstellingen-knop in Instellingen: wist alle data en ontkoppelt de machine
+
 ## [1.1.3] - 2026-06-15
 ### Gefixt
 - Machine vergat model na herstart door verkeerde opstartvolgorde: database werd uitgelezen vóórdat de tabellen aangemaakt waren — nu wordt de database eerst aangemaakt, dan pas uitgelezen
@@ -207,6 +213,12 @@
 - Calibratie crashte als pomp tussentijds verwijderd was
 - Scrollen werkt nu ook op echte touchscreens (naast Pi muis-emulatie)
 - Uploadlimiet voor receptfoto's: max 8MB
+
+## [1.2.0] - 2026-06-15
+### Nieuw
+- Cloud koppeling toont welk account gekoppeld is (naam + e-mailadres)
+- "Uitloggen" knop vervangt "Koppeling verwijderen" — duidelijkere taal
+- Fabrieksinstellingen-knop in Instellingen: wist alle data en ontkoppelt de machine
 
 ## [1.1.3] - 2026-06-10
 ### Nieuw

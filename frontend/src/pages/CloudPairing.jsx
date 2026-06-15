@@ -56,15 +56,26 @@ export default function CloudPairing({ onClose }) {
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
-            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Machine gekoppeld</div>
-            <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, marginBottom: 28 }}>
-              Deze machine is verbonden met het MIXMATE portaal.
-            </div>
+            <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>Machine gekoppeld</div>
+
+            {/* Accountinfo */}
+            {data.account_name && (
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 16px', margin: '16px 0 20px', textAlign: 'left' }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Gekoppeld account</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#111', marginBottom: 2 }}>{data.account_name}</div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>{data.account_email}</div>
+              </div>
+            )}
+            {!data.account_name && (
+              <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6, marginBottom: 20 }}>
+                Deze machine is verbonden met het MIXMATE portaal.
+              </div>
+            )}
 
             {/* Ontkoppelen */}
             {!unpairConf ? (
               <button onClick={() => setUnpairConf(true)} style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 10, padding: '10px 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer', width: '100%' }}>
-                Koppeling verwijderen
+                Uitloggen
               </button>
             ) : (
               <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
@@ -77,7 +88,7 @@ export default function CloudPairing({ onClose }) {
                     Annuleren
                   </button>
                   <button onClick={unpair} disabled={unpairing} style={{ flex: 1, background: '#dc2626', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#fff', opacity: unpairing ? 0.6 : 1 }}>
-                    {unpairing ? 'Bezig...' : 'Verwijderen'}
+                    {unpairing ? 'Bezig...' : 'Uitloggen'}
                   </button>
                 </div>
               </div>
