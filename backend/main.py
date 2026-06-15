@@ -625,16 +625,22 @@ def _set_machine_model(model: str):
 
 # ── Cloud koppeling ───────────────────────────────────────────────────────────
 
-_cloud_pair: dict = {"code": None, "paired": False, "connected": False, "account_name": None, "account_email": None}
+_cloud_pair: dict = {
+    "code": None, "paired": False, "connected": False,
+    "account_name": None, "account_email": None,
+    "reset_code": None, "reset_code_email": None,
+}
 
 @app.post("/api/cloud/pair-code")
 def set_pair_code(body: dict):
     """Intern endpoint — cloud_client.py schrijft de koppelcode en verbindingsstatus hierheen."""
-    if "code"    in body: _cloud_pair["code"]    = body.get("code")
-    if "paired"  in body: _cloud_pair["paired"]  = body.get("paired")
-    if "connected" in body: _cloud_pair["connected"] = body.get("connected")
-    if "account_name"  in body: _cloud_pair["account_name"]  = body.get("account_name")
-    if "account_email" in body: _cloud_pair["account_email"] = body.get("account_email")
+    if "code"             in body: _cloud_pair["code"]             = body.get("code")
+    if "paired"           in body: _cloud_pair["paired"]           = body.get("paired")
+    if "connected"        in body: _cloud_pair["connected"]        = body.get("connected")
+    if "account_name"     in body: _cloud_pair["account_name"]     = body.get("account_name")
+    if "account_email"    in body: _cloud_pair["account_email"]    = body.get("account_email")
+    if "reset_code"       in body: _cloud_pair["reset_code"]       = body.get("reset_code")
+    if "reset_code_email" in body: _cloud_pair["reset_code_email"] = body.get("reset_code_email")
     return {"ok": True}
 
 @app.get("/api/cloud/pair-code")

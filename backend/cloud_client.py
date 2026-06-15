@@ -302,6 +302,21 @@ async def cloud_loop():
                                 pass
                             continue
 
+                        if msg_type == "reset_code":
+                            try:
+                                async with httpx.AsyncClient() as c:
+                                    await c.post(
+                                        f"{LOCAL}/api/cloud/pair-code",
+                                        json={
+                                            "reset_code":       message.get("code"),
+                                            "reset_code_email": message.get("email"),
+                                        },
+                                        timeout=3,
+                                    )
+                            except Exception:
+                                pass
+                            continue
+
                         if msg_type == "heartbeat_ack":
                             continue
 

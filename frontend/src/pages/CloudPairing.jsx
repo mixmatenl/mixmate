@@ -94,6 +94,22 @@ export default function CloudPairing({ onClose }) {
               </div>
             )}
           </div>
+        ) : data?.reset_code ? (
+          <div style={{ textAlign: 'center', width: '100%', maxWidth: 340 }}>
+            <div style={{ width: 72, height: 72, borderRadius: 36, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Wachtwoord herstellen</div>
+            <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>voor account</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 20 }}>{data.reset_code_email}</div>
+            <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Verificatiecode</div>
+            <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: 10, fontFamily: 'monospace', background: '#fff', border: '2px solid #2563eb', borderRadius: 16, padding: '20px 24px', color: '#2563eb' }}>
+              {data.reset_code}
+            </div>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 16 }}>Voer deze code in op het portaal. Geldig voor 10 minuten.</div>
+          </div>
         ) : data?.code ? (
           <div style={{ textAlign: 'center', width: '100%', maxWidth: 340 }}>
             <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 500 }}>Koppelcode</div>
