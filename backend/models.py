@@ -3,6 +3,12 @@ from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
 
 
+class Config(SQLModel, table=True):
+    """Key-value store voor persistente machine-instellingen (buiten .env)."""
+    key: str = Field(primary_key=True)
+    value: str = ""
+
+
 class Glass(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str

@@ -19,38 +19,79 @@ log = logging.getLogger("cloud_client")
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "")
 LOCAL     = "http://localhost:8000"
 
-# Persistent machine ID — stored outside the git repo so it survives re-clones.
-# On a Raspberry Pi we prefer the hardware CPU serial (truly permanent).
 _MACHINE_ID_FILE = Path("/etc/mixmate_id")
 
-def get_machine_id() -> str:
-    # 1. Prefer Raspberry Pi hardware serial (immutable, survives reinstalls)
+
+def _derive_hardware_id() -> str | None:
+    """Lees het CPU-serienummer van de Raspberry Pi."""
     try:
-        cpuinfo = Path("/proc/cpuinfo").read_text()
-        for line in cpuinfo.splitlines():
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
             if line.startswith("Serial"):
                 serial = line.split(":")[-1].strip().lstrip("0")
                 if serial:
                     return f"pi-{serial}"
     except Exception:
         pass
+    return None
 
-    # 2. Fall back to a UUID persisted in /etc/mixmate_id (outside repo)
-    if _MACHINE_ID_FILE.exists():
-        mid = _MACHINE_ID_FILE.read_text().strip()
-        if mid:
-            return mid
-    machine_id = str(uuid.uuid4())
+
+def get_machine_id() -> str:
+    """
+    Geeft de permanente machine-ID terug. Prioriteit:
+    1. Database (mixmate.db → config tabel) — overleeft alles
+    2. Raspberry Pi CPU-serienummer
+    3. /etc/mixmate_id (buiten repo)
+    4. Nieuw UUID (wordt opgeslagen in DB én /etc/mixmate_id)
+    """
+    # 1. Database — meest betrouwbaar, wordt bij eerste gebruik gevuld
     try:
-        _MACHINE_ID_FILE.write_text(machine_id)
-    except PermissionError:
-        # Running in dev without root — use a temp file next to this script
-        fallback = Path(__file__).parent.parent / ".machine_id"
-        if not fallback.exists():
-            fallback.write_text(machine_id)
-        else:
-            return fallback.read_text().strip()
-    return machine_id
+        import sqlite3
+        db_path = Path(__file__).parent.parent / "mixmate.db"
+        if db_path.exists():
+            con = sqlite3.connect(str(db_path))
+            row = con.execute("SELECT value FROM config WHERE key='machine_id'").fetchone()
+            con.close()
+            if row and row[0]:
+                return row[0]
+    except Exception:
+        pass
+
+    # 2. Raspberry Pi hardware serial
+    mid = _derive_hardware_id()
+
+    # 3. /etc/mixmate_id
+    if not mid:
+        try:
+            stored = _MACHINE_ID_FILE.read_text().strip()
+            if stored:
+                mid = stored
+        except Exception:
+            pass
+
+    # 4. Genereer nieuw UUID
+    if not mid:
+        mid = str(uuid.uuid4())
+        try:
+            _MACHINE_ID_FILE.write_text(mid)
+        except Exception:
+            pass
+
+    # Sla altijd op in de database zodat het volgende keer direct gevonden wordt
+    try:
+        db_path = Path(__file__).parent.parent / "mixmate.db"
+        if db_path.exists():
+            con = sqlite3.connect(str(db_path))
+            con.execute(
+                "INSERT INTO config (key, value) VALUES ('machine_id', ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (mid,)
+            )
+            con.commit()
+            con.close()
+    except Exception:
+        pass
+
+    return mid
 
 async def handle_message(message: dict) -> dict | None:
     msg_type = message.get("type")
