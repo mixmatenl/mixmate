@@ -1,3 +1,8 @@
+## [1.2.2] - 2026-06-15
+### Nieuw
+- Wachtwoord vergeten via de machine: verificatiecode verschijnt op het machinescherm
+- Machine toont gekoppeld accountnaam en e-mailadres in Cloud koppeling scherm
+
 ## [1.2.1] - 2026-06-15
 ### Gefixt
 - Machine vergeet model, cloud-URL en PIN niet meer na update — database en .env worden nu bewaard tijdens git reset
