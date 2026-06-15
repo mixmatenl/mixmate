@@ -39,14 +39,18 @@ def _load_env():
                 os.environ[key.strip()] = val.strip()
 
 
+_cloud_task: asyncio.Task | None = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _cloud_task
     _load_env()
     create_db()
     from .cloud_client import cloud_loop
-    cloud_task = asyncio.create_task(cloud_loop())
+    _cloud_task = asyncio.create_task(cloud_loop())
     yield
-    cloud_task.cancel()
+    if _cloud_task:
+        _cloud_task.cancel()
     gpio.cleanup()
 
 
@@ -570,6 +574,24 @@ async def unpair_cloud():
                 await c.post(f"{cloud_http}/api/machines/{machine_id}/unpair", timeout=5)
         except Exception:
             pass
+    return {"ok": True}
+
+
+@app.post("/api/cloud/reset")
+async def reset_cloud():
+    """Reset de volledige cloudverbinding: wis koppelstatus en herstart de WebSocket-client."""
+    global _cloud_task
+    _cloud_pair["code"]      = None
+    _cloud_pair["paired"]    = False
+    _cloud_pair["connected"] = False
+    if _cloud_task and not _cloud_task.done():
+        _cloud_task.cancel()
+        try:
+            await _cloud_task
+        except (asyncio.CancelledError, Exception):
+            pass
+    from .cloud_client import cloud_loop
+    _cloud_task = asyncio.create_task(cloud_loop())
     return {"ok": True}
 
 

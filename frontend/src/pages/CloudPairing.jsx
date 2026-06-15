@@ -5,6 +5,7 @@ export default function CloudPairing({ onClose }) {
   const [loading,     setLoading]     = useState(true)
   const [unpairConf,  setUnpairConf]  = useState(false)
   const [unpairing,   setUnpairing]   = useState(false)
+  const [resetting,   setResetting]   = useState(false)
 
   useEffect(() => {
     load()
@@ -28,6 +29,16 @@ export default function CloudPairing({ onClose }) {
     } catch {}
     setUnpairing(false)
     setUnpairConf(false)
+  }
+
+  async function reset() {
+    setResetting(true)
+    try {
+      await fetch('/api/cloud/reset', { method: 'POST' })
+      await new Promise(r => setTimeout(r, 1500))
+      await load()
+    } catch {}
+    setResetting(false)
   }
 
   const s = { fontFamily: 'system-ui, sans-serif', color: '#111' }
@@ -98,10 +109,22 @@ export default function CloudPairing({ onClose }) {
               </svg>
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Geen cloudverbinding</div>
-            <div style={{ fontSize: 13, color: '#6b7280', maxWidth: 260, lineHeight: 1.6 }}>Controleer de internetverbinding en probeer opnieuw.</div>
+            <div style={{ fontSize: 13, color: '#6b7280', maxWidth: 260, lineHeight: 1.6, marginBottom: 20 }}>Controleer de internetverbinding en probeer opnieuw.</div>
+            <button onClick={reset} disabled={resetting} style={{ background: '#111', border: 'none', color: '#fff', borderRadius: 10, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: resetting ? 0.6 : 1 }}>
+              {resetting ? 'Bezig...' : 'Verbinding herstellen'}
+            </button>
           </div>
         )}
       </div>
+
+      {/* Reset altijd beschikbaar onderaan als er wél een code of koppeling is */}
+      {!loading && (data?.paired || data?.code) && (
+        <div style={{ padding: '0 24px 24px', textAlign: 'center' }}>
+          <button onClick={reset} disabled={resetting} style={{ background: 'none', border: '1px solid #e5e7eb', color: '#9ca3af', borderRadius: 8, padding: '8px 16px', fontSize: 12, cursor: 'pointer', opacity: resetting ? 0.6 : 1 }}>
+            {resetting ? 'Verbinding herstarten...' : 'Verbinding resetten'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,3 +1,8 @@
+## [1.0.3] - 2026-06-15
+### Gefixt
+- Reset-knop toegevoegd bij cloud koppeling — herstart de WebSocket-verbinding volledig zonder de machine te herstarten
+- Bij "Geen cloudverbinding" staat nu direct een knop om de verbinding te herstellen
+
 ## [1.0.2] - 2026-06-15
 ### Gefixt
 - SQLite WAL-mode ingeschakeld — voorkomt "readonly database" fout bij gelijktijdige lees/schrijfoperaties
