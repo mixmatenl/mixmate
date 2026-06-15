@@ -12,20 +12,21 @@ import CloudPairing from './CloudPairing'
 
 // ── Factory Reset animatiescherm ──────────────────────────────────────────────
 const RESET_STEPS = [
-  { label: 'Koppeling met portaal verbreken',    duration: 2200 },
-  { label: 'Recepten wissen',                    duration: 1800 },
-  { label: 'Ingrediënten wissen',                duration: 1600 },
-  { label: 'Glazen en categorieën wissen',       duration: 1400 },
-  { label: 'Pompinstellingen wissen',            duration: 1200 },
-  { label: 'Configuratie en PIN wissen',          duration: 1800 },
-  { label: 'Systeem opschonen',                  duration: 2000 },
-  { label: 'Machine herstarten',                 duration: 3000 },
+  { label: 'Koppeling met portaal verbreken',    duration: 7000  },
+  { label: 'Recepten wissen',                    duration: 6000  },
+  { label: 'Ingrediënten wissen',                duration: 5500  },
+  { label: 'Glazen en categorieën wissen',       duration: 5000  },
+  { label: 'Pompinstellingen wissen',            duration: 4500  },
+  { label: 'Configuratie en PIN wissen',         duration: 6000  },
+  { label: 'Systeem opschonen',                  duration: 7000  },
+  { label: 'Machine herstarten',                 duration: 9000  },
 ]
 
 function FactoryResetScreen() {
-  const [stepIndex, setStepIndex] = useState(0)
-  const [done,      setDone]      = useState(false)
-  const [progress,  setProgress]  = useState(0)
+  const [stepIndex,  setStepIndex]  = useState(0)
+  const [done,       setDone]       = useState(false)
+  const [progress,   setProgress]   = useState(0)
+  const [countdown,  setCountdown]  = useState(30)
 
   useEffect(() => {
     let cancelled = false
@@ -54,6 +55,27 @@ function FactoryResetScreen() {
     run()
     return () => { cancelled = true }
   }, [])
+
+  // Afteltimer + pagina herladen zodra animatie klaar is
+  useEffect(() => {
+    if (!done) return
+    let secs = 30
+    const interval = setInterval(() => {
+      secs -= 1
+      setCountdown(secs)
+      if (secs <= 0) {
+        clearInterval(interval)
+        // Probeer de pagina te herladen — werkt zodra de machine weer online is
+        const retry = setInterval(() => {
+          fetch('/api/system/info').then(() => {
+            clearInterval(retry)
+            window.location.reload()
+          }).catch(() => {})
+        }, 2000)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [done])
 
   return (
     <div style={{
@@ -86,7 +108,9 @@ function FactoryResetScreen() {
       </div>
       <div style={{ color: '#636366', fontSize: 13, marginBottom: 40, textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
         {done
-          ? 'De machine herstart nu automatisch. Dit duurt ongeveer 30 seconden.'
+          ? countdown > 0
+            ? `Machine herstart… pagina laadt opnieuw over ${countdown} seconden.`
+            : 'Wachten tot de machine weer online is…'
           : 'Zet de machine niet uit. Dit duurt even.'
         }
       </div>
