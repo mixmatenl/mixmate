@@ -16,7 +16,9 @@ import websockets
 
 log = logging.getLogger("cloud_client")
 
-CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "")
+# Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
+_CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
+CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
 LOCAL     = "http://localhost:8000"
 
 _MACHINE_ID_FILE = Path("/etc/mixmate_id")
@@ -196,7 +198,7 @@ async def handle_message(message: dict) -> dict | None:
 
 async def cloud_loop():
     # Herlees CLOUD_URL uit omgeving — kan zijn bijgewerkt via _load_env() na import
-    cloud_url = os.getenv("MIXMATE_CLOUD_URL", "") or CLOUD_URL
+    cloud_url = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
     if not cloud_url:
         log.info("MIXMATE_CLOUD_URL niet ingesteld — cloud verbinding uitgeschakeld")
         return

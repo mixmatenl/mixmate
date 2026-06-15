@@ -1,3 +1,7 @@
+## [1.1.1] - 2026-06-15
+### Gefixt
+- Cloud-URL ingebakken als fallback in de code — machine maakt altijd verbinding met de cloud ook als .env en database leeg zijn
+
 ## [1.1.0] - 2026-06-15
 ### Gefixt
 - Machine vergeet model en cloud-URL niet meer na herstart — beide worden nu opgeslagen in de database (overleeft git-updates en herinstallaties)
