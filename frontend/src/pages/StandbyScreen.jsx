@@ -14,9 +14,26 @@ export default function StandbyScreen({ onWake }) {
   const [mounted,    setMounted]    = useState(false)  // triggt de instap-animatie
   const [logoFading, setLogoFading] = useState(false)  // triggt de logo-fade tijdens waking
   const [progress,   setProgress]   = useState(0)
+  const [pairCode,   setPairCode]   = useState(null)
+  const [paired,     setPaired]     = useState(false)
   const calledWake = useRef(false)
   const rafRef     = useRef(null)
   const startRef   = useRef(null)
+
+  // Koppelcode ophalen van cloud
+  useEffect(() => {
+    async function fetchPairCode() {
+      try {
+        const r = await fetch('/api/cloud/pair-code')
+        const d = await r.json()
+        setPairCode(d.code || null)
+        setPaired(d.paired || false)
+      } catch {}
+    }
+    fetchPairCode()
+    const interval = setInterval(fetchPairCode, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Één frame wachten zodat de browser de beginpositie (100%) registreert,
   // dan schakelen naar mounted=true → paneel animeert naar 0%
@@ -170,6 +187,24 @@ export default function StandbyScreen({ onWake }) {
             Druk om te starten
           </span>
         </div>
+
+        {/* Koppelcode — alleen tonen als niet gekoppeld */}
+        {pairCode && !paired && phase === P.STANDBY && (
+          <div style={{
+            position: 'absolute', top: '32px', right: '32px',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              color: `rgba(${fg},0.4)`, fontSize: '10px',
+              letterSpacing: '2px', textTransform: 'uppercase',
+              marginBottom: '6px', fontFamily: 'system-ui, sans-serif',
+            }}>Koppelcode</div>
+            <div style={{
+              color: `rgba(${fg},0.9)`, fontSize: '28px',
+              fontFamily: 'monospace', letterSpacing: '6px', fontWeight: '600',
+            }}>{pairCode}</div>
+          </div>
+        )}
 
         {/* Progress + label */}
         <div style={{
