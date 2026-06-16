@@ -171,6 +171,9 @@ function PourModal({ recipe, glasses, onClose }) {
           {/* Bevestiging */}
           {status === PS.CONFIRM && (
             <>
+              <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
+                <div style={{ fontSize: 13, color: '#6e6e73' }}>Zet het glas onder de uitloop</div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {recipe.ingredients.map(ing => (
                   <span key={ing.ingredient_id} className={`text-xs px-3 py-1.5 rounded-full border font-medium ${
@@ -250,7 +253,8 @@ function PourModal({ recipe, glasses, onClose }) {
                 </div>
               </div>
               <div>
-                <p className="text-gray-800 font-bold text-xl tracking-tight">{recipe.name}</p>
+                <p className="text-gray-800 font-bold text-2xl tracking-tight">{recipe.name}</p>
+                <p style={{ fontSize: 13, color: '#aeaeb2', marginTop: 4 }}>{selectedGlass ? selectedGlass.name : ''}</p>
                 <p className="text-gray-400 text-sm mt-1">Smakelijk!</p>
               </div>
               <button onClick={onClose} className="btn-dark w-full py-4 rounded-2xl text-sm font-bold tracking-wide">
@@ -418,9 +422,13 @@ function SearchBar({ value, onChange }) {
   )
 }
 
+const CACHE_KEY = 'mm_recipes_cache'
+
 /* ── Dashboard ───────────────────────────────────────────────────────── */
 export default function Dashboard({ onStandby }) {
-  const [recipes,    setRecipes]    = useState([])
+  const [recipes,    setRecipes]    = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null') || [] } catch { return [] }
+  })
   const [categories, setCategories] = useState([])
   const [glasses,    setGlasses]    = useState([])
   const [favorites,  setFavorites]  = useState([])   // array van recipe_ids
@@ -435,7 +443,12 @@ export default function Dashboard({ onStandby }) {
     // Recepten/categorieën/glazen apart van favorieten laden —
     // zodat een ontbrekend favorites-endpoint (oude backend) de recepten niet blokkeert
     Promise.all([api.getRecipes(), api.getCategories(), api.getGlasses()])
-      .then(([r, c, g]) => { setRecipes(r); setCategories(c); setGlasses(g) })
+      .then(([r, c, g]) => {
+        setRecipes(r)
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(r))
+        setCategories(c)
+        setGlasses(g)
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
 
@@ -502,8 +515,8 @@ export default function Dashboard({ onStandby }) {
         <div className="min-h-full px-8 py-8">
           <SearchBar value={search} onChange={setSearch} />
 
-          {loading ? (
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+          {loading && recipes.length === 0 ? (
+            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
@@ -519,7 +532,7 @@ export default function Dashboard({ onStandby }) {
               )}
             </div>
           ) : (
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
               {filtered.map(r => (
                 <CocktailCard
                   key={r.id}

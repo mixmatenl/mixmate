@@ -65,14 +65,14 @@ export default function MachineSpoelen() {
   )
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: '#f2f2f7', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: 'var(--bg)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
       <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', marginBottom: 6 }}>Spoelroutine</h1>
       <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: 24 }}>
         Selecteer de leidingen die op water zijn aangesloten en start de spoelcyclus.
       </p>
 
       {/* Pompkeuze */}
-      <div style={{ background: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 12 }}>
           Leidingen op water
         </div>
@@ -90,7 +90,7 @@ export default function MachineSpoelen() {
                   setAnalysed(false)
                 }} style={{
                   border: `2.5px solid ${on ? '#007aff' : '#e5e5ea'}`,
-                  borderRadius: 14, padding: '14px 10px', background: on ? '#f0f7ff' : '#fafafa',
+                  borderRadius: 14, padding: '18px 10px', background: on ? '#f0f7ff' : '#fafafa',
                   cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', transition: 'all .15s',
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#007aff' : '#aeaeb2', marginBottom: 3 }}>L{p.slot}</div>
@@ -109,7 +109,7 @@ export default function MachineSpoelen() {
 
       {/* Analyse resultaat */}
       {analysed && selected.length > 0 && (
-        <div style={{ background: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 10 }}>Analyse</div>
           {[...selected].sort((a, b) => a - b).map(slot => {
             const dur = durations[slot]; const lbl = flushLabel(dur)

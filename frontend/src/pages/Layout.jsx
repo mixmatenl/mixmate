@@ -53,6 +53,17 @@ function useStatusPoll() {
   return { wifi, cloud }
 }
 
+function Clock() {
+  const [time, setTime] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  const h = time.getHours().toString().padStart(2,'0')
+  const m = time.getMinutes().toString().padStart(2,'0')
+  return <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums', letterSpacing: 1 }}>{h}:{m}</span>
+}
+
 export default function Layout({ children, onLogout, onStandby }) {
   const { wifi, cloud } = useStatusPoll()
 
@@ -61,14 +72,14 @@ export default function Layout({ children, onLogout, onStandby }) {
       <header className="h-16 flex items-center px-8 gap-12 shrink-0 z-30 shadow-lg"
         style={{ background: '#111111' }}>
         <span className="font-bold tracking-[0.28em] text-base select-none text-white">MIXMATE</span>
-        <nav className="flex gap-10">
+        <nav className="flex gap-8">
           {NAV.map(({ to, label, exact }) => (
             <NavLink
               key={to}
               to={to}
               end={exact}
               className="text-xs font-semibold tracking-[0.18em] transition-colors duration-200"
-              style={({ isActive }) => ({ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.35)' })}
+              style={({ isActive }) => ({ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.35)', padding: '8px 12px', borderRadius: 8 })}
             >
               {label}
             </NavLink>
@@ -82,6 +93,7 @@ export default function Layout({ children, onLogout, onStandby }) {
           <div title={cloud.connected ? 'Cloud verbonden' : cloud.paired ? 'Cloud gekoppeld, niet verbonden' : 'Niet gekoppeld'} className="flex items-center">
             <CloudIcon connected={cloud.connected} paired={cloud.paired} />
           </div>
+          <Clock />
         </div>
       </header>
 
@@ -141,7 +153,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
               <li key={cat.value} ref={el => { if (el) itemRefs.current[cat.value] = el }}>
                 <button
                   onClick={() => onSelect(cat.value)}
-                  className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 flex items-center gap-2"
+                  className="w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition-colors duration-150 flex items-center gap-2"
                   style={{ color: active === cat.value ? '#ffffff' : 'rgba(255,255,255,0.45)' }}
                 >
                   {cat.icon && <span className="text-sm leading-none">{cat.icon}</span>}
