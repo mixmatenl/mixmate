@@ -73,13 +73,13 @@ function PourModal({ recipe, glasses, onClose }) {
   const pct = progress ? Math.round(progress.total_progress * 100) : 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      style={{ animation: 'modalIn 0.25s cubic-bezier(0.22,1,0.36,1)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75"
+      style={{ animation: 'modalIn 0.18s ease-out' }}>
 
       <style>{`
         @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.96) translateY(8px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
 

@@ -1,3 +1,7 @@
+## [1.3.2] - 2026-06-16
+### Verbeterd
+- Modal openen soepeler: backdrop-blur en scale-animatie verwijderd van cocktail-popup
+
 ## [1.3.1] - 2026-06-16
 ### Verbeterd
 - Scroll-stotteren opgelost op het dashboard (backdrop-blur verwijderd, lazy loading voor afbeeldingen, scroll-layer optimalisatie)
