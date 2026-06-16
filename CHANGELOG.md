@@ -1,3 +1,21 @@
+## [2.0.0] - 2026-06-16
+### Nieuw
+- Machine blokkeren vanuit portaal: bartender kan machine vergrendelen zodat geen cocktails gemaakt worden
+- Spoelschema: wekelijks automatisch spoelmoment instellen per dag via portaal
+- Spoelherinnering: oranje badge op dashboard en machinekaart als spoelen te lang geleden is
+- BlockedOverlay op machinesch erm: fullscreen vergrendeling zichtbaar bij blokkering
+### Verbeterd
+- Volledig donker thema op de machine-app met CSS-variabelen
+- Nieuwe header met klok, WiFi- en cloudindicator, pill-navigatie
+- Cocktailkaarten: gradient-overlay op afbeelding, donkere status-badges
+- Spoelroutine-scherm gebruikt nu CSS-variabelen (klopt bij donker thema)
+- Portaaldashboard: cache voor directe laadtijd, "Spoelen vereist" badge
+- Machinedetailpagina: blokkeerknop altijd zichtbaar naast online-indicator
+### Gefixt
+- GPIO-methodes hersteld (activate/deactivate in plaats van on/off)
+- Machinenaam opslaan werkt nu correct via cloud-API
+- Machinestatus toonde altijd offline — online-veld toegevoegd aan lijst
+
 ## [1.4.4] - 2026-06-16
 ### Verbeterd
 - Spoelroutine volledig herschreven: geen WebSocket meer, alles via eenvoudige HTTP-polling
