@@ -340,7 +340,7 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06)',
       }}
     >
       {/* Afbeelding — groter */}
