@@ -21,9 +21,7 @@ export default function BlockedOverlay() {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9998,
-      background: 'rgba(242,242,247,0.97)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      background: '#f2f2f7',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
     }}>

@@ -87,9 +87,7 @@ export default function Layout({ children }) {
         gap: 0,
         flexShrink: 0,
         zIndex: 30,
-        background: 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: '#ffffff',
         borderBottom: '1px solid rgba(0,0,0,0.07)',
       }}>
         {/* Logo */}
@@ -167,9 +165,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: 'rgba(255,255,255,0.7)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      background: '#fafafa',
       borderRight: '1px solid rgba(0,0,0,0.06)',
       userSelect: 'none',
     }}>

@@ -72,12 +72,11 @@ select option { background: #ffffff; color: #1c1c1e; }
 /* ── Kaart press ────────────────────────────────────────────────────── */
 .card-pressable {
   cursor: pointer;
-  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.14s ease,
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
               opacity 0.1s ease;
   will-change: transform;
 }
-.card-pressable:active { transform: scale(0.965); opacity: 0.9; }
+.card-pressable:active { transform: scale(0.965); opacity: 0.88; }
 
 /* ── Primaire knop ──────────────────────────────────────────────────── */
 .btn-primary {
@@ -127,6 +126,6 @@ select option { background: #ffffff; color: #1c1c1e; }
 
 /* ── Modal fade in ──────────────────────────────────────────────────── */
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.97) translateY(10px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

@@ -1,3 +1,9 @@
+## [2.1.1] - 2026-06-16
+### Gefixt
+- Stotterig scrollen opgelost: backdrop-filter blur verwijderd van header, sidebar en overlay (te zwaar voor Pi GPU)
+- Modal-animatie vereenvoudigd voor snellere receptopening
+- Box-shadow uit card-transitie gehaald (GPU-intensief)
+
 ## [2.1.0] - 2026-06-16
 ### Verbeterd
 - Volledig nieuw licht premium thema: Apple-stijl aansluitend bij MIXMATE.NL
