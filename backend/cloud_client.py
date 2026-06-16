@@ -189,6 +189,11 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/system/info")
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "flush_pumps":
+                pumps = message.get("pumps", [])
+                asyncio.create_task(_run_flush(pumps))
+                return {"req_id": req_id, "ok": True}
+
             elif msg_type == "trigger_update":
                 asyncio.create_task(_run_ota_update())
                 return {"req_id": req_id, "ok": True}
@@ -199,6 +204,21 @@ async def handle_message(message: dict) -> dict | None:
             return {"req_id": req_id, "type": "error", "detail": str(e)}
 
     return None
+
+async def _run_flush(pumps: list):
+    """Spoel geselecteerde leidingen door — elk voor de berekende duur."""
+    log.info("Spoelroutine gestart: %d leiding(en)", len(pumps))
+    for pump in sorted(pumps, key=lambda p: p.get("slot", 0)):
+        slot     = pump.get("slot")
+        duration = pump.get("duration", 10)
+        log.info("Spoelen leiding %s voor %ds", slot, duration)
+        try:
+            async with httpx.AsyncClient(timeout=duration + 10) as c:
+                await c.post(f"{LOCAL}/api/pumps/flush", json={"slot": slot, "duration": duration})
+        except Exception as e:
+            log.warning("Spoelen leiding %s mislukt: %s", slot, e)
+        await asyncio.sleep(1.5)
+    log.info("Spoelroutine voltooid")
 
 async def _run_ota_update():
     import subprocess, sys
