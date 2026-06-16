@@ -17,7 +17,7 @@ import websockets
 log = logging.getLogger("cloud_client")
 
 # Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
-_CLOUD_URL_DEFAULT = "wss://portaal.mixmate.nl"
+_CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
 LOCAL     = "http://localhost:8000"
 
@@ -189,12 +189,31 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/system/info")
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "trigger_update":
+                asyncio.create_task(_run_ota_update())
+                return {"req_id": req_id, "ok": True}
+
     except Exception as e:
         log.error("Fout bij verwerken commando %s: %s", msg_type, e)
         if req_id:
             return {"req_id": req_id, "type": "error", "detail": str(e)}
 
     return None
+
+async def _run_ota_update():
+    import subprocess, sys
+    log.info("OTA update gestart via portaal")
+    try:
+        await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: subprocess.run(
+                [sys.executable, "-m", "backend.updater", "--run"],
+                cwd="/home/pi/mixmate",
+            )
+        )
+    except Exception as e:
+        log.error("OTA update mislukt: %s", e)
+
 
 async def cloud_loop():
     # Herlees CLOUD_URL uit omgeving — kan zijn bijgewerkt via _load_env() na import
