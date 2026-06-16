@@ -28,7 +28,7 @@ export default function MachineSpoelen() {
       .then(r => r.json())
       .then(ps => {
         setPumps(ps)
-        setSelected(ps.map(p => p.slot))
+        setSelected([])
       })
       .catch(() => setError('Kan pompen niet laden'))
       .finally(() => setLoading(false))
