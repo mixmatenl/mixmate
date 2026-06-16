@@ -1,3 +1,8 @@
+## [1.3.1] - 2026-06-16
+### Verbeterd
+- Scroll-stotteren opgelost op het dashboard (backdrop-blur verwijderd, lazy loading voor afbeeldingen, scroll-layer optimalisatie)
+- Afbeeldingen tonen nu altijd een gradient als fallback wanneer een URL niet laadbaar is
+
 ## [1.3.0] - 2026-06-15
 ### Nieuw
 - Premium UX redesign: Cloud koppeling op de machine volledig vernieuwd (losse cijferblokjes, account-avatar, groene statusbadge)

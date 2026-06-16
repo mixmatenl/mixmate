@@ -288,14 +288,36 @@ function HeartButton({ active, onToggle }) {
   return (
     <button
       onClick={handle}
-      className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-sm transition-colors ${popping ? 'heart-pop' : ''}`}
-      style={{ background: 'rgba(0,0,0,0.3)' }}
+      className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${popping ? 'heart-pop' : ''}`}
+      style={{ background: 'rgba(0,0,0,0.45)' }}
       aria-label="Favoriet"
     >
       <span className="text-lg leading-none" style={{ color: active ? '#ff5a7a' : 'rgba(255,255,255,0.85)' }}>
         {active ? '♥' : '♡'}
       </span>
     </button>
+  )
+}
+
+/* ── Afbeelding met gradient fallback ────────────────────────────────── */
+function ImageWithFallback({ recipe }) {
+  const [failed, setFailed] = React.useState(false)
+  if (!recipe.image_url || failed) {
+    return (
+      <div className="w-full h-40" style={{ background: gradientFor(recipe.name) }} />
+    )
+  }
+  return (
+    <div className="w-full h-40 overflow-hidden">
+      <img
+        src={recipe.image_url}
+        alt={recipe.name}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    </div>
   )
 }
 
@@ -312,11 +334,7 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
       }`}
       style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
     >
-      {recipe.image_url && (
-        <div className="w-full h-40 overflow-hidden">
-          <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
-        </div>
-      )}
+      <ImageWithFallback recipe={recipe} />
 
       <div className="p-5">
         {recipe.category_name && (
@@ -465,7 +483,7 @@ export default function Dashboard({ onStandby }) {
         onStandby={onStandby}
       />
 
-      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
+      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)', willChange: 'scroll-position', WebkitOverflowScrolling: 'touch' }}>
         <div className="min-h-full px-8 py-8">
           <SearchBar value={search} onChange={setSearch} />
 
