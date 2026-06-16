@@ -22,6 +22,7 @@ export default function MachineSpoelen() {
   const [durations, setDurations] = useState({})
   const [loading,   setLoading]   = useState(true)
   const [error,     setError]     = useState(null)
+  const [flushErr,  setFlushErr]  = useState(null)
 
   useEffect(() => {
     fetch('/api/pumps/simple')
@@ -44,14 +45,23 @@ export default function MachineSpoelen() {
     setDurations(d); setAnalysed(true); setAnalysing(false)
   }
 
-  function startFlush() {
+  async function startFlush() {
+    setFlushErr(null)
     const pumpsPayload = selected.map(slot => ({ slot, duration: durations[slot] || 10 }))
-    fetch('/api/pumps/flush-all', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pumps: pumpsPayload }),
-    }).catch(() => {})
-    // FlushOverlay polt /api/pumps/flush-status en toont zich automatisch
+    try {
+      const r = await fetch('/api/pumps/flush-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pumps: pumpsPayload }),
+      })
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}))
+        setFlushErr(`Fout ${r.status}: ${body.detail || 'onbekend'}`)
+      }
+      // FlushOverlay polt /api/pumps/flush-status en toont zich automatisch
+    } catch (e) {
+      setFlushErr(`Verbindingsfout: ${e.message}`)
+    }
   }
 
   function testOverlay() {
@@ -135,6 +145,13 @@ export default function MachineSpoelen() {
             <span style={{ color: '#6e6e73' }}>Totale duur</span>
             <span style={{ fontWeight: 700 }}>±{totalTime}s</span>
           </div>
+        </div>
+      )}
+
+      {/* Foutmelding */}
+      {flushErr && (
+        <div style={{ background: '#fff2f2', border: '1px solid #ffcdd2', borderRadius: 12, padding: '12px 16px', marginBottom: 12, fontSize: 13, color: '#c62828' }}>
+          {flushErr}
         </div>
       )}
 

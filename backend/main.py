@@ -1,6 +1,9 @@
 import asyncio
+import logging
 import os
 import time
+
+log = logging.getLogger("mixmate")
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
@@ -417,10 +420,6 @@ _flush_state: dict = {"active": False}
 async def _run_flush_task(pumps: list):
     """Achtergrondtaak: bestuurt GPIO en houdt _flush_state bij."""
     global _flush_state
-    _flush_state = {
-        "active": True, "total": len(pumps), "done": 0,
-        "current_slot": None, "current_duration": 0, "elapsed": 0,
-    }
     try:
         for i, p in enumerate(pumps):
             slot     = p["slot"]
@@ -447,13 +446,21 @@ async def _run_flush_task(pumps: list):
             await asyncio.sleep(1.0)
 
         _flush_state = {"active": False, "total": len(pumps), "done": len(pumps)}
-    except Exception:
-        _flush_state = {"active": False}
+    except Exception as e:
+        log.error("Flush taak fout bij leiding %s: %s", _flush_state.get("current_slot"), e)
+        _flush_state = {"active": False, "error": str(e)}
 
 
 @app.get("/api/pumps/flush-status")
 def get_flush_status():
     return _flush_state
+
+
+@app.get("/api/pumps/flush-debug")
+def flush_debug(session: Session = Depends(get_session)):
+    """Diagnose-endpoint: toont of pompen gpio_pins hebben."""
+    pumps = session.exec(select(Pump)).all()
+    return [{"id": p.id, "slot": p.slot, "gpio_pin": p.gpio_pin, "enabled": p.enabled} for p in pumps]
 
 
 @app.post("/api/pumps/flush-all")
@@ -468,18 +475,32 @@ async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
 
     # Resolve GPIO pins nu (met DB sessie) zodat de achtergrondtaak geen DB nodig heeft
     resolved = []
+    skipped  = []
     for p in pumps_data:
         slot     = p.get("slot")
         duration = float(p.get("duration", 10))
         pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
-        if pump:
+        if pump and pump.gpio_pin is not None:
             resolved.append({"slot": slot, "duration": duration, "gpio_pin": pump.gpio_pin})
+        else:
+            skipped.append(slot)
 
+    if skipped:
+        log.warning("Leidingen overgeslagen (geen pump/gpio_pin): %s", skipped)
     if not resolved:
-        raise HTTPException(status_code=404, detail="Geen geldige leidingen gevonden")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Geen geldige leidingen gevonden. Overgeslagen: {skipped}. "
+                   f"Controleer of de pompen een gpio_pin hebben ingesteld."
+        )
 
+    # Zet active=True VOOR de task zodat de overlay direct kan tonen
+    _flush_state = {
+        "active": True, "total": len(resolved), "done": 0,
+        "current_slot": resolved[0]["slot"], "current_duration": resolved[0]["duration"], "elapsed": 0,
+    }
     asyncio.create_task(_run_flush_task(resolved))
-    return {"ok": True}
+    return {"ok": True, "pumps": len(resolved)}
 
 
 @app.post("/api/pumps/flush-test")
