@@ -1,3 +1,12 @@
+## [2.3.0] - 2026-06-16
+### Nieuw
+- Sessie-tracking: elke keer dat de machine opstart begint een nieuwe dienst
+- Uitschakelen-knop sluit de sessie netjes af
+- Rapporten toont diensten (machine aan → uitschakelen) met cocktailranglijst per dienst
+### Gefixt
+- Cocktails aantikken veel responsiever: onTouchEnd zonder 300ms vertraging
+- Scroll-detectie drempel verhoogd naar 20px, cooldown verlaagd naar 80ms
+
 ## [2.2.2] - 2026-06-16
 ### Gefixt
 - Emoji medailles (🥇🥈🥉) vervangen door gekleurde nummerbadges — emoji's worden niet goed gerenderd door Chromium op de Pi

@@ -220,7 +220,10 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
 
       {/* Onderkant */}
       <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', padding: '10px 8px 16px' }}>
-        <button onClick={onStandby} style={{
+        <button onClick={async () => {
+          try { await fetch('/api/sessions/end', { method: 'POST' }) } catch {}
+          onStandby()
+        }} style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 9,
           padding: '9px 11px', borderRadius: 9, background: 'none', border: 'none',
           cursor: 'pointer', color: '#8e8e93', fontSize: 13,

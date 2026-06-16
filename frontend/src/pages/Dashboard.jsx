@@ -293,6 +293,7 @@ function HeartButton({ active, onToggle }) {
   }
   return (
     <button
+      onTouchEnd={e => { e.preventDefault(); handle(e) }}
       onClick={handle}
       className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${popping ? 'heart-pop' : ''}`}
       style={{ background: 'rgba(0,0,0,0.45)' }}
@@ -333,6 +334,7 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite, isPopular 
 
   return (
     <div
+      onTouchEnd={e => { if (!window.__dragScrollDidScroll?.() && canMake) { e.preventDefault(); onMake(recipe) } }}
       onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
       className={`card-pressable relative w-full text-left rounded-3xl overflow-hidden ${
         canMake ? '' : 'opacity-30 cursor-not-allowed'

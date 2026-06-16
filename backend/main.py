@@ -23,6 +23,7 @@ from .models import (
     Recipe, RecipeCreate, RecipeRead, RecipeUpdate,
     RecipeIngredient, RecipeIngredientRead,
     Favorite, Pour, PourCreate, PourRead,
+    Session as MachineSession, SessionRead,
 )
 from datetime import datetime, timedelta
 from sqlalchemy import func
@@ -129,6 +130,8 @@ _cloud_task: asyncio.Task | None = None
 async def lifespan(app: FastAPI):
     global _cloud_task
     create_db()   # eerst tabel aanmaken, dan pas uit DB lezen
+    _auto_migrate_sessions()
+    _start_new_session()
     _load_env()
     from .cloud_client import cloud_loop
     _cloud_task = asyncio.create_task(cloud_loop())
@@ -416,6 +419,27 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 
 _flush_state: dict = {"active": False}
 _machine_blocked: bool = False
+_current_session_id: Optional[int] = None
+
+
+def _auto_migrate_sessions():
+    """Voeg ontbrekende kolommen toe aan bestaande databases."""
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE pour ADD COLUMN session_id INTEGER REFERENCES session(id)"))
+            conn.commit()
+        except Exception:
+            pass  # kolom bestaat al
+
+
+def _start_new_session():
+    global _current_session_id
+    from sqlmodel import Session as DBSession
+    with DBSession(engine) as db:
+        s = MachineSession()
+        db.add(s); db.commit(); db.refresh(s)
+        _current_session_id = s.id
 
 
 async def _run_flush_task(pumps: list):
@@ -695,9 +719,44 @@ def list_pours(limit: int = 200, date: str = None, session: Session = Depends(ge
 
 @app.post("/api/pours", response_model=PourRead)
 def create_pour(data: PourCreate, session: Session = Depends(get_session)):
-    pour = Pour(recipe_id=data.recipe_id, recipe_name=data.recipe_name, scale=data.scale)
+    pour = Pour(recipe_id=data.recipe_id, recipe_name=data.recipe_name, scale=data.scale, session_id=_current_session_id)
     session.add(pour); session.commit(); session.refresh(pour)
     return pour
+
+
+# ── Sessies ────────────────────────────────────────────────────────────────────
+
+@app.get("/api/sessions", response_model=List[SessionRead])
+def list_sessions(session: Session = Depends(get_session)):
+    return session.exec(
+        select(MachineSession).order_by(MachineSession.started_at.desc()).limit(50)
+    ).all()
+
+@app.get("/api/sessions/current")
+def get_current_session(session: Session = Depends(get_session)):
+    if _current_session_id is None:
+        return {"id": None, "started_at": None, "ended_at": None, "pour_count": 0}
+    s = session.get(MachineSession, _current_session_id)
+    count = session.exec(select(func.count(Pour.id)).where(Pour.session_id == _current_session_id)).one()
+    return {"id": s.id, "started_at": s.started_at, "ended_at": s.ended_at, "pour_count": count}
+
+@app.post("/api/sessions/end")
+def end_session(session: Session = Depends(get_session)):
+    global _current_session_id
+    if _current_session_id is None:
+        return {"ok": True}
+    s = session.get(MachineSession, _current_session_id)
+    if s and not s.ended_at:
+        s.ended_at = datetime.utcnow()
+        session.add(s); session.commit()
+    _current_session_id = None
+    return {"ok": True}
+
+@app.get("/api/sessions/{session_id}/pours", response_model=List[PourRead])
+def get_session_pours(session_id: int, session: Session = Depends(get_session)):
+    return session.exec(
+        select(Pour).where(Pour.session_id == session_id).order_by(Pour.poured_at.desc())
+    ).all()
 
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────

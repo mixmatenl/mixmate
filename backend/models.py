@@ -67,12 +67,18 @@ class Favorite(SQLModel, table=True):
     recipe_id: int = Field(foreign_key="recipe.id", index=True)
 
 
+class Session(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    ended_at: Optional[datetime] = None
+
 class Pour(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     recipe_id: Optional[int] = Field(default=None, foreign_key="recipe.id")
     recipe_name: str = ""
     poured_at: datetime = Field(default_factory=datetime.utcnow)
     scale: float = 1.0
+    session_id: Optional[int] = Field(default=None, foreign_key="session.id")
 
 
 # ── Schemas ────────────────────────────────────────────────────────────────────
@@ -211,3 +217,9 @@ class PourRead(SQLModel):
     recipe_name: str
     poured_at: datetime
     scale: float
+    session_id: Optional[int] = None
+
+class SessionRead(SQLModel):
+    id: int
+    started_at: datetime
+    ended_at: Optional[datetime] = None
