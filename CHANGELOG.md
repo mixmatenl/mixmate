@@ -1,3 +1,10 @@
+## [1.4.4] - 2026-06-16
+### Verbeterd
+- Spoelroutine volledig herschreven: geen WebSocket meer, alles via eenvoudige HTTP-polling
+- FlushOverlay polt nu /api/pumps/flush-status elke 500ms — geen verbindingsproblemen meer
+- flush-all geeft direct terug en start de spoeling als achtergrondtaak op de Pi
+- cloud_client vereenvoudigd: geen aparte _run_flush wrapper meer nodig
+
 ## [1.4.3] - 2026-06-16
 ### Gefixt
 - Ingredientnamen worden nu correct getoond bij de leidingen in de spoelroutine (was altijd leeg)

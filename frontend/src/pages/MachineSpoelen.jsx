@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { api } from '../api'
 
 function calcFlushDuration(slot, daysSince) {
   const base = 8
@@ -10,7 +9,7 @@ function calcFlushDuration(slot, daysSince) {
 }
 
 function flushLabel(duration) {
-  if (duration <= 9)  return { text: 'Standaard',  color: '#30d158' }
+  if (duration <= 9)  return { text: 'Standaard', color: '#30d158' }
   if (duration <= 13) return { text: 'Intensief',  color: '#ff9500' }
   return                     { text: 'Verhoogd',   color: '#ff3b30' }
 }
@@ -21,23 +20,21 @@ export default function MachineSpoelen() {
   const [analysed,  setAnalysed]  = useState(false)
   const [analysing, setAnalysing] = useState(false)
   const [durations, setDurations] = useState({})
-  const [lastFlush, setLastFlush] = useState(null)
   const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      api.getPumpsSimple(),
-      fetch('/api/pumps/flush-status').then(r => r.json()).catch(() => ({})),
-    ]).then(([ps, status]) => {
-      setPumps(ps)
-      setSelected(ps.map(p => p.slot))
-    }).finally(() => setLoading(false))
-
-    // Haal laatste spoeldatum op uit de lokale cache (flush-status geeft geen log)
-    fetch('/api/pumps/flush-status').then(r => r.json()).catch(() => null)
+    fetch('/api/pumps/simple')
+      .then(r => r.json())
+      .then(ps => {
+        setPumps(ps)
+        setSelected(ps.map(p => p.slot))
+      })
+      .catch(() => setError('Kan pompen niet laden'))
+      .finally(() => setLoading(false))
   }, [])
 
-  const daysSinceLast = lastFlush ? Math.floor((Date.now() - new Date(lastFlush).getTime()) / 86400000) : 30
+  const daysSinceLast = 30  // conservatief default
 
   async function analyse() {
     setAnalysing(true); setAnalysed(false)
@@ -47,22 +44,22 @@ export default function MachineSpoelen() {
     setDurations(d); setAnalysed(true); setAnalysing(false)
   }
 
-  async function startFlush() {
+  function startFlush() {
     const pumpsPayload = selected.map(slot => ({ slot, duration: durations[slot] || 10 }))
     fetch('/api/pumps/flush-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pumps: pumpsPayload }),
-    })
-    // Geen await — FlushOverlay neemt het over zodra active: true
+    }).catch(() => {})
+    // FlushOverlay polt /api/pumps/flush-status en toont zich automatisch
   }
 
-  async function testOverlay() {
+  function testOverlay() {
     fetch('/api/pumps/flush-test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slots: Math.max(1, selected.length) }),
-    })
+      body: JSON.stringify({ slots: Math.max(2, selected.length) }),
+    }).catch(() => {})
   }
 
   const totalTime = selected.reduce((s, slot) => s + (durations[slot] || 0), 0)
@@ -70,6 +67,12 @@ export default function MachineSpoelen() {
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: '#aeaeb2', fontSize: 14 }}>Laden…</div>
+    </div>
+  )
+
+  if (error) return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: '#ff3b30', fontSize: 14 }}>{error}</div>
     </div>
   )
 
@@ -81,7 +84,7 @@ export default function MachineSpoelen() {
       </p>
 
       {/* Pompkeuze */}
-      <div style={{ background: '#fff', borderRadius: 16, padding: '16px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 12 }}>
           Leidingen op water
         </div>
@@ -100,10 +103,9 @@ export default function MachineSpoelen() {
                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', transition: 'all .15s',
               }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#007aff' : '#aeaeb2', marginBottom: 3 }}>L{p.slot}</div>
-                {p.ingredient?.name
-                  ? <div style={{ fontSize: 11, color: '#6e6e73', marginBottom: analysed ? 5 : 0 }}>{p.ingredient.name}</div>
-                  : <div style={{ fontSize: 11, color: '#c7c7cc', marginBottom: analysed ? 5 : 0 }}>Leeg</div>
-                }
+                <div style={{ fontSize: 11, color: p.ingredient?.name ? '#6e6e73' : '#c7c7cc', marginBottom: analysed ? 5 : 0 }}>
+                  {p.ingredient?.name || 'Leeg'}
+                </div>
                 {analysed && dur && (
                   <div style={{ fontSize: 12, fontWeight: 700, color: lbl.color }}>{dur}s — {lbl.text}</div>
                 )}
@@ -115,9 +117,9 @@ export default function MachineSpoelen() {
 
       {/* Analyse resultaat */}
       {analysed && selected.length > 0 && (
-        <div style={{ background: '#fff', borderRadius: 16, padding: '16px', marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
+        <div style={{ background: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 10 }}>Analyse</div>
-          {[...selected].sort((a,b)=>a-b).map(slot => {
+          {[...selected].sort((a, b) => a - b).map(slot => {
             const dur = durations[slot]; const lbl = flushLabel(dur)
             return (
               <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f2f2f7' }}>
@@ -142,7 +144,7 @@ export default function MachineSpoelen() {
           <button onClick={analyse} disabled={analysing || selected.length === 0} style={{
             flex: 1, background: selected.length ? '#1d1d1f' : '#e5e5ea',
             color: selected.length ? '#fff' : '#aeaeb2',
-            border: 'none', borderRadius: 14, padding: '16px', fontSize: 16, fontWeight: 600,
+            border: 'none', borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 600,
             cursor: selected.length && !analysing ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}>
@@ -157,14 +159,14 @@ export default function MachineSpoelen() {
           <>
             <button onClick={startFlush} style={{
               flex: 2, background: '#007aff', color: '#fff',
-              border: 'none', borderRadius: 14, padding: '16px', fontSize: 16, fontWeight: 600,
+              border: 'none', borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Start spoelroutine
             </button>
             <button onClick={() => setAnalysed(false)} style={{
               flex: 1, background: '#f2f2f7', color: '#1d1d1f',
-              border: 'none', borderRadius: 14, padding: '16px', fontSize: 16,
+              border: 'none', borderRadius: 14, padding: 16, fontSize: 16,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Opnieuw
@@ -172,18 +174,19 @@ export default function MachineSpoelen() {
           </>
         )}
       </div>
-      {/* Test-knop: overlay testen zonder pompen */}
+
+      {/* Test-knop */}
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e5ea' }}>
         <button onClick={testOverlay} style={{
           width: '100%', background: 'transparent', color: '#8e8e93',
-          border: '1.5px solid #c7c7cc', borderRadius: 14, padding: '12px',
+          border: '1.5px solid #c7c7cc', borderRadius: 14, padding: 12,
           fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
         }}>
           Overlay testen (zonder pompen)
         </button>
       </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }

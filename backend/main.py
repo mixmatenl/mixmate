@@ -408,124 +408,101 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 
 
 # ── Spoelroutine ──────────────────────────────────────────────────────────────
+# Simpel ontwerp: één globale dict, polling via GET /api/pumps/flush-status.
+# Geen WebSocket nodig — zowel de machine-overlay als het portaal pollen HTTP.
 
 _flush_state: dict = {"active": False}
-_flush_clients: set = set()
 
-async def _broadcast_flush(data: dict):
-    dead = set()
-    for ws in list(_flush_clients):  # copy to avoid set-changed-during-iteration
-        try:
-            await ws.send_json(data)
-        except Exception:
-            dead.add(ws)
-    _flush_clients.difference_update(dead)
 
-@app.websocket("/ws/flush")
-async def websocket_flush(websocket: WebSocket):
-    await websocket.accept()
-    _flush_clients.add(websocket)
-    await websocket.send_json(_flush_state)
-    try:
-        while True:
-            await asyncio.sleep(5)
-            # Stuur ping zodat de verbinding open blijft
-            try:
-                await websocket.send_json({"ping": True, **_flush_state})
-            except Exception:
-                break
-    except WebSocketDisconnect:
-        pass
-    finally:
-        _flush_clients.discard(websocket)
-
-@app.get("/api/pumps/flush-status")
-def get_flush_status():
-    return _flush_state
-
-# MOET vóór /{pump_id} routes staan
-@app.post("/api/pumps/flush")
-async def flush_pump(body: dict, session: Session = Depends(get_session)):
-    slot     = body.get("slot")
-    duration = float(body.get("duration", 10))
-    pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
-    if not pump:
-        raise HTTPException(status_code=404, detail=f"Pomp {slot} niet gevonden")
-    try:
-        gpio.on(pump.gpio_pin)
-        await asyncio.sleep(duration)
-    finally:
-        gpio.off(pump.gpio_pin)
-    return {"ok": True, "slot": slot, "duration": duration}
-
-@app.post("/api/pumps/flush-test")
-async def flush_test(body: dict):
-    """Simuleert een spoelroutine zonder GPIO — voor testen van de overlay."""
+async def _run_flush_task(pumps: list):
+    """Achtergrondtaak: bestuurt GPIO en houdt _flush_state bij."""
     global _flush_state
-    n = max(1, int(body.get("slots", 3)))
-    _flush_state = {"active": True, "total": n, "done": 0, "current_slot": 1, "current_duration": 10, "elapsed": 0}
-    await _broadcast_flush(_flush_state)
-
-    async def _run():
-        global _flush_state
-        for i in range(n):
-            _flush_state.update({"done": i, "current_slot": i + 1, "current_duration": 10, "elapsed": 0})
-            await _broadcast_flush(dict(_flush_state))
-            for tick in range(25):  # 10s in 0.4s stappen
-                _flush_state["elapsed"] = round(tick * 0.4, 1)
-                await _broadcast_flush(dict(_flush_state))
-                await asyncio.sleep(0.4)
-            await asyncio.sleep(0.5)
-        _flush_state = {"active": False, "total": n, "done": n}
-        await _broadcast_flush(_flush_state)
-
-    asyncio.create_task(_run())
-    return {"ok": True}
-
-@app.post("/api/pumps/flush-all")
-async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
-    global _flush_state
-    pumps_data = sorted(body.get("pumps", []), key=lambda p: p.get("slot", 0))
-    if not pumps_data:
-        raise HTTPException(status_code=400, detail="Geen leidingen opgegeven")
-
-    _flush_state = {"active": True, "total": len(pumps_data), "done": 0,
-                    "current_slot": None, "current_duration": 0, "elapsed": 0}
-    await _broadcast_flush(_flush_state)
-
+    _flush_state = {
+        "active": True, "total": len(pumps), "done": 0,
+        "current_slot": None, "current_duration": 0, "elapsed": 0,
+    }
     try:
-        for i, p in enumerate(pumps_data):
-            slot     = p.get("slot")
-            duration = float(p.get("duration", 10))
-            pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
-            if not pump:
-                continue
+        for i, p in enumerate(pumps):
+            slot     = p["slot"]
+            duration = p["duration"]
+            gpio_pin = p["gpio_pin"]
 
-            _flush_state.update({"done": i, "current_slot": slot, "current_duration": duration, "elapsed": 0})
-            await _broadcast_flush(dict(_flush_state))
+            _flush_state.update({
+                "done": i, "current_slot": slot,
+                "current_duration": duration, "elapsed": 0,
+            })
 
             try:
-                gpio.on(pump.gpio_pin)
+                gpio.on(gpio_pin)
                 start = time.monotonic()
                 while True:
                     elapsed = time.monotonic() - start
                     if elapsed >= duration:
                         break
                     _flush_state["elapsed"] = round(elapsed, 1)
-                    await _broadcast_flush(dict(_flush_state))
-                    await asyncio.sleep(0.4)
+                    await asyncio.sleep(0.5)
             finally:
-                gpio.off(pump.gpio_pin)
+                gpio.off(gpio_pin)
 
             await asyncio.sleep(1.0)
 
-        _flush_state = {"active": False, "total": len(pumps_data), "done": len(pumps_data)}
-        await _broadcast_flush(_flush_state)
-    except Exception as e:
+        _flush_state = {"active": False, "total": len(pumps), "done": len(pumps)}
+    except Exception:
         _flush_state = {"active": False}
-        await _broadcast_flush(_flush_state)
-        raise
 
+
+@app.get("/api/pumps/flush-status")
+def get_flush_status():
+    return _flush_state
+
+
+@app.post("/api/pumps/flush-all")
+async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
+    global _flush_state
+    if _flush_state.get("active"):
+        raise HTTPException(status_code=409, detail="Spoelung al actief")
+
+    pumps_data = sorted(body.get("pumps", []), key=lambda p: p.get("slot", 0))
+    if not pumps_data:
+        raise HTTPException(status_code=400, detail="Geen leidingen opgegeven")
+
+    # Resolve GPIO pins nu (met DB sessie) zodat de achtergrondtaak geen DB nodig heeft
+    resolved = []
+    for p in pumps_data:
+        slot     = p.get("slot")
+        duration = float(p.get("duration", 10))
+        pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
+        if pump:
+            resolved.append({"slot": slot, "duration": duration, "gpio_pin": pump.gpio_pin})
+
+    if not resolved:
+        raise HTTPException(status_code=404, detail="Geen geldige leidingen gevonden")
+
+    asyncio.create_task(_run_flush_task(resolved))
+    return {"ok": True}
+
+
+@app.post("/api/pumps/flush-test")
+async def flush_test(body: dict):
+    """Simuleert een spoelroutine zonder GPIO — voor testen van de overlay."""
+    global _flush_state
+    if _flush_state.get("active"):
+        raise HTTPException(status_code=409, detail="Spoelung al actief")
+    n = max(1, int(body.get("slots", 3)))
+
+    async def _run():
+        global _flush_state
+        _flush_state = {"active": True, "total": n, "done": 0,
+                        "current_slot": 1, "current_duration": 8, "elapsed": 0}
+        for i in range(n):
+            _flush_state.update({"done": i, "current_slot": i + 1, "current_duration": 8, "elapsed": 0})
+            for tick in range(16):  # 8s in 0.5s stappen
+                _flush_state["elapsed"] = round(tick * 0.5, 1)
+                await asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)
+        _flush_state = {"active": False, "total": n, "done": n}
+
+    asyncio.create_task(_run())
     return {"ok": True}
 
 
