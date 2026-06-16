@@ -1,3 +1,9 @@
+## [2.1.3] - 2026-06-16
+### Gefixt
+- GPU-acceleratie ingeschakeld voor Chromium op de Pi (--use-gl=egl, --enable-gpu-rasterization, --enable-zero-copy)
+- Updater past de Chromium autostart automatisch aan bij elke update
+- Zonder deze flags renderde alles via de CPU, wat de scroll-stutter veroorzaakte
+
 ## [2.1.2] - 2026-06-16
 ### Gefixt
 - Stotterig scrollen definitief opgelost: JS-gebaseerde scroll vervangen door native browser scroll
