@@ -189,7 +189,7 @@ function PourModal({ recipe, glasses, onClose }) {
                 <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
                 <button onClick={hasAuto ? startPour : finishDone}
                   className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
-                  {hasAuto ? '🍸 Maken' : 'Klaar!'}
+                  {hasAuto ? 'Maken' : 'Klaar!'}
                 </button>
               </div>
             </>
@@ -204,7 +204,7 @@ function PourModal({ recipe, glasses, onClose }) {
                   {progress?.step_name || '…'}
                 </p>
                 {progress?.mode === 'weight' && (
-                  <p className="text-green-500 text-xs mt-1 tracking-wide">⚖ Weegmodus actief</p>
+                  <p className="text-green-500 text-xs mt-1 tracking-wide">Weegmodus actief</p>
                 )}
               </div>
 
@@ -251,7 +251,7 @@ function PourModal({ recipe, glasses, onClose }) {
               </div>
               <div>
                 <p className="text-gray-800 font-bold text-xl tracking-tight">{recipe.name}</p>
-                <p className="text-gray-400 text-sm mt-1">Smakelijk! 🥂</p>
+                <p className="text-gray-400 text-sm mt-1">Smakelijk!</p>
               </div>
               <button onClick={onClose} className="btn-dark w-full py-4 rounded-2xl text-sm font-bold tracking-wide">
                 Sluiten
@@ -292,9 +292,9 @@ function HeartButton({ active, onToggle }) {
       style={{ background: 'rgba(0,0,0,0.45)' }}
       aria-label="Favoriet"
     >
-      <span className="text-lg leading-none" style={{ color: active ? '#ff5a7a' : 'rgba(255,255,255,0.85)' }}>
-        {active ? '♥' : '♡'}
-      </span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill={active ? '#ff5a7a' : 'none'} stroke={active ? '#ff5a7a' : 'rgba(255,255,255,0.85)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
     </button>
   )
 }
@@ -360,7 +360,9 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
             ) : (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
                 style={{ background: '#fef3c7', color: '#92400e' }}>
-                <span>✋</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+                </svg>
                 Deels handmatig
               </span>
             )}
@@ -458,7 +460,7 @@ export default function Dashboard({ onStandby }) {
 
   // Sidebar categorieën — Favorieten bovenaan als er favorieten zijn
   const sidebarCats = [
-    ...(favorites.length > 0 ? [{ value: 'favorites', label: 'Favorieten', icon: '♥' }] : []),
+    ...(favorites.length > 0 ? [{ value: 'favorites', label: 'Favorieten' }] : []),
     { value: 'all', label: 'Alles' },
     ...categories.map(c => ({ value: c.id, label: c.name })),
   ]
@@ -506,7 +508,9 @@ export default function Dashboard({ onStandby }) {
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-3" style={{ color: 'var(--text-secondary)' }}>
-              <p className="text-4xl opacity-30">🍹</p>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
+                <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
+              </svg>
               <p className="text-base font-semibold" style={{ color: 'var(--text)' }}>
                 {searching ? 'Geen resultaten' : 'Geen cocktails gevonden'}
               </p>

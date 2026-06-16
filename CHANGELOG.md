@@ -1,3 +1,10 @@
+## [1.3.4] - 2026-06-16
+### Verbeterd
+- Alle emoji's vervangen door SVG-icoontjes (Pi heeft geen emoji-lettertype)
+- "Deels handmatig" badge toont nu een hand-SVG
+- "Geen cocktails gevonden" toont nu een cocktailglas-SVG
+- Hartknop gebruikt nu SVG in plaats van ♥/♡ tekens
+
 ## [1.3.3] - 2026-06-16
 ### Verbeterd
 - Status badge (automatisch/deels handmatig) staat nu in de kaart onder de naam in plaats van op de afbeelding — veel beter leesbaar
