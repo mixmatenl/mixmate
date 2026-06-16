@@ -1,3 +1,11 @@
+## [2.1.0] - 2026-06-16
+### Verbeterd
+- Volledig nieuw licht premium thema: Apple-stijl aansluitend bij MIXMATE.NL
+- Header en sidebar met frosted glass effect (backdrop-filter blur)
+- Cocktailkaarten: witte kaarten met subtiele schaduw, gradient-overlay op foto
+- Spoelroutine: lichte kaarten, gekleurde intensiteitsbadges per leiding
+- Geblokkeerd-overlay: clean wit frosted-glass design
+
 ## [2.0.0] - 2026-06-16
 ### Nieuw
 - Machine blokkeren vanuit portaal: bartender kan machine vergrendelen zodat geen cocktails gemaakt worden
