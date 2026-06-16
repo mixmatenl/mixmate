@@ -1,3 +1,7 @@
+## [1.4.3] - 2026-06-16
+### Gefixt
+- Ingredientnamen worden nu correct getoond bij de leidingen in de spoelroutine (was altijd leeg)
+
 ## [1.4.2] - 2026-06-16
 ### Gefixt
 - Raceconditie in flush-broadcast opgelost (kon spoelroutine stil laten crashen als overlay net verbond)

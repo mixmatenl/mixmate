@@ -100,8 +100,8 @@ export default function MachineSpoelen() {
                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', transition: 'all .15s',
               }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#007aff' : '#aeaeb2', marginBottom: 3 }}>L{p.slot}</div>
-                {p.ingredient_name
-                  ? <div style={{ fontSize: 11, color: '#6e6e73', marginBottom: analysed ? 5 : 0 }}>{p.ingredient_name}</div>
+                {p.ingredient?.name
+                  ? <div style={{ fontSize: 11, color: '#6e6e73', marginBottom: analysed ? 5 : 0 }}>{p.ingredient.name}</div>
                   : <div style={{ fontSize: 11, color: '#c7c7cc', marginBottom: analysed ? 5 : 0 }}>Leeg</div>
                 }
                 {analysed && dur && (
