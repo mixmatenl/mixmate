@@ -1,3 +1,7 @@
+## [2.2.2] - 2026-06-16
+### Gefixt
+- Emoji medailles (🥇🥈🥉) vervangen door gekleurde nummerbadges — emoji's worden niet goed gerenderd door Chromium op de Pi
+
 ## [2.2.1] - 2026-06-16
 ### Gefixt
 - Rapporten pagina op de machine nu volledig werkend: datum picker, samenvatting, cocktailranglijst en 30-dagen staafdiagram

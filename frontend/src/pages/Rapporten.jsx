@@ -110,9 +110,13 @@ export default function Rapporten() {
                   borderBottom: i < grouped.length - 1 ? '1px solid var(--border)' : 'none',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{i + 1}</span>}
-                    </span>
+                    <span style={{
+                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700,
+                      background: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--accent-bg)',
+                      color: i < 3 ? '#fff' : 'var(--text-muted)',
+                    }}>{i + 1}</span>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: i < 3 ? 600 : 400, color: 'var(--text)' }}>{item.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Laatste: {fmt(item.times[0])}</div>
