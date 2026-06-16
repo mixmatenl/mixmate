@@ -1,3 +1,9 @@
+## [1.4.2] - 2026-06-16
+### Gefixt
+- Raceconditie in flush-broadcast opgelost (kon spoelroutine stil laten crashen als overlay net verbond)
+- Testknop toegevoegd in Spoelroutine op de machine: overlay simuleren zonder pompen te starten
+- Intern: `time.monotonic()` en veilige set-iteratie in broadcast
+
 ## [1.4.1] - 2026-06-16
 ### Nieuw
 - Spoelroutine nu ook beschikbaar op het scherm van de machine zelf (Instellingen → Spoelroutine)
