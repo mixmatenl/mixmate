@@ -192,6 +192,9 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
     cat = session.get(Category, recipe.category_id) if recipe.category_id else None
     glass = session.get(Glass, recipe.glass_id) if recipe.glass_id else None
     total_volume_ml = sum(i.amount_ml for i in ingredients_read)
+    pour_count = session.exec(
+        select(func.count(Pour.id)).where(Pour.recipe_id == recipe.id)
+    ).one()
     return RecipeRead(
         id=recipe.id, name=recipe.name, description=recipe.description,
         image_url=recipe.image_url, category_id=recipe.category_id,
@@ -204,6 +207,7 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
         ingredients=ingredients_read,
         fully_automatic=fully_automatic,
         partially_available=partially_available,
+        pour_count=pour_count or 0,
     )
 
 
@@ -407,7 +411,10 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 @app.get("/api/recipes", response_model=List[RecipeRead])
 def list_recipes(session: Session = Depends(get_session)):
     recipes = session.exec(select(Recipe)).all()
-    return [_build_recipe_read(r, session) for r in recipes]
+    built = [_build_recipe_read(r, session) for r in recipes]
+    # Meest gemaakt bovenaan, daarna alfabetisch
+    built.sort(key=lambda r: (-r.pour_count, r.name.lower()))
+    return built
 
 @app.post("/api/recipes", response_model=RecipeRead)
 def create_recipe(data: RecipeCreate, session: Session = Depends(get_session)):

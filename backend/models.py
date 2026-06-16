@@ -197,6 +197,7 @@ class RecipeRead(SQLModel):
     ingredients: List[RecipeIngredientRead] = []
     fully_automatic: bool = False
     partially_available: bool = False
+    pour_count: int = 0
 
 
 class PourCreate(SQLModel):

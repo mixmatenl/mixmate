@@ -12,6 +12,7 @@ export function DragScrollProvider({ children }) {
     let startY = 0
     let startScroll = 0
     let didScroll = false
+    let lastScrollTime = 0
 
     function findScrollable(el) {
       while (el && el !== document.body) {
@@ -42,8 +43,9 @@ export function DragScrollProvider({ children }) {
     function onMove(e) {
       if (!scrollEl) return
       const dy = getClientY(e) - startY
-      if (Math.abs(dy) > 6) {
+      if (Math.abs(dy) > 10) {
         didScroll = true
+        lastScrollTime = Date.now()
         scrollEl.scrollTop = startScroll - dy
         e.preventDefault()
         e.stopPropagation()
@@ -54,7 +56,9 @@ export function DragScrollProvider({ children }) {
       scrollEl = null
     }
 
-    window.__dragScrollDidScroll = () => didScroll
+    // Gebruik ook een tijdcheck: gesimuleerde muis-events na touchend resetten didScroll,
+    // maar lastScrollTime blijft staan zodat clicks ≤300ms na scrollen alsnog geblokkeerd worden.
+    window.__dragScrollDidScroll = () => didScroll || (Date.now() - lastScrollTime < 300)
 
     // Mouse events (Pi met touchscreen-emulatie als muis)
     document.addEventListener('mousedown', onDown, { passive: true })

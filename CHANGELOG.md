@@ -1,3 +1,10 @@
+## [1.3.5] - 2026-06-16
+### Nieuw
+- Dashboard sorteert automatisch op meest gemaakte cocktails (pour_count)
+- Portaal: recept-editor volledig uitgebreid met ingrediënten, glazen, categorieën en afbeelding-URL
+### Verbeterd
+- Accidentele tik tijdens scrollen veel beter onderdrukt (threshold 10px + 300ms tijdslot na scroll)
+
 ## [1.3.4] - 2026-06-16
 ### Verbeterd
 - Alle emoji's vervangen door SVG-icoontjes (Pi heeft geen emoji-lettertype)
