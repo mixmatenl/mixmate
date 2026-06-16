@@ -1,3 +1,11 @@
+## [1.4.1] - 2026-06-16
+### Nieuw
+- Spoelroutine nu ook beschikbaar op het scherm van de machine zelf (Instellingen → Spoelroutine)
+### Verbeterd
+- Portaal loopt niet meer vast tijdens spoelen — voortgang wordt live getoond (leiding, seconden, blokjes)
+- FlushOverlay blijft stabiel door keepalive-ping elke 5 seconden
+- Flush-status endpoint toegevoegd zodat portaal de Pi rechtstreeks kan pollen
+
 ## [1.4.0] - 2026-06-16
 ### Nieuw
 - Spoelroutine vanuit portaal: selecteer leidingen op water, machine berekent spoelduur automatisch per leiding
