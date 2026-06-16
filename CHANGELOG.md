@@ -1,3 +1,7 @@
+## [1.3.6] - 2026-06-16
+### Verbeterd
+- Cloud verbinding bijgewerkt naar portaal.mixmate.nl
+
 ## [1.3.5] - 2026-06-16
 ### Nieuw
 - Dashboard sorteert automatisch op meest gemaakte cocktails (pour_count)

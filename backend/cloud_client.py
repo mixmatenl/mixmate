@@ -17,7 +17,7 @@ import websockets
 log = logging.getLogger("cloud_client")
 
 # Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
-_CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
+_CLOUD_URL_DEFAULT = "wss://portaal.mixmate.nl"
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
 LOCAL     = "http://localhost:8000"
 
