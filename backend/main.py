@@ -406,6 +406,33 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
     return {"ok": True}
 
 
+# ── Spoelroutine ──────────────────────────────────────────────────────────────
+
+_flush_state: dict = {"active": False}
+_flush_clients: set = set()
+
+async def _broadcast_flush(data: dict):
+    dead = set()
+    for ws in _flush_clients:
+        try:
+            await ws.send_json(data)
+        except Exception:
+            dead.add(ws)
+    _flush_clients.difference_update(dead)
+
+@app.websocket("/ws/flush")
+async def websocket_flush(websocket: WebSocket):
+    await websocket.accept()
+    _flush_clients.add(websocket)
+    await websocket.send_json(_flush_state)
+    try:
+        while True:
+            await asyncio.sleep(30)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        _flush_clients.discard(websocket)
+
 # MOET vóór /{pump_id} routes staan
 @app.post("/api/pumps/flush")
 async def flush_pump(body: dict, session: Session = Depends(get_session)):
@@ -420,6 +447,52 @@ async def flush_pump(body: dict, session: Session = Depends(get_session)):
     finally:
         gpio.off(pump.gpio_pin)
     return {"ok": True, "slot": slot, "duration": duration}
+
+@app.post("/api/pumps/flush-all")
+async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
+    global _flush_state
+    pumps_data = sorted(body.get("pumps", []), key=lambda p: p.get("slot", 0))
+    if not pumps_data:
+        raise HTTPException(status_code=400, detail="Geen leidingen opgegeven")
+
+    _flush_state = {"active": True, "total": len(pumps_data), "done": 0,
+                    "current_slot": None, "current_duration": 0, "elapsed": 0}
+    await _broadcast_flush(_flush_state)
+
+    try:
+        for i, p in enumerate(pumps_data):
+            slot     = p.get("slot")
+            duration = float(p.get("duration", 10))
+            pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
+            if not pump:
+                continue
+
+            _flush_state.update({"done": i, "current_slot": slot, "current_duration": duration, "elapsed": 0})
+            await _broadcast_flush(dict(_flush_state))
+
+            try:
+                gpio.on(pump.gpio_pin)
+                start = asyncio.get_event_loop().time()
+                while True:
+                    elapsed = asyncio.get_event_loop().time() - start
+                    if elapsed >= duration:
+                        break
+                    _flush_state["elapsed"] = round(elapsed, 1)
+                    await _broadcast_flush(dict(_flush_state))
+                    await asyncio.sleep(0.4)
+            finally:
+                gpio.off(pump.gpio_pin)
+
+            await asyncio.sleep(1.0)
+
+        _flush_state = {"active": False, "total": len(pumps_data), "done": len(pumps_data)}
+        await _broadcast_flush(_flush_state)
+    except Exception as e:
+        _flush_state = {"active": False}
+        await _broadcast_flush(_flush_state)
+        raise
+
+    return {"ok": True}
 
 
 # ── Recipes ───────────────────────────────────────────────────────────────────
@@ -609,6 +682,10 @@ def cancel():
 @app.websocket("/ws/pour/{recipe_id}")
 async def websocket_pour(websocket: WebSocket, recipe_id: int, scale: float = 1.0):
     await websocket.accept()
+    if _flush_state.get("active"):
+        await websocket.send_json({"type": "error", "message": "Machine is bezig met spoelen — probeer het later opnieuw."})
+        await websocket.close()
+        return
     with Session(engine) as session:
         recipe = session.get(Recipe, recipe_id)
         if not recipe:

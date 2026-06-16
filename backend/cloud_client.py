@@ -206,18 +206,14 @@ async def handle_message(message: dict) -> dict | None:
     return None
 
 async def _run_flush(pumps: list):
-    """Spoel geselecteerde leidingen door — elk voor de berekende duur."""
+    """Spoel geselecteerde leidingen door via flush-all endpoint."""
     log.info("Spoelroutine gestart: %d leiding(en)", len(pumps))
-    for pump in sorted(pumps, key=lambda p: p.get("slot", 0)):
-        slot     = pump.get("slot")
-        duration = pump.get("duration", 10)
-        log.info("Spoelen leiding %s voor %ds", slot, duration)
-        try:
-            async with httpx.AsyncClient(timeout=duration + 10) as c:
-                await c.post(f"{LOCAL}/api/pumps/flush", json={"slot": slot, "duration": duration})
-        except Exception as e:
-            log.warning("Spoelen leiding %s mislukt: %s", slot, e)
-        await asyncio.sleep(1.5)
+    total = sum(p.get("duration", 10) for p in pumps) + len(pumps) * 1.5
+    try:
+        async with httpx.AsyncClient(timeout=total + 30) as c:
+            await c.post(f"{LOCAL}/api/pumps/flush-all", json={"pumps": pumps})
+    except Exception as e:
+        log.error("Spoelroutine mislukt: %s", e)
     log.info("Spoelroutine voltooid")
 
 async def _run_ota_update():

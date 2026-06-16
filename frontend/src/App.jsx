@@ -8,6 +8,7 @@ import Instellingen from './pages/Instellingen'
 import Rapporten from './pages/Rapporten'
 import SplashScreen from './pages/SplashScreen'
 import StandbyScreen from './pages/StandbyScreen'
+import FlushOverlay from './components/FlushOverlay'
 import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 import { DragScrollProvider } from './components/DragScroll'
 
@@ -70,6 +71,7 @@ export default function App() {
     <DragScrollProvider>
       {appContent}
       {standby && <StandbyScreen onWake={() => setStandby(false)} />}
+      <FlushOverlay />
     </DragScrollProvider>
   )
 }
