@@ -1,3 +1,7 @@
+## [2.1.4] - 2026-06-16
+### Gefixt
+- GPU-acceleratie flags ook toegevoegd aan install.sh (nieuwe installaties hadden dit nog niet)
+
 ## [2.1.3] - 2026-06-16
 ### Gefixt
 - GPU-acceleratie ingeschakeld voor Chromium op de Pi (--use-gl=egl, --enable-gpu-rasterization, --enable-zero-copy)

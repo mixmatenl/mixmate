@@ -311,6 +311,11 @@ exec ${CHROMIUM_BIN} \\
   --disable-pinch \\
   --overscroll-history-navigation=0 \\
   --check-for-update-interval=31536000 \\
+  --use-gl=egl \\
+  --enable-gpu-rasterization \\
+  --enable-zero-copy \\
+  --enable-features=VaapiVideoDecoder \\
+  --disable-features=UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\
   http://localhost:8000
 XINITRC
 chown ${USER}:${USER} /home/${USER}/.xinitrc
