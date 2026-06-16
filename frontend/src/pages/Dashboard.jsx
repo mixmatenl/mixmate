@@ -347,6 +347,26 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
           style={{ color: 'var(--text)' }}>
           {recipe.name}
         </h3>
+
+        {/* Status badge */}
+        {canMake && (
+          <div className="mb-3">
+            {recipe.fully_automatic ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: '#dcfce7', color: '#15803d' }}>
+                <span style={{ width: 6, height: 6, borderRadius: 3, background: '#16a34a', display: 'inline-block' }} />
+                Volledig automatisch
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: '#fef3c7', color: '#92400e' }}>
+                <span>✋</span>
+                Deels handmatig
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-1.5">
           {(recipe.ingredients || []).slice(0, 4).map(ing => (
             <span key={ing.ingredient_id}
@@ -359,13 +379,6 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
       </div>
 
       <HeartButton active={isFavorite} onToggle={() => onToggleFavorite(recipe.id)} />
-
-      {canMake && !recipe.fully_automatic && (
-        <div className="absolute top-3 left-3 text-[10px] font-bold px-2 py-1 rounded-full tracking-wide"
-          style={{ background: 'rgba(245,158,11,0.15)', color: '#92400e', border: '1px solid rgba(245,158,11,0.3)' }}>
-          Deels handmatig
-        </div>
-      )}
     </div>
   )
 }

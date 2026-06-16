@@ -1,3 +1,8 @@
+## [1.3.3] - 2026-06-16
+### Verbeterd
+- Status badge (automatisch/deels handmatig) staat nu in de kaart onder de naam in plaats van op de afbeelding — veel beter leesbaar
+- Groen badge voor volledig automatische cocktails, geel voor deels handmatig
+
 ## [1.3.2] - 2026-06-16
 ### Verbeterd
 - Modal openen soepeler: backdrop-blur en scale-animatie verwijderd van cocktail-popup
