@@ -294,7 +294,7 @@ async def run_update():
 
             # Zorg dat GPU-acceleratie aan staat in de Chromium autostart
         autostart_path = Path.home() / ".config/autostart/mixmate.desktop"
-        gpu_flags = "--use-gl=egl --enable-gpu-rasterization --enable-zero-copy --enable-features=VaapiVideoDecoder --disable-features=UseChromeOSDirectVideoDecoder,UseSkiaRenderer"
+        gpu_flags = "--use-gl=egl --enable-gpu-rasterization --enable-zero-copy --enable-features=VaapiVideoDecoder --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer"
         try:
             if autostart_path.exists():
                 content = autostart_path.read_text()

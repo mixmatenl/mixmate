@@ -1,3 +1,8 @@
+## [2.1.5] - 2026-06-16
+### Gefixt
+- Dubbele --disable-features vlag samengevoegd (Chromium negeerde de eerste, GPU-fix werkte niet correct)
+- Installer detecteert nu zowel /boot/cmdline.txt als /boot/firmware/cmdline.txt (Pi OS Bookworm vs Bullseye)
+
 ## [2.1.4] - 2026-06-16
 ### Gefixt
 - GPU-acceleratie flags ook toegevoegd aan install.sh (nieuwe installaties hadden dit nog niet)

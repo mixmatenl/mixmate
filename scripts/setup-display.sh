@@ -70,7 +70,7 @@ cat > "$AUTOSTART_DIR/mixmate.desktop" << EOF
 [Desktop Entry]
 Type=Application
 Name=Mixmate
-Exec=chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --password-store=basic --disable-translate --force-device-scale-factor=1.5 --use-gl=egl --enable-gpu-rasterization --enable-zero-copy --enable-features=VaapiVideoDecoder --disable-features=UseChromeOSDirectVideoDecoder,UseSkiaRenderer http://localhost:8000
+Exec=chromium --kiosk --noerrdialogs --disable-infobars --no-first-run --password-store=basic --disable-translate --force-device-scale-factor=1.5 --use-gl=egl --enable-gpu-rasterization --enable-zero-copy --enable-features=VaapiVideoDecoder --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer http://localhost:8000
 X-GNOME-Autostart-enabled=true
 EOF
 

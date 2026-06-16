@@ -231,12 +231,14 @@ cp "$INSTALL_DIR/frontend/public/logo.png"          "$THEME_DIR/"
 plymouth-set-default-theme mixmate 2>/dev/null || warn "Plymouth theme instellen mislukt — doorgaan"
 update-initramfs -u 2>/dev/null || warn "initramfs update mislukt — doorgaan"
 
-# Boottext verbergen: voeg quiet splash toe aan cmdline.txt
-CMDLINE="/boot/cmdline.txt"
-if [ -f "$CMDLINE" ] && ! grep -q "quiet" "$CMDLINE"; then
-  sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE"
-  log "Boot parameters aangepast"
-fi
+# Boottext verbergen: voeg quiet splash toe aan cmdline.txt (Pi OS Bookworm + Bullseye)
+for CMDLINE in /boot/firmware/cmdline.txt /boot/cmdline.txt; do
+  if [ -f "$CMDLINE" ] && ! grep -q "quiet" "$CMDLINE"; then
+    sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE"
+    log "Boot parameters aangepast: $CMDLINE"
+    break
+  fi
+done
 
 # ── Systemd backend service ───────────────────
 log "Backend service instellen..."
@@ -306,7 +308,6 @@ exec ${CHROMIUM_BIN} \\
   --no-first-run \\
   --password-store=basic \\
   --disable-translate \\
-  --disable-features=TranslateUI \\
   --force-device-scale-factor=1.5 \\
   --disable-pinch \\
   --overscroll-history-navigation=0 \\
@@ -315,7 +316,7 @@ exec ${CHROMIUM_BIN} \\
   --enable-gpu-rasterization \\
   --enable-zero-copy \\
   --enable-features=VaapiVideoDecoder \\
-  --disable-features=UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\
+  --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\
   http://localhost:8000
 XINITRC
 chown ${USER}:${USER} /home/${USER}/.xinitrc
