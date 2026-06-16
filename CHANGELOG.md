@@ -1,3 +1,13 @@
+## [1.4.0] - 2026-06-16
+### Nieuw
+- Spoelroutine vanuit portaal: selecteer leidingen op water, machine berekent spoelduur automatisch per leiding
+- Spoelen toont real-time voortgang op het machinesch erm (fullscreen overlay met circulaire progressie)
+- Machine blokkeert cocktails maken tijdens een actieve spoelroutine
+- Spoelgeschiedenis bijgehouden per machine in de cloud (datum, leidingen, duur)
+- Teambeheer: meerdere accounts koppelen aan één machine (medewerker / beheerder)
+- Receptvergrendeling: eigenaar kan recepten vergrendelen zodat medewerkers ze niet kunnen bewerken of verwijderen
+- Spoelen is een apart tabblad in het portaal (tussen Pompen en Instellingen)
+
 ## [1.3.6] - 2026-06-16
 ### Verbeterd
 - Cloud verbinding bijgewerkt naar portaal.mixmate.nl
