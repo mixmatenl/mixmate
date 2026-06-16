@@ -211,6 +211,18 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/machine/blocked", timeout=3)
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "get_pours":
+                date_param = message.get("date", "")
+                url = f"{LOCAL}/api/pours?limit=200"
+                if date_param:
+                    url += f"&date={date_param}"
+                r = await c.get(url, timeout=5)
+                return {"req_id": req_id, "pours": r.json() if r.status_code == 200 else []}
+
+            elif msg_type == "get_pour_stats":
+                r = await c.get(f"{LOCAL}/api/pours/stats", timeout=5)
+                return {"req_id": req_id, **(r.json() if r.status_code == 200 else {})}
+
             elif msg_type == "trigger_update":
                 asyncio.create_task(_run_ota_update())
                 return {"req_id": req_id, "ok": True}

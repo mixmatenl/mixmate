@@ -328,7 +328,7 @@ function ImageWithFallback({ recipe }) {
 }
 
 /* ── Cocktail card ───────────────────────────────────────────────────── */
-function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
+function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite, isPopular }) {
   const canMake = recipe.partially_available
 
   return (
@@ -353,18 +353,29 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
           pointerEvents: 'none',
         }} />
         {/* Categorie bovenaan in de afbeelding */}
-        {recipe.category_name && (
-          <div style={{
-            position: 'absolute', top: 12, left: 14,
-            fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
-            textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)',
-            background: 'rgba(0,0,0,0.35)',
-            backdropFilter: 'blur(8px)',
-            padding: '3px 8px', borderRadius: 20,
-          }}>
-            {recipe.category_name}
-          </div>
-        )}
+        <div style={{ position: 'absolute', top: 12, left: 14, display: 'flex', gap: 6 }}>
+          {recipe.category_name && (
+            <div style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)',
+              background: 'rgba(0,0,0,0.32)',
+              padding: '3px 8px', borderRadius: 20,
+            }}>
+              {recipe.category_name}
+            </div>
+          )}
+          {isPopular && (
+            <div style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+              color: '#fff',
+              background: 'rgba(255,149,0,0.85)',
+              padding: '3px 8px', borderRadius: 20,
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              ★ Populair
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ padding: '14px 16px 16px' }}>
@@ -568,13 +579,14 @@ export default function Dashboard({ onStandby }) {
             </div>
           ) : (
             <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-              {filtered.map(r => (
+              {filtered.map((r, i) => (
                 <CocktailCard
                   key={r.id}
                   recipe={r}
                   onMake={setMaking}
                   isFavorite={favSet.has(r.id)}
                   onToggleFavorite={toggleFavorite}
+                  isPopular={r.pour_count > 0 && i < 3 && activeCategory === 'all' && !searching}
                 />
               ))}
             </div>

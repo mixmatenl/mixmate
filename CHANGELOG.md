@@ -1,3 +1,9 @@
+## [2.2.0] - 2026-06-16
+### Nieuw
+- "Populair" badge op top-3 meest gemaakte cocktails in de machine-app
+- Pour-data beschikbaar via cloud: portaal kan nu giethistorie per dag ophalen
+- Datumfilter toegevoegd aan /api/pours endpoint op de Pi
+
 ## [2.1.6] - 2026-06-16
 ### Gefixt
 - OTA-updater patcht nu .xinitrc (de echte Chromium-lanceerder) in plaats van .config/autostart die niet gebruikt wordt

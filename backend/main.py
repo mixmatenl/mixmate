@@ -680,10 +680,18 @@ def pour_stats(session: Session = Depends(get_session)):
     }
 
 @app.get("/api/pours", response_model=List[PourRead])
-def list_pours(limit: int = 50, session: Session = Depends(get_session)):
-    return session.exec(
-        select(Pour).order_by(Pour.poured_at.desc()).limit(limit)
-    ).all()
+def list_pours(limit: int = 200, date: str = None, session: Session = Depends(get_session)):
+    q = select(Pour).order_by(Pour.poured_at.desc())
+    if date:
+        try:
+            from datetime import date as date_type
+            d = date_type.fromisoformat(date)
+            day_start = datetime.combine(d, datetime.min.time())
+            day_end   = datetime.combine(d, datetime.max.time())
+            q = q.where(Pour.poured_at >= day_start, Pour.poured_at <= day_end)
+        except ValueError:
+            pass
+    return session.exec(q.limit(limit)).all()
 
 @app.post("/api/pours", response_model=PourRead)
 def create_pour(data: PourCreate, session: Session = Depends(get_session)):
