@@ -427,11 +427,20 @@ async def websocket_flush(websocket: WebSocket):
     await websocket.send_json(_flush_state)
     try:
         while True:
-            await asyncio.sleep(30)
+            await asyncio.sleep(5)
+            # Stuur ping zodat de verbinding open blijft
+            try:
+                await websocket.send_json({"ping": True, **_flush_state})
+            except Exception:
+                break
     except WebSocketDisconnect:
         pass
     finally:
         _flush_clients.discard(websocket)
+
+@app.get("/api/pumps/flush-status")
+def get_flush_status():
+    return _flush_state
 
 # MOET vóór /{pump_id} routes staan
 @app.post("/api/pumps/flush")

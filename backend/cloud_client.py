@@ -194,6 +194,10 @@ async def handle_message(message: dict) -> dict | None:
                 asyncio.create_task(_run_flush(pumps))
                 return {"req_id": req_id, "ok": True}
 
+            elif msg_type == "get_flush_status":
+                r = await c.get(f"{LOCAL}/api/pumps/flush-status", timeout=3)
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "trigger_update":
                 asyncio.create_task(_run_ota_update())
                 return {"req_id": req_id, "ok": True}

@@ -11,7 +11,11 @@ export default function FlushOverlay() {
       const port  = import.meta.env.DEV ? '8000' : (window.location.port || '80')
       const ws    = new WebSocket(`${proto}://${host}:${port}/ws/flush`)
       wsRef.current = ws
-      ws.onmessage = e => setState(JSON.parse(e.data))
+      ws.onmessage = e => {
+        const d = JSON.parse(e.data)
+        if (d.ping && !d.active) return  // keepalive zonder wijziging negeren
+        setState(d)
+      }
       ws.onclose   = () => setTimeout(connect, 3000)
     }
     connect()
