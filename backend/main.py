@@ -406,6 +406,22 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
     return {"ok": True}
 
 
+# MOET vóór /{pump_id} routes staan
+@app.post("/api/pumps/flush")
+async def flush_pump(body: dict, session: Session = Depends(get_session)):
+    slot     = body.get("slot")
+    duration = float(body.get("duration", 10))
+    pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
+    if not pump:
+        raise HTTPException(status_code=404, detail=f"Pomp {slot} niet gevonden")
+    try:
+        gpio.on(pump.gpio_pin)
+        await asyncio.sleep(duration)
+    finally:
+        gpio.off(pump.gpio_pin)
+    return {"ok": True, "slot": slot, "duration": duration}
+
+
 # ── Recipes ───────────────────────────────────────────────────────────────────
 
 @app.get("/api/recipes", response_model=List[RecipeRead])
