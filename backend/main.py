@@ -415,6 +415,7 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 # Geen WebSocket nodig — zowel de machine-overlay als het portaal pollen HTTP.
 
 _flush_state: dict = {"active": False}
+_machine_blocked: bool = False
 
 
 async def _run_flush_task(pumps: list):
@@ -455,6 +456,25 @@ async def _run_flush_task(pumps: list):
 @app.get("/api/pumps/flush-status")
 def get_flush_status():
     return _flush_state
+
+
+@app.post("/api/machine/block")
+def block_machine():
+    global _machine_blocked
+    _machine_blocked = True
+    return {"blocked": True}
+
+
+@app.post("/api/machine/unblock")
+def unblock_machine():
+    global _machine_blocked
+    _machine_blocked = False
+    return {"blocked": False}
+
+
+@app.get("/api/machine/blocked")
+def get_blocked():
+    return {"blocked": _machine_blocked}
 
 
 @app.get("/api/pumps/flush-debug")
@@ -715,6 +735,10 @@ def cancel():
 @app.websocket("/ws/pour/{recipe_id}")
 async def websocket_pour(websocket: WebSocket, recipe_id: int, scale: float = 1.0):
     await websocket.accept()
+    if _machine_blocked:
+        await websocket.send_json({"type": "error", "message": "Machine is geblokkeerd — spoelroutine actief."})
+        await websocket.close()
+        return
     if _flush_state.get("active"):
         await websocket.send_json({"type": "error", "message": "Machine is bezig met spoelen — probeer het later opnieuw."})
         await websocket.close()

@@ -199,6 +199,18 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/pumps/flush-status", timeout=3)
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "block_machine":
+                r = await c.post(f"{LOCAL}/api/machine/block", timeout=3)
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "unblock_machine":
+                r = await c.post(f"{LOCAL}/api/machine/unblock", timeout=3)
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "get_block_status":
+                r = await c.get(f"{LOCAL}/api/machine/blocked", timeout=3)
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "trigger_update":
                 asyncio.create_task(_run_ota_update())
                 return {"req_id": req_id, "ok": True}

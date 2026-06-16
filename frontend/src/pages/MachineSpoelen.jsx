@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 
 function calcFlushDuration(slot, daysSince) {
   const base = 8
@@ -15,16 +15,13 @@ function flushLabel(duration) {
 }
 
 export default function MachineSpoelen() {
-  const [pumps,      setPumps]      = useState([])
-  const [selected,   setSelected]   = useState([])
-  const [analysed,   setAnalysed]   = useState(false)
-  const [analysing,  setAnalysing]  = useState(false)
-  const [durations,  setDurations]  = useState({})
-  const [loading,    setLoading]    = useState(true)
-  const [loadErr,    setLoadErr]    = useState(null)
-  const [flushMsg,   setFlushMsg]   = useState(null)  // {ok, text}
-  const [debugPumps, setDebugPumps] = useState(null)
-  const [showDebug,  setShowDebug]  = useState(false)
+  const [pumps,     setPumps]     = useState([])
+  const [selected,  setSelected]  = useState([])
+  const [analysed,  setAnalysed]  = useState(false)
+  const [analysing, setAnalysing] = useState(false)
+  const [durations, setDurations] = useState({})
+  const [loading,   setLoading]   = useState(true)
+  const [loadErr,   setLoadErr]   = useState(null)
 
   useEffect(() => {
     fetch('/api/pumps/simple')
@@ -34,17 +31,10 @@ export default function MachineSpoelen() {
       .finally(() => setLoading(false))
   }, [])
 
-  function loadDebug() {
-    fetch('/api/pumps/flush-debug')
-      .then(r => r.json())
-      .then(setDebugPumps)
-      .catch(() => setDebugPumps([]))
-  }
-
   const daysSinceLast = 30
 
   async function analyse() {
-    setAnalysing(true); setAnalysed(false); setFlushMsg(null)
+    setAnalysing(true); setAnalysed(false)
     await new Promise(r => setTimeout(r, 1600))
     const d = {}
     selected.forEach(slot => { d[slot] = calcFlushDuration(slot, daysSinceLast) })
@@ -52,39 +42,12 @@ export default function MachineSpoelen() {
   }
 
   async function startFlush() {
-    setFlushMsg(null)
     const pumpsPayload = selected.map(slot => ({ slot, duration: durations[slot] || 10 }))
-    setFlushMsg({ ok: null, text: `Spoelcommando sturen (${pumpsPayload.length} leidingen)…` })
-    try {
-      const r = await fetch('/api/pumps/flush-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pumps: pumpsPayload }),
-      })
-      const body = await r.json().catch(() => ({}))
-      if (r.ok) {
-        setFlushMsg({ ok: true, text: `Gestart — ${body.pumps || pumpsPayload.length} leidingen. Overlay verschijnt nu.` })
-      } else {
-        setFlushMsg({ ok: false, text: `Fout ${r.status}: ${body.detail || JSON.stringify(body)}` })
-      }
-    } catch (e) {
-      setFlushMsg({ ok: false, text: `Verbindingsfout: ${e.message}` })
-    }
-  }
-
-  async function testOverlay() {
-    setFlushMsg({ ok: null, text: 'Test overlay gestart…' })
-    try {
-      const r = await fetch('/api/pumps/flush-test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slots: Math.max(2, selected.length || 2) }),
-      })
-      if (r.ok) setFlushMsg({ ok: true, text: 'Test gestart — overlay verschijnt nu.' })
-      else       setFlushMsg({ ok: false, text: `Test fout: ${r.status}` })
-    } catch (e) {
-      setFlushMsg({ ok: false, text: `Verbindingsfout: ${e.message}` })
-    }
+    await fetch('/api/pumps/flush-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pumps: pumpsPayload }),
+    }).catch(() => {})
   }
 
   const totalTime = selected.reduce((s, slot) => s + (durations[slot] || 0), 0)
@@ -167,18 +130,6 @@ export default function MachineSpoelen() {
         </div>
       )}
 
-      {/* Statusmelding */}
-      {flushMsg && (
-        <div style={{
-          borderRadius: 12, padding: '12px 16px', marginBottom: 12, fontSize: 13,
-          background: flushMsg.ok === true ? '#f0fff4' : flushMsg.ok === false ? '#fff2f2' : '#f0f7ff',
-          color:      flushMsg.ok === true ? '#1a7a3a' : flushMsg.ok === false ? '#c62828' : '#0055cc',
-          border: `1px solid ${flushMsg.ok === true ? '#b2dfdb' : flushMsg.ok === false ? '#ffcdd2' : '#bbdefb'}`,
-        }}>
-          {flushMsg.text}
-        </div>
-      )}
-
       {/* Knoppen */}
       <div style={{ display: 'flex', gap: 12 }}>
         {!analysed ? (
@@ -213,48 +164,6 @@ export default function MachineSpoelen() {
               Opnieuw
             </button>
           </>
-        )}
-      </div>
-
-      {/* Diagnose sectie */}
-      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e5ea' }}>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <button onClick={testOverlay} style={{
-            flex: 1, background: 'transparent', color: '#8e8e93',
-            border: '1.5px solid #c7c7cc', borderRadius: 14, padding: 12,
-            fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            Overlay testen
-          </button>
-          <button onClick={() => { setShowDebug(v => !v); if (!showDebug) loadDebug() }} style={{
-            flex: 1, background: 'transparent', color: '#8e8e93',
-            border: '1.5px solid #c7c7cc', borderRadius: 14, padding: 12,
-            fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
-          }}>
-            {showDebug ? 'Verberg diagnose' : 'Diagnose'}
-          </button>
-        </div>
-
-        {showDebug && (
-          <div style={{ background: '#1d1d1f', borderRadius: 12, padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 8 }}>
-              Pompdiagnose (gpio_pin vereist voor spoelen)
-            </div>
-            {debugPumps === null ? (
-              <div style={{ color: '#6e6e73', fontSize: 13 }}>Laden…</div>
-            ) : debugPumps.length === 0 ? (
-              <div style={{ color: '#ff3b30', fontSize: 13 }}>Geen pompen gevonden in database</div>
-            ) : (
-              debugPumps.map(p => (
-                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #2c2c2e', fontSize: 13 }}>
-                  <span style={{ color: '#fff' }}>Slot {p.slot}</span>
-                  <span style={{ color: p.gpio_pin !== null ? '#30d158' : '#ff3b30', fontFamily: 'monospace' }}>
-                    gpio={p.gpio_pin !== null ? p.gpio_pin : 'NULL ⚠️'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
         )}
       </div>
 
