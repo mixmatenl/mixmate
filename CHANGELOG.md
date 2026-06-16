@@ -1,3 +1,9 @@
+## [2.1.2] - 2026-06-16
+### Gefixt
+- Stotterig scrollen definitief opgelost: JS-gebaseerde scroll vervangen door native browser scroll
+- DragScrollProvider doet nu alleen click-vs-scroll detectie, geen scrollTop manipulatie meer
+- touch-action en will-change opgeschoond — geen onnodige GPU-lagen meer
+
 ## [2.1.1] - 2026-06-16
 ### Gefixt
 - Stotterig scrollen opgelost: backdrop-filter blur verwijderd van header, sidebar en overlay (te zwaar voor Pi GPU)

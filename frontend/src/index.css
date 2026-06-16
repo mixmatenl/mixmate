@@ -53,11 +53,8 @@ html, body, #root {
 .overflow-y-auto, .overflow-y-scroll {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
-.overflow-y-auto *, .overflow-y-scroll * { touch-action: pan-y; }
-.overflow-y-auto button, .overflow-y-auto a,
-.overflow-y-auto input, .overflow-y-auto select,
-.overflow-y-auto textarea { touch-action: manipulation; }
 
 /* ── Select dropdown ────────────────────────────────────────────────── */
 select option { background: #ffffff; color: #1c1c1e; }
@@ -72,11 +69,8 @@ select option { background: #ffffff; color: #1c1c1e; }
 /* ── Kaart press ────────────────────────────────────────────────────── */
 .card-pressable {
   cursor: pointer;
-  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.1s ease;
-  will-change: transform;
 }
-.card-pressable:active { transform: scale(0.965); opacity: 0.88; }
+.card-pressable:active { opacity: 0.75; }
 
 /* ── Primaire knop ──────────────────────────────────────────────────── */
 .btn-primary {

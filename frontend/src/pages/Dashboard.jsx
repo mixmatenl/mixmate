@@ -546,7 +546,7 @@ export default function Dashboard({ onStandby }) {
         onStandby={onStandby}
       />
 
-      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)', willChange: 'scroll-position', WebkitOverflowScrolling: 'touch' }}>
+      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
         <div className="min-h-full px-8 py-8">
           <SearchBar value={search} onChange={setSearch} />
 
