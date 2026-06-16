@@ -292,18 +292,22 @@ async def run_update():
                 except Exception:
                     pass
 
-            # Zorg dat GPU-acceleratie aan staat in de Chromium autostart
-        autostart_path = Path.home() / ".config/autostart/mixmate.desktop"
-        gpu_flags = "--use-gl=egl --enable-gpu-rasterization --enable-zero-copy --enable-features=VaapiVideoDecoder --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer"
+            # Zorg dat GPU-acceleratie aan staat in .xinitrc (echte Chromium-lanceerder)
+        xinitrc_path = Path.home() / ".xinitrc"
         try:
-            if autostart_path.exists():
-                content = autostart_path.read_text()
+            if xinitrc_path.exists():
+                content = xinitrc_path.read_text()
                 if "use-gl=egl" not in content:
                     content = content.replace(
-                        "http://localhost:8000",
-                        f"{gpu_flags} http://localhost:8000"
+                        "--check-for-update-interval=31536000 \\\n",
+                        "--check-for-update-interval=31536000 \\\n"
+                        "  --use-gl=egl \\\n"
+                        "  --enable-gpu-rasterization \\\n"
+                        "  --enable-zero-copy \\\n"
+                        "  --enable-features=VaapiVideoDecoder \\\n"
+                        "  --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\\n"
                     )
-                    autostart_path.write_text(content)
+                    xinitrc_path.write_text(content)
         except Exception:
             pass
 

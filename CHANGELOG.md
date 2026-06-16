@@ -1,3 +1,7 @@
+## [2.1.6] - 2026-06-16
+### Gefixt
+- OTA-updater patcht nu .xinitrc (de echte Chromium-lanceerder) in plaats van .config/autostart die niet gebruikt wordt
+
 ## [2.1.5] - 2026-06-16
 ### Gefixt
 - Dubbele --disable-features vlag samengevoegd (Chromium negeerde de eerste, GPU-fix werkte niet correct)
