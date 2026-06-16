@@ -3,12 +3,14 @@ import { api, createPourSocket } from '../api'
 import { Sidebar } from './Layout'
 
 const GRADIENTS = [
-  'linear-gradient(135deg,#1a1a2e,#0f3460)',
-  'linear-gradient(135deg,#0d0d0d,#2d2d2d)',
-  'linear-gradient(135deg,#0f0c29,#24243e)',
-  'linear-gradient(135deg,#141e30,#243b55)',
-  'linear-gradient(135deg,#0f2027,#2c5364)',
-  'linear-gradient(135deg,#1c1c1c,#3a3a3a)',
+  'linear-gradient(145deg,#1a0533,#4a0e6e)',
+  'linear-gradient(145deg,#0d2137,#0f5c8a)',
+  'linear-gradient(145deg,#1a1a0a,#4a4200)',
+  'linear-gradient(145deg,#0d1f0d,#1a5c1a)',
+  'linear-gradient(145deg,#2d0a0a,#7a1515)',
+  'linear-gradient(145deg,#001a2d,#004466)',
+  'linear-gradient(145deg,#1a0d2e,#3d1f6e)',
+  'linear-gradient(145deg,#0a1a0a,#1a4d2e)',
 ]
 function gradientFor(name) {
   let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
@@ -328,56 +330,89 @@ function ImageWithFallback({ recipe }) {
 /* ── Cocktail card ───────────────────────────────────────────────────── */
 function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite }) {
   const canMake = recipe.partially_available
-  const statusLabel = recipe.fully_automatic ? 'Automatisch' : (canMake ? 'Deels' : 'Niet')
 
   return (
     <div
       onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
-      className={`card-pressable relative w-full text-left rounded-3xl border overflow-hidden ${
-        canMake ? '' : 'opacity-40 cursor-not-allowed'
+      className={`card-pressable relative w-full text-left rounded-3xl overflow-hidden ${
+        canMake ? '' : 'opacity-30 cursor-not-allowed'
       }`}
-      style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+      }}
     >
-      <ImageWithFallback recipe={recipe} />
-
-      <div className="p-5">
+      {/* Afbeelding — groter */}
+      <div style={{ position: 'relative' }}>
+        <ImageWithFallback recipe={recipe} />
+        {/* Gradient overlay onderaan afbeelding */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 80,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)',
+          pointerEvents: 'none',
+        }} />
+        {/* Categorie bovenaan in de afbeelding */}
         {recipe.category_name && (
-          <p className="text-[10px] font-semibold tracking-[0.22em] uppercase mb-1"
-            style={{ color: 'var(--text-muted)' }}>
+          <div style={{
+            position: 'absolute', top: 12, left: 14,
+            fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
+            textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)',
+            background: 'rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(8px)',
+            padding: '3px 8px', borderRadius: 20,
+          }}>
             {recipe.category_name}
-          </p>
+          </div>
         )}
-        <h3 className="font-semibold text-lg tracking-tight leading-tight mb-2"
-          style={{ color: 'var(--text)' }}>
+      </div>
+
+      <div style={{ padding: '14px 16px 16px' }}>
+        <h3 style={{
+          fontSize: 17, fontWeight: 700, letterSpacing: -0.3,
+          color: 'var(--text)', marginBottom: 10, lineHeight: 1.2,
+        }}>
           {recipe.name}
         </h3>
 
         {/* Status badge */}
         {canMake && (
-          <div className="mb-3">
+          <div style={{ marginBottom: 10 }}>
             {recipe.fully_automatic ? (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: '#dcfce7', color: '#15803d' }}>
-                <span style={{ width: 6, height: 6, borderRadius: 3, background: '#16a34a', display: 'inline-block' }} />
-                Volledig automatisch
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 600,
+                padding: '4px 10px', borderRadius: 20,
+                background: 'rgba(48,209,88,0.12)',
+                color: '#30d158',
+                border: '1px solid rgba(48,209,88,0.2)',
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#30d158', display: 'inline-block' }} />
+                Automatisch
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: '#fef3c7', color: '#92400e' }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
-                </svg>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontWeight: 600,
+                padding: '4px 10px', borderRadius: 20,
+                background: 'rgba(255,159,10,0.12)',
+                color: '#ff9f0a',
+                border: '1px solid rgba(255,159,10,0.2)',
+              }}>
                 Deels handmatig
               </span>
             )}
           </div>
         )}
 
-        <div className="flex flex-wrap gap-1.5">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {(recipe.ingredients || []).slice(0, 4).map(ing => (
-            <span key={ing.ingredient_id}
-              className="text-[11px] px-2.5 py-1 rounded-full border"
-              style={{ color: 'var(--text-secondary)', background: 'var(--accent-bg)', borderColor: 'var(--border)' }}>
+            <span key={ing.ingredient_id} style={{
+              fontSize: 11, padding: '4px 10px', borderRadius: 20,
+              color: 'var(--text-muted)',
+              background: 'var(--accent-bg)',
+              border: '1px solid var(--border)',
+            }}>
               {ing.ingredient_name}
             </span>
           ))}

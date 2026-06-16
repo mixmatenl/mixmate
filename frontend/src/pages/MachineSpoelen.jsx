@@ -9,9 +9,9 @@ function calcFlushDuration(slot, daysSince) {
 }
 
 function flushLabel(duration) {
-  if (duration <= 9)  return { text: 'Standaard', color: '#30d158' }
-  if (duration <= 13) return { text: 'Intensief',  color: '#ff9500' }
-  return                     { text: 'Verhoogd',   color: '#ff3b30' }
+  if (duration <= 9)  return { text: 'Standaard', color: 'var(--green)' }
+  if (duration <= 13) return { text: 'Intensief',  color: 'var(--orange)' }
+  return                     { text: 'Verhoogd',   color: 'var(--red)' }
 }
 
 export default function MachineSpoelen() {
@@ -54,30 +54,30 @@ export default function MachineSpoelen() {
 
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#aeaeb2', fontSize: 14 }}>Laden…</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Laden…</div>
     </div>
   )
 
   if (loadErr) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#ff3b30', fontSize: 14 }}>{loadErr}</div>
+      <div style={{ color: 'var(--red)', fontSize: 14 }}>{loadErr}</div>
     </div>
   )
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: 'var(--bg)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', marginBottom: 6 }}>Spoelroutine</h1>
-      <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: 24 }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: 'var(--bg)', fontFamily: 'inherit' }}>
+      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Spoelroutine</h1>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24 }}>
         Selecteer de leidingen die op water zijn aangesloten en start de spoelcyclus.
       </p>
 
       {/* Pompkeuze */}
-      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 12 }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, border: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
           Leidingen op water
         </div>
         {pumps.length === 0 ? (
-          <div style={{ color: '#aeaeb2', fontSize: 14 }}>Geen pompen gevonden</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Geen pompen gevonden</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
             {pumps.map(p => {
@@ -89,12 +89,17 @@ export default function MachineSpoelen() {
                   setSelected(s => on ? s.filter(x => x !== p.slot) : [...s, p.slot])
                   setAnalysed(false)
                 }} style={{
-                  border: `2.5px solid ${on ? '#007aff' : '#e5e5ea'}`,
-                  borderRadius: 14, padding: '18px 10px', background: on ? '#f0f7ff' : '#fafafa',
-                  cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center', transition: 'all .15s',
+                  border: `2.5px solid ${on ? '#0a84ff' : 'var(--border)'}`,
+                  borderRadius: 14,
+                  padding: '18px 10px',
+                  background: on ? 'rgba(10,132,255,0.12)' : 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  textAlign: 'center',
+                  transition: 'all .15s',
                 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#007aff' : '#aeaeb2', marginBottom: 3 }}>L{p.slot}</div>
-                  <div style={{ fontSize: 11, color: p.ingredient?.name ? '#6e6e73' : '#c7c7cc', marginBottom: analysed ? 5 : 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: on ? '#0a84ff' : 'var(--text-muted)', marginBottom: 3 }}>L{p.slot}</div>
+                  <div style={{ fontSize: 11, color: p.ingredient?.name ? 'var(--text-secondary)' : 'var(--text-muted)', marginBottom: analysed ? 5 : 0 }}>
                     {p.ingredient?.name || 'Leeg'}
                   </div>
                   {analysed && dur && (
@@ -109,23 +114,23 @@ export default function MachineSpoelen() {
 
       {/* Analyse resultaat */}
       {analysed && selected.length > 0 && (
-        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 10 }}>Analyse</div>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, marginBottom: 16, border: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Analyse</div>
           {[...selected].sort((a, b) => a - b).map(slot => {
             const dur = durations[slot]; const lbl = flushLabel(dur)
             return (
-              <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f2f2f7' }}>
-                <div style={{ fontSize: 15, color: '#1d1d1f' }}>Leiding {slot}</div>
+              <div key={slot} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 15, color: 'var(--text)' }}>Leiding {slot}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: lbl.color, fontWeight: 600 }}>{lbl.text}</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f' }}>{dur}s</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{dur}s</span>
                 </div>
               </div>
             )
           })}
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, fontSize: 14 }}>
-            <span style={{ color: '#6e6e73' }}>Totale duur</span>
-            <span style={{ fontWeight: 700 }}>±{totalTime}s</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Totale duur</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>±{totalTime}s</span>
           </div>
         </div>
       )}
@@ -134,15 +139,19 @@ export default function MachineSpoelen() {
       <div style={{ display: 'flex', gap: 12 }}>
         {!analysed ? (
           <button onClick={analyse} disabled={analysing || selected.length === 0} style={{
-            flex: 1, background: selected.length ? '#1d1d1f' : '#e5e5ea',
-            color: selected.length ? '#fff' : '#aeaeb2',
-            border: 'none', borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 600,
-            cursor: selected.length && !analysing ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+            flex: 1,
+            background: selected.length ? 'var(--text)' : 'var(--bg-card)',
+            color: selected.length ? 'var(--bg)' : 'var(--text-muted)',
+            border: '1px solid var(--border)',
+            borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 600,
+            cursor: selected.length && !analysing ? 'pointer' : 'not-allowed',
+            fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            transition: 'opacity 0.15s',
           }}>
             {analysing ? (
               <>
-                <span style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
+                <span style={{ width: 18, height: 18, border: '2.5px solid rgba(0,0,0,.2)', borderTopColor: 'var(--bg)', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
                 Leidingen analyseren…
               </>
             ) : 'Analyseer leidingen'}
@@ -150,15 +159,15 @@ export default function MachineSpoelen() {
         ) : (
           <>
             <button onClick={startFlush} style={{
-              flex: 2, background: '#007aff', color: '#fff',
+              flex: 2, background: '#0a84ff', color: '#fff',
               border: 'none', borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Start spoelroutine
             </button>
             <button onClick={() => setAnalysed(false)} style={{
-              flex: 1, background: '#f2f2f7', color: '#1d1d1f',
-              border: 'none', borderRadius: 14, padding: 16, fontSize: 16,
+              flex: 1, background: 'var(--bg-card)', color: 'var(--text)',
+              border: '1px solid var(--border)', borderRadius: 14, padding: 16, fontSize: 16,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>
               Opnieuw
@@ -166,8 +175,6 @@ export default function MachineSpoelen() {
           </>
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
