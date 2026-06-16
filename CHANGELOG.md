@@ -1,3 +1,7 @@
+## [2.2.1] - 2026-06-16
+### Gefixt
+- Rapporten pagina op de machine nu volledig werkend: datum picker, samenvatting, cocktailranglijst en 30-dagen staafdiagram
+
 ## [2.2.0] - 2026-06-16
 ### Nieuw
 - "Populair" badge op top-3 meest gemaakte cocktails in de machine-app

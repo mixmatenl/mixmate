@@ -1,13 +1,172 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function fmt(iso) {
+  return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+}
+
+function groupByRecipe(pours) {
+  const map = {}
+  for (const p of pours) {
+    if (!map[p.recipe_name]) map[p.recipe_name] = { name: p.recipe_name, count: 0, times: [] }
+    map[p.recipe_name].count++
+    map[p.recipe_name].times.push(p.poured_at)
+  }
+  return Object.values(map).sort((a, b) => b.count - a.count)
+}
 
 export default function Rapporten() {
+  const [date,    setDate]    = useState(todayISO())
+  const [pours,   setPours]   = useState(null)
+  const [stats,   setStats]   = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      fetch(`/api/pours?date=${date}&limit=200`).then(r => r.json()),
+      fetch('/api/pours/stats').then(r => r.json()),
+    ])
+      .then(([p, s]) => { setPours(p); setStats(s) })
+      .catch(() => { setPours([]); setStats(null) })
+      .finally(() => setLoading(false))
+  }, [date])
+
+  const grouped = pours ? groupByRecipe(pours) : []
+  const total   = pours?.length ?? 0
+
+  const peakHour = (() => {
+    if (!pours || pours.length === 0) return null
+    const hours = {}
+    for (const p of pours) {
+      const h = new Date(p.poured_at).getHours()
+      hours[h] = (hours[h] || 0) + 1
+    }
+    const peak = Object.entries(hours).sort((a, b) => b[1] - a[1])[0]
+    return peak ? `${peak[0]}:00` : null
+  })()
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
-      <svg className="w-12 h-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-      <p className="font-medium text-gray-500">Rapporten komen binnenkort</p>
-      <p className="text-sm">Hier komen verbruiksstatistieken en populaire cocktails.</p>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', background: 'var(--bg)', fontFamily: 'inherit' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginBottom: 4, letterSpacing: -0.4 }}>Rapporten</h1>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 20 }}>Overzicht van gemaakte cocktails.</p>
+
+      {/* Datum picker */}
+      <input
+        type="date"
+        value={date}
+        max={todayISO()}
+        onChange={e => setDate(e.target.value)}
+        style={{
+          background: 'var(--bg-card)', border: '1px solid var(--border)',
+          borderRadius: 10, padding: '10px 14px', fontSize: 14,
+          color: 'var(--text)', fontFamily: 'inherit', marginBottom: 20,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}
+      />
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: 14 }}>Laden…</div>
+      ) : pours !== null && (
+        <>
+          {/* Samenvatting */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
+            {[
+              { label: 'Totaal', value: total },
+              { label: 'Soorten', value: grouped.length },
+              { label: 'Piekuur', value: peakHour || '—' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
+                background: 'var(--bg-card)', borderRadius: 14, padding: '14px 16px',
+                border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.3 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Ranglijst */}
+          {grouped.length === 0 ? (
+            <div style={{
+              background: 'var(--bg-card)', borderRadius: 16, padding: '40px 20px',
+              border: '1px solid var(--border)', textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>🍹</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Geen cocktails gemaakt</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                Op {new Date(date + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })} zijn er geen cocktails geregistreerd.
+              </div>
+            </div>
+          ) : (
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 16 }}>
+              {grouped.map((item, i) => (
+                <div key={item.name} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '13px 16px',
+                  borderBottom: i < grouped.length - 1 ? '1px solid var(--border)' : 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{i + 1}</span>}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: i < 3 ? 600 : 400, color: 'var(--text)' }}>{item.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Laatste: {fmt(item.times[0])}</div>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: 13, fontWeight: 700,
+                    background: i === 0 ? '#1c1c1e' : 'var(--accent-bg)',
+                    color: i === 0 ? '#fff' : 'var(--text)',
+                    padding: '4px 12px', borderRadius: 20,
+                  }}>{item.count}×</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 30-dagen staafdiagram */}
+          {stats?.pours_per_day?.length > 0 && (
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '16px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 12 }}>
+                Afgelopen 30 dagen
+              </div>
+              <BarChart data={stats.pours_per_day} selectedDate={date} onSelect={setDate} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function BarChart({ data, selectedDate, onSelect }) {
+  const max = Math.max(...data.map(d => d.count), 1)
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 72 }}>
+      {data.map(d => {
+        const isSelected = d.date === selectedDate
+        const isToday = d.date === todayISO()
+        return (
+          <div key={d.date}
+            onClick={() => d.count > 0 && onSelect(d.date)}
+            title={`${d.date}: ${d.count}`}
+            style={{ flex: 1, display: 'flex', alignItems: 'flex-end', cursor: d.count > 0 ? 'pointer' : 'default', height: '100%' }}
+          >
+            <div style={{
+              width: '100%',
+              height: `${Math.max((d.count / max) * 60, d.count > 0 ? 4 : 2)}px`,
+              borderRadius: 4,
+              background: isSelected ? '#1c1c1e' : isToday ? '#8e8e93' : d.count > 0 ? '#c7c7cc' : '#f2f2f7',
+              transition: 'background 0.15s',
+            }} />
+          </div>
+        )
+      })}
     </div>
   )
 }
