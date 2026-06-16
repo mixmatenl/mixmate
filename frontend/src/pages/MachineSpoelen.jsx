@@ -156,7 +156,7 @@ export default function MachineSpoelen() {
             }}>
               Start spoelroutine
             </button>
-            <button onClick={() => { setAnalysed(false); setFlushMsg(null) }} style={{
+            <button onClick={() => setAnalysed(false)} style={{
               flex: 1, background: '#f2f2f7', color: '#1d1d1f',
               border: 'none', borderRadius: 14, padding: 16, fontSize: 16,
               cursor: 'pointer', fontFamily: 'inherit',
