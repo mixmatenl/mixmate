@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
@@ -413,7 +414,7 @@ _flush_clients: set = set()
 
 async def _broadcast_flush(data: dict):
     dead = set()
-    for ws in _flush_clients:
+    for ws in list(_flush_clients):  # copy to avoid set-changed-during-iteration
         try:
             await ws.send_json(data)
         except Exception:
@@ -457,6 +458,30 @@ async def flush_pump(body: dict, session: Session = Depends(get_session)):
         gpio.off(pump.gpio_pin)
     return {"ok": True, "slot": slot, "duration": duration}
 
+@app.post("/api/pumps/flush-test")
+async def flush_test(body: dict):
+    """Simuleert een spoelroutine zonder GPIO — voor testen van de overlay."""
+    global _flush_state
+    n = max(1, int(body.get("slots", 3)))
+    _flush_state = {"active": True, "total": n, "done": 0, "current_slot": 1, "current_duration": 10, "elapsed": 0}
+    await _broadcast_flush(_flush_state)
+
+    async def _run():
+        global _flush_state
+        for i in range(n):
+            _flush_state.update({"done": i, "current_slot": i + 1, "current_duration": 10, "elapsed": 0})
+            await _broadcast_flush(dict(_flush_state))
+            for tick in range(25):  # 10s in 0.4s stappen
+                _flush_state["elapsed"] = round(tick * 0.4, 1)
+                await _broadcast_flush(dict(_flush_state))
+                await asyncio.sleep(0.4)
+            await asyncio.sleep(0.5)
+        _flush_state = {"active": False, "total": n, "done": n}
+        await _broadcast_flush(_flush_state)
+
+    asyncio.create_task(_run())
+    return {"ok": True}
+
 @app.post("/api/pumps/flush-all")
 async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
     global _flush_state
@@ -481,9 +506,9 @@ async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
 
             try:
                 gpio.on(pump.gpio_pin)
-                start = asyncio.get_event_loop().time()
+                start = time.monotonic()
                 while True:
-                    elapsed = asyncio.get_event_loop().time() - start
+                    elapsed = time.monotonic() - start
                     if elapsed >= duration:
                         break
                     _flush_state["elapsed"] = round(elapsed, 1)
@@ -1077,9 +1102,9 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
         await asyncio.sleep(0.3)
         gpio.setup_pin(pin); gpio.activate(pin)
         await websocket.send_json({"type": "running", "seconds": seconds})
-        start = asyncio.get_event_loop().time()
+        start = time.monotonic()
         while True:
-            elapsed = asyncio.get_event_loop().time() - start
+            elapsed = time.monotonic() - start
             if elapsed >= seconds: break
             weight = loadcell.get_weight_grams()
             if not (hasattr(loadcell, '_hx') and loadcell._hx):

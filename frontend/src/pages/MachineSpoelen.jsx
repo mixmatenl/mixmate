@@ -49,13 +49,20 @@ export default function MachineSpoelen() {
 
   async function startFlush() {
     const pumpsPayload = selected.map(slot => ({ slot, duration: durations[slot] || 10 }))
-    // FlushOverlay neemt het over zodra active: true
     fetch('/api/pumps/flush-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pumps: pumpsPayload }),
     })
-    // Geen await — overlay toont de voortgang
+    // Geen await — FlushOverlay neemt het over zodra active: true
+  }
+
+  async function testOverlay() {
+    fetch('/api/pumps/flush-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slots: Math.max(1, selected.length) }),
+    })
   }
 
   const totalTime = selected.reduce((s, slot) => s + (durations[slot] || 0), 0)
@@ -165,6 +172,17 @@ export default function MachineSpoelen() {
           </>
         )}
       </div>
+      {/* Test-knop: overlay testen zonder pompen */}
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e5ea' }}>
+        <button onClick={testOverlay} style={{
+          width: '100%', background: 'transparent', color: '#8e8e93',
+          border: '1.5px solid #c7c7cc', borderRadius: 14, padding: '12px',
+          fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Overlay testen (zonder pompen)
+        </button>
+      </div>
+
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
