@@ -432,7 +432,8 @@ async def _run_flush_task(pumps: list):
             })
 
             try:
-                gpio.on(gpio_pin)
+                gpio.setup_pin(gpio_pin)
+                gpio.activate(gpio_pin)
                 start = time.monotonic()
                 while True:
                     elapsed = time.monotonic() - start
@@ -441,7 +442,7 @@ async def _run_flush_task(pumps: list):
                     _flush_state["elapsed"] = round(elapsed, 1)
                     await asyncio.sleep(0.5)
             finally:
-                gpio.off(gpio_pin)
+                gpio.deactivate(gpio_pin)
 
             await asyncio.sleep(1.0)
 
