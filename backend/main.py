@@ -1629,7 +1629,7 @@ def activate_demo(session: Session = Depends(get_session)):
     from sqlmodel import select, delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,
-        Pour, Favorite,
+        Pour, Favorite, Pump,
     )
     # Wis in juiste volgorde (foreign keys)
     session.exec(delete(Pour))
@@ -1637,6 +1637,7 @@ def activate_demo(session: Session = Depends(get_session)):
     session.exec(delete(Favorite))
     session.exec(delete(RecipeIngredient))
     session.exec(delete(Recipe))
+    session.exec(delete(Pump))
     session.exec(delete(Ingredient))
     session.exec(delete(Category))
     session.exec(delete(Glass))
@@ -1651,13 +1652,14 @@ def deactivate_demo(session: Session = Depends(get_session)):
     from sqlmodel import delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,
-        Pour, Favorite,
+        Pour, Favorite, Pump,
     )
     session.exec(delete(Pour))
     session.exec(delete(MachineSession))
     session.exec(delete(Favorite))
     session.exec(delete(RecipeIngredient))
     session.exec(delete(Recipe))
+    session.exec(delete(Pump))
     session.exec(delete(Ingredient))
     session.exec(delete(Category))
     session.exec(delete(Glass))

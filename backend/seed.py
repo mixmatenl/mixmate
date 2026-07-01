@@ -3,7 +3,7 @@ import random
 import urllib.request
 import json as _json
 from sqlmodel import Session
-from .models import Ingredient, Category, Glass, Recipe, RecipeIngredient, Pour, Session as MachineSession
+from .models import Ingredient, Category, Glass, Recipe, RecipeIngredient, Pour, Session as MachineSession, Pump
 
 _COCKTAILDB = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s="
 
@@ -113,6 +113,25 @@ def seed_demo_data(db: Session):
         db.add(ing)
         db.flush()
         ingredients[name] = ing
+
+    # ── Pompen (8 slots, meest gebruikte ingrediënten) ───────────────────
+    # GPIO-pinnen zijn dummy-waarden voor demo — geen echte hardware aangestuurd
+    DEMO_PUMP_SLOTS = [
+        (1, "Wodka",         17),
+        (2, "Rum",           27),
+        (3, "Gin",           22),
+        (4, "Grenadine",     23),
+        (5, "Sinaasappelsap", 24),
+        (6, "Cranberrysap",  25),
+        (7, "Cola",           4),
+        (8, "Tonic",          5),
+    ]
+    for slot, ing_name, gpio_pin in DEMO_PUMP_SLOTS:
+        ing = ingredients.get(ing_name)
+        if ing:
+            pump = Pump(slot=slot, gpio_pin=gpio_pin, ingredient_id=ing.id, enabled=True)
+            db.add(pump)
+    db.flush()
 
     # ── Categorieën ───────────────────────────────────────────────────────
     categories = {}

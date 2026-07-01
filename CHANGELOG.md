@@ -1,3 +1,9 @@
+## [4.7.1] - 2026-07-01
+### Gefixt
+- Demo data seed maakt nu 8 pompslots aan met de meest gebruikte ingrediënten
+- Demo activate/deactivate wist ook de Pump-tabel (foreign key volgorde correct)
+- Machine ziet er in de admin "volledig ingericht" uit bij demo activatie
+
 ## [4.7.0] - 2026-07-01
 ### Nieuw
 - Demo pour: volledig pomprek zichtbaar (8 pompen naast elkaar)
