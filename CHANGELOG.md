@@ -1,3 +1,10 @@
+## [4.4.0] - 2026-07-01
+### Nieuw
+- Demo modus: tik op een cocktail-slide → gesimuleerde pour opent (geen echte pompen)
+- Demo pour toont voortgangscirkel, ingredient-highlighting per stap, druppel-animatie
+- Na afloop keert demo automatisch terug naar de attractor slideshow
+- Slideshow prompt verandert naar "Tik om te maken" op cocktail-slides
+
 ## [4.3.1] - 2026-07-01
 ### Gefixt
 - Installer detecteert Pi 5 automatisch en gebruikt Wayland + cage i.p.v. X11 + openbox
