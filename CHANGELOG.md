@@ -1,3 +1,11 @@
+## [4.5.0] - 2026-07-01
+### Gewijzigd
+- Demo slideshow toont alleen feature slides (geen cocktail-slideshow meer)
+- 7 USP-slides: snelheid (180/uur), weegplateau, spoelprogramma's, recepten, beheer op afstand, rapporten, consistentie
+- Elke slide heeft eigen accentkleur, glow en grote SVG-illustratie
+- "Probeer het zelf →" knop opent demo pour met willekeurig recept
+- Voortgangsbalk kleurt mee met accentkleur per slide
+
 ## [4.4.0] - 2026-07-01
 ### Nieuw
 - Demo modus: tik op een cocktail-slide → gesimuleerde pour opent (geen echte pompen)
