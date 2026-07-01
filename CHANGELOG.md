@@ -1,3 +1,8 @@
+## [4.7.10] - 2026-07-02
+### Gefixt
+- DemoMode crash opgelost: `useNavigate` was niet geïmporteerd maar wel aangeroepen → demo toonde cocktails ipv slides
+- FlushVisual tekst gecorrigeerd
+
 ## [4.7.9] - 2026-07-02
 ### Gefixt
 - Schermweergave: terug naar CSS zoom=1.5 (force-device-scale-factor werkt niet met cage)

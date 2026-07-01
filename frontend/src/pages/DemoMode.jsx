@@ -73,7 +73,6 @@ const FEATURES = [
 
 // ── Hoofd component ───────────────────────────────────────────────────────────
 export default function DemoMode({ onExit }) {
-  const navigate = useNavigate()
   const [idx,      setIdx]     = useState(0)
   const [nextIdx,  setNextIdx] = useState(null)
   const [fading,   setFading]  = useState(false)
@@ -369,7 +368,7 @@ function FlushVisual() {
       ))}
       {/* Pijl cirkel */}
       <path d="M60 200 Q60 240 150 240 Q240 240 240 200" stroke="white" strokeWidth="2" strokeOpacity="0.2" strokeDasharray="6 8" strokeLinecap="round" />
-      <text x="150" y="268" textAnchor="middle" fill="white" fontSize="13" fontFamily="system-ui" opacity="0.4">automatisch na elke dienst</text>
+      <text x="150" y="268" textAnchor="middle" fill="white" fontSize="13" fontFamily="system-ui" opacity="0.4">wanneer jij wilt starten</text>
     </svg>
   )
 }
