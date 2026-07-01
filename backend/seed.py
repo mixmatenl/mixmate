@@ -7,38 +7,68 @@ from .models import Ingredient, Category, Glass, Recipe, RecipeIngredient, Pour,
 
 _COCKTAILDB = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s="
 
-# Handmatige mapping voor recepten waarvan de naam afwijkt van TheCocktailDB
 _NAME_MAP = {
-    "Wodka Cola":        "Vodka Cola",
-    "Rum & Cola":        "Rum and Cola",
-    "Whiskey Cola":      "Whiskey and Cola",
-    "Woo Woo":           "Woo Woo",
-    "Passion Star":      "Passion Star Martini",
-    "Mango Tango":       None,
-    "Rosé Lemonade":     None,
-    "Cucumber Cooler":   None,
-    "Coconut Kiss":      None,
-    "Caribbean Breeze":  None,
-    "Malibu Sunset":     None,
-    "Bay Breeze":        "Bay Breeze",
-    "Blue Motorcycle":   None,
-    "Jungle Juice":      None,
-    "Sangria Punch":     "Sangria",
-    "Vodka Redbull":     "Vodka Red Bull",
-    "Grapefruit Gin":    None,
-    "Tropical Punch":    None,
-    "Bahama Mama":       "Bahama Mama",
-    "Appletini":         "Appletini",
-    "Campari Orange":    None,
-    "Cognac Sour":       None,
-    "Whiskey Ginger":    "Whiskey Highball",
-    "Gin Gimlet":        "Gimlet",
-    "Dark & Stormy":     "Dark and Stormy",
-    "Rosé Lemonade":     None,
+    # Naam in seed          → zoekterm TheCocktailDB (None = geen afbeelding)
+    "Wodka Cola":           "Vodka Cola",
+    "Rum & Cola":           "Rum and Cola",
+    "Whiskey Cola":         "Whiskey and Cola",
+    "Woo Woo":              "Woo Woo",
+    "Passion Star":         "Passion Star Martini",
+    "Mango Tango":          None,
+    "Rosé Lemonade":        None,
+    "Cucumber Cooler":      None,
+    "Coconut Kiss":         None,
+    "Caribbean Breeze":     None,
+    "Malibu Sunset":        None,
+    "Bay Breeze":           "Bay Breeze",
+    "Blue Motorcycle":      None,
+    "Jungle Juice":         None,
+    "Sangria Punch":        "Sangria",
+    "Vodka Redbull":        "Vodka Red Bull",
+    "Grapefruit Gin":       None,
+    "Tropical Punch":       None,
+    "Bahama Mama":          "Bahama Mama",
+    "Appletini":            "Appletini",
+    "Campari Orange":       None,
+    "Cognac Sour":          None,
+    "Whiskey Ginger":       "Whiskey Highball",
+    "Gin Gimlet":           "Gimlet",
+    "Dark & Stormy":        "Dark and Stormy",
+    "Midori Sour":          "Midori Sour",
+    "Kir Royal":            "Kir Royale",
+    "French 75":            "French 75",
+    "B-52":                 "B-52",
+    "Kamikaze":             "Kamikaze",
+    "Long Island Iced Tea": "Long Island Tea",
+    "Piña Colada":          "Pina Colada",
+    "Tequila Sunrise":      "Tequila Sunrise",
+    "Mojito":               "Mojito",
+    "Margarita":            "Margarita",
+    "Negroni":              "Negroni",
+    "Old Fashioned":        "Old Fashioned",
+    "Whiskey Sour":         "Whiskey Sour",
+    "Bloody Mary":          "Bloody Mary",
+    "Espresso Martini":     "Espresso Martini",
+    "White Russian":        "White Russian",
+    "Caipirinha":           "Caipirinha",
+    "Strawberry Daiquiri":  "Strawberry Daiquiri",
+    "Harvey Wallbanger":    "Harvey Wallbanger",
+    "Mimosa":               "Mimosa",
+    "Bellini":              "Bellini",
+    "Amaretto Sour":        "Amaretto Sour",
+    "Aperol Spritz":        "Aperol Spritz",
+    "Screwdriver":          "Screwdriver",
+    "Moscow Mule":          "Moscow Mule",
+    "Cosmopolitan":         "Cosmopolitan",
+    "Sex on the Beach":     "Sex on the Beach",
+    "Blue Lagoon":          "Blue Lagoon",
+    "Daiquiri":             "Daiquiri",
+    "Tequila Shot":         "Tequila Slammer",
+    "Wodka Shot":           None,
+    "Sambuca Shot":         None,
 }
 
 def _fetch_image(name: str) -> str:
-    """Zoek cocktailafbeelding op TheCocktailDB. Geeft lege string bij mislukking."""
     try:
         search = _NAME_MAP.get(name, name)
         if search is None:
@@ -55,76 +85,104 @@ def _fetch_image(name: str) -> str:
 
 
 def seed_demo_data(db: Session):
-    # ── Ingrediënten ──────────────────────────────────────────────────────
+    # ── Ingrediënten ──────────────────────────────────────────────────────────
     ingredients = {}
     for name, carbonated in [
         # Sterke drank
-        ("Wodka",               False),
-        ("Rum",                 False),
-        ("Witte Rum",           False),
-        ("Donkere Rum",         False),
-        ("Gin",                 False),
-        ("Tequila",             False),
-        ("Whiskey",             False),
-        ("Bourbon",             False),
-        ("Cognac",              False),
-        ("Champagne",           True),
-        ("Prosecco",            True),
+        ("Wodka",                False),
+        ("Witte Rum",            False),
+        ("Donkere Rum",          False),
+        ("Gin",                  False),
+        ("Tequila",              False),
+        ("Whiskey",              False),
+        ("Bourbon",              False),
+        ("Cognac",               False),
+        ("Champagne",            True),
+        ("Prosecco",             True),
         # Likeuren
-        ("Amaretto",            False),
-        ("Peach Schnapps",      False),
-        ("Blue Curaçao",        False),
-        ("Triple Sec",          False),
-        ("Limoenlikeur",        False),
-        ("Kahlúa",              False),
-        ("Baileys",             False),
-        ("Grenadine",           False),
-        ("Passoa",              False),
-        ("Malibu",              False),
-        ("Midori",              False),
-        ("Sambuca",             False),
-        ("Aperol",              False),
-        ("Campari",             False),
+        ("Amaretto",             False),
+        ("Peach Schnapps",       False),
+        ("Blue Curaçao",         False),
+        ("Triple Sec",           False),
+        ("Kahlúa",               False),
+        ("Baileys",              False),
+        ("Grenadine",            False),
+        ("Passoa",               False),
+        ("Malibu",               False),
+        ("Midori",               False),
+        ("Aperol",               False),
+        ("Campari",              False),
+        ("Sambuca",              False),
         # Sappen
-        ("Sinaasappelsap",      False),
-        ("Cranberrysap",        False),
-        ("Ananassap",           False),
-        ("Limoen­sap",          False),
-        ("Citroensap",          False),
-        ("Grapefruits­ap",      False),
-        ("Mango­sap",           False),
-        ("Appelsap",            False),
-        ("Kokosnootcrème",      False),
+        ("Sinaasappelsap",       False),
+        ("Cranberrysap",         False),
+        ("Ananassap",            False),
+        ("Limoensap",            False),
+        ("Citroensap",           False),
+        ("Mangosap",             False),
+        ("Grapefruitap",         False),
+        ("Appelsap",             False),
+        ("Tomatensap",           False),
+        ("Kokosnootcrème",       False),
         # Frisdrank
-        ("Cola",                True),
-        ("Tonic",               True),
-        ("Sprite",              True),
-        ("Ginger Beer",         True),
-        ("Soda",                True),
-        ("Energy Drink",        True),
-        # Overig
-        ("Suikerstroop",        False),
-        ("Agave Siroop",        False),
-        ("Munt Siroop",         False),
-        ("Passievrucht Siroop", False),
-        ("Vanille Siroop",      False),
+        ("Cola",                 True),
+        ("Tonic",                True),
+        ("Sprite",               True),
+        ("Ginger Beer",          True),
+        ("Soda",                 True),
+        ("Energy Drink",         True),
+        # Siropen / overig
+        ("Suikerstroop",         False),
+        ("Agave Siroop",         False),
+        ("Munt Siroop",          False),
+        ("Passievrucht Siroop",  False),
+        ("Vanille Siroop",       False),
+        ("Worcestershire Sauce", False),
+        ("Tabasco",              False),
+        ("Espresso",             False),
+        ("Slagroom",             False),
     ]:
         ing = Ingredient(name=name, is_carbonated=carbonated)
         db.add(ing)
         db.flush()
         ingredients[name] = ing
 
-    # ── Pompen (8 slots, meest gebruikte ingrediënten) ───────────────────
-    # GPIO-pinnen zijn dummy-waarden voor demo — geen echte hardware aangestuurd
+    # ── 32 pompen — Mate.1 Pro configuratie ───────────────────────────────────
+    # GPIO-nummers zijn dummy-waarden voor demo (echte hardware gebruikt shift registers)
     DEMO_PUMP_SLOTS = [
-        (1, "Wodka",         17),
-        (2, "Rum",           27),
-        (3, "Gin",           22),
-        (4, "Grenadine",     23),
-        (5, "Sinaasappelsap", 24),
-        (6, "Cranberrysap",  25),
-        (7, "Cola",           4),
-        (8, "Tonic",          5),
+        # slot  ingredient            gpio
+        (1,  "Wodka",               4),
+        (2,  "Witte Rum",           5),
+        (3,  "Donkere Rum",         6),
+        (4,  "Gin",                12),
+        (5,  "Tequila",            13),
+        (6,  "Whiskey",            16),
+        (7,  "Bourbon",            17),
+        (8,  "Prosecco",           18),
+        (9,  "Triple Sec",         19),
+        (10, "Amaretto",           20),
+        (11, "Peach Schnapps",     21),
+        (12, "Blue Curaçao",       22),
+        (13, "Kahlúa",             23),
+        (14, "Baileys",            24),
+        (15, "Grenadine",          25),
+        (16, "Passoa",             26),
+        (17, "Malibu",             27),
+        (18, "Midori",              0),
+        (19, "Aperol",              1),
+        (20, "Campari",             2),
+        (21, "Sinaasappelsap",      3),
+        (22, "Cranberrysap",        7),
+        (23, "Ananassap",           8),
+        (24, "Limoensap",           9),
+        (25, "Citroensap",         10),
+        (26, "Mangosap",           11),
+        (27, "Grapefruitap",       14),
+        (28, "Appelsap",           15),
+        (29, "Cola",               28),
+        (30, "Tonic",              29),
+        (31, "Ginger Beer",        30),
+        (32, "Sprite",             31),
     ]
     for slot, ing_name, gpio_pin in DEMO_PUMP_SLOTS:
         ing = ingredients.get(ing_name)
@@ -133,7 +191,7 @@ def seed_demo_data(db: Session):
             db.add(pump)
     db.flush()
 
-    # ── Categorieën ───────────────────────────────────────────────────────
+    # ── Categorieën ───────────────────────────────────────────────────────────
     categories = {}
     for i, name in enumerate([
         "Klassiekers", "Fruity", "Tropisch", "Shots", "Bubbels", "Zomer", "Party", "Sterk",
@@ -143,7 +201,7 @@ def seed_demo_data(db: Session):
         db.flush()
         categories[name] = cat
 
-    # ── Glazen ────────────────────────────────────────────────────────────
+    # ── Glazen ────────────────────────────────────────────────────────────────
     glasses = {}
     for i, (name, volume) in enumerate([
         ("Shotglas",   60),
@@ -158,118 +216,142 @@ def seed_demo_data(db: Session):
         db.flush()
         glasses[name] = glass
 
-    # ── Recepten ──────────────────────────────────────────────────────────
+    # ── Recepten ──────────────────────────────────────────────────────────────
+    # Ingrediënten op pompen 1-32: Wodka, Witte Rum, Donkere Rum, Gin, Tequila,
+    # Whiskey, Bourbon, Prosecco, Triple Sec, Amaretto, Peach Schnapps, Blue Curaçao,
+    # Kahlúa, Baileys, Grenadine, Passoa, Malibu, Midori, Aperol, Campari,
+    # Sinaasappelsap, Cranberrysap, Ananassap, Limoensap, Citroensap, Mangosap,
+    # Grapefruitap, Appelsap, Cola, Tonic, Ginger Beer, Sprite
+    #
+    # Recepten waarbij ALLE ingrediënten op een pomp zitten = volledig automatisch
+    # Recepten waarbij SOMMIGE ingrediënten op een pomp zitten = handmatig
+    # Recepten waarbij GEEN ingrediënten op een pomp zitten = niet mogelijk
     recipes_data = [
-        # KLASSIEKERS
+        # ── VOLLEDIG AUTOMATISCH ─────────────────────────────────────────────
+        # Klassiekers
         {"name": "Gin Tonic",           "cat": "Klassiekers", "glass": "Longdrink",
-         "ings": [("Gin", 50), ("Tonic", 200), ("Limoen­sap", 10)]},
+         "ings": [("Gin", 50), ("Tonic", 200), ("Limoensap", 10)]},
         {"name": "Wodka Cola",          "cat": "Klassiekers", "glass": "Longdrink",
          "ings": [("Wodka", 50), ("Cola", 200)]},
         {"name": "Rum & Cola",          "cat": "Klassiekers", "glass": "Longdrink",
-         "ings": [("Rum", 50), ("Cola", 200)]},
-        {"name": "Whiskey Cola",        "cat": "Klassiekers", "glass": "Longdrink",
-         "ings": [("Whiskey", 50), ("Cola", 200)]},
+         "ings": [("Witte Rum", 50), ("Cola", 200)]},
         {"name": "Tequila Sunrise",     "cat": "Klassiekers", "glass": "Highball",
          "ings": [("Tequila", 50), ("Sinaasappelsap", 180), ("Grenadine", 20)]},
         {"name": "Screwdriver",         "cat": "Klassiekers", "glass": "Standaard",
          "ings": [("Wodka", 50), ("Sinaasappelsap", 150)]},
         {"name": "Harvey Wallbanger",   "cat": "Klassiekers", "glass": "Highball",
          "ings": [("Wodka", 50), ("Sinaasappelsap", 150), ("Amaretto", 20)]},
-        {"name": "Bourbon Sour",        "cat": "Klassiekers", "glass": "Standaard",
-         "ings": [("Bourbon", 60), ("Citroensap", 30), ("Suikerstroop", 15)]},
         {"name": "Moscow Mule",         "cat": "Klassiekers", "glass": "Highball",
-         "ings": [("Wodka", 50), ("Ginger Beer", 180), ("Limoen­sap", 20)]},
+         "ings": [("Wodka", 50), ("Ginger Beer", 180), ("Limoensap", 20)]},
         {"name": "Dark & Stormy",       "cat": "Klassiekers", "glass": "Highball",
-         "ings": [("Donkere Rum", 50), ("Ginger Beer", 180), ("Limoen­sap", 15)]},
-        # FRUITY
+         "ings": [("Donkere Rum", 50), ("Ginger Beer", 180), ("Limoensap", 15)]},
+        {"name": "Whiskey Cola",        "cat": "Klassiekers", "glass": "Longdrink",
+         "ings": [("Whiskey", 50), ("Cola", 200)]},
+        {"name": "Whiskey Ginger",      "cat": "Klassiekers", "glass": "Longdrink",
+         "ings": [("Whiskey", 50), ("Ginger Beer", 180)]},
+        {"name": "Gin Gimlet",          "cat": "Klassiekers", "glass": "Standaard",
+         "ings": [("Gin", 60), ("Limoensap", 30)]},
+        # Fruity
         {"name": "Sex on the Beach",    "cat": "Fruity", "glass": "Groot",
          "ings": [("Wodka", 40), ("Peach Schnapps", 20), ("Sinaasappelsap", 80), ("Cranberrysap", 60)]},
-        {"name": "Daiquiri",            "cat": "Fruity", "glass": "Standaard",
-         "ings": [("Witte Rum", 50), ("Limoen­sap", 25), ("Suikerstroop", 15)]},
         {"name": "Cosmopolitan",        "cat": "Fruity", "glass": "Standaard",
-         "ings": [("Wodka", 40), ("Triple Sec", 20), ("Cranberrysap", 60), ("Limoen­sap", 15)]},
+         "ings": [("Wodka", 40), ("Triple Sec", 20), ("Cranberrysap", 60), ("Citroensap", 15)]},
         {"name": "Bay Breeze",          "cat": "Fruity", "glass": "Groot",
          "ings": [("Wodka", 50), ("Cranberrysap", 100), ("Ananassap", 100)]},
         {"name": "Blue Lagoon",         "cat": "Fruity", "glass": "Highball",
          "ings": [("Wodka", 50), ("Blue Curaçao", 30), ("Citroensap", 20), ("Sprite", 130)]},
         {"name": "Midori Sour",         "cat": "Fruity", "glass": "Standaard",
-         "ings": [("Midori", 45), ("Citroensap", 30), ("Suikerstroop", 15)]},
+         "ings": [("Midori", 45), ("Citroensap", 30)]},
         {"name": "Passion Star",        "cat": "Fruity", "glass": "Standaard",
-         "ings": [("Wodka", 40), ("Passoa", 20), ("Passievrucht Siroop", 20), ("Citroensap", 15)]},
+         "ings": [("Wodka", 40), ("Passoa", 30), ("Citroensap", 20)]},
         {"name": "Woo Woo",             "cat": "Fruity", "glass": "Standaard",
          "ings": [("Wodka", 40), ("Peach Schnapps", 20), ("Cranberrysap", 100)]},
         {"name": "Mango Tango",         "cat": "Fruity", "glass": "Groot",
-         "ings": [("Wodka", 40), ("Mango­sap", 120), ("Grenadine", 20), ("Sprite", 80)]},
+         "ings": [("Wodka", 40), ("Mangosap", 120), ("Grenadine", 20), ("Sprite", 80)]},
         {"name": "Appletini",           "cat": "Fruity", "glass": "Standaard",
          "ings": [("Wodka", 40), ("Triple Sec", 20), ("Appelsap", 60), ("Citroensap", 10)]},
-        # TROPISCH
-        {"name": "Piña Colada",         "cat": "Tropisch", "glass": "Groot",
-         "ings": [("Witte Rum", 50), ("Kokosnootcrème", 30), ("Ananassap", 120)]},
+        {"name": "Grapefruit Gin",      "cat": "Fruity", "glass": "Longdrink",
+         "ings": [("Gin", 50), ("Grapefruitap", 150)]},
+        {"name": "Strawberry Daiquiri", "cat": "Fruity", "glass": "Standaard",
+         "ings": [("Witte Rum", 50), ("Limoensap", 25), ("Grenadine", 20)]},
+        # Tropisch
         {"name": "Malibu Sunset",       "cat": "Tropisch", "glass": "Groot",
          "ings": [("Malibu", 50), ("Ananassap", 100), ("Grenadine", 20), ("Sinaasappelsap", 60)]},
         {"name": "Tropical Punch",      "cat": "Tropisch", "glass": "Groot",
-         "ings": [("Witte Rum", 40), ("Ananassap", 100), ("Mango­sap", 80), ("Grenadine", 20)]},
-        {"name": "Coconut Kiss",        "cat": "Tropisch", "glass": "Standaard",
-         "ings": [("Malibu", 50), ("Kokosnootcrème", 20), ("Ananassap", 100)]},
+         "ings": [("Witte Rum", 40), ("Ananassap", 100), ("Mangosap", 80), ("Grenadine", 20)]},
         {"name": "Caribbean Breeze",    "cat": "Tropisch", "glass": "Highball",
          "ings": [("Donkere Rum", 50), ("Ananassap", 80), ("Cranberrysap", 60), ("Grenadine", 15)]},
         {"name": "Bahama Mama",         "cat": "Tropisch", "glass": "Groot",
          "ings": [("Donkere Rum", 30), ("Malibu", 20), ("Ananassap", 80), ("Sinaasappelsap", 60), ("Grenadine", 10)]},
-        # ZOMER
+        # Zomer
         {"name": "Aperol Spritz",       "cat": "Zomer", "glass": "Groot",
          "ings": [("Aperol", 60), ("Prosecco", 90), ("Soda", 30)]},
-        {"name": "Amaretto Sour",       "cat": "Zomer", "glass": "Standaard",
-         "ings": [("Amaretto", 50), ("Citroensap", 30), ("Suikerstroop", 10)]},
         {"name": "Campari Orange",      "cat": "Zomer", "glass": "Longdrink",
          "ings": [("Campari", 50), ("Sinaasappelsap", 150)]},
         {"name": "Rosé Lemonade",       "cat": "Zomer", "glass": "Highball",
-         "ings": [("Prosecco", 80), ("Cranberrysap", 60), ("Citroensap", 20), ("Suikerstroop", 10), ("Sprite", 80)]},
-        {"name": "Grapefruit Gin",      "cat": "Zomer", "glass": "Longdrink",
-         "ings": [("Gin", 50), ("Grapefruits­ap", 150), ("Suikerstroop", 10)]},
+         "ings": [("Prosecco", 80), ("Cranberrysap", 60), ("Citroensap", 20), ("Sprite", 80)]},
         {"name": "Cucumber Cooler",     "cat": "Zomer", "glass": "Highball",
-         "ings": [("Gin", 50), ("Citroensap", 20), ("Munt Siroop", 15), ("Soda", 150)]},
-        # BUBBELS
+         "ings": [("Gin", 50), ("Citroensap", 20), ("Sprite", 150)]},
+        # Bubbels
         {"name": "Kir Royal",           "cat": "Bubbels", "glass": "Champagne",
-         "ings": [("Champagne", 120), ("Cranberrysap", 20)]},
+         "ings": [("Prosecco", 120), ("Cranberrysap", 20)]},
         {"name": "Bellini",             "cat": "Bubbels", "glass": "Champagne",
-         "ings": [("Prosecco", 100), ("Passievrucht Siroop", 30)]},
+         "ings": [("Prosecco", 100), ("Peach Schnapps", 30)]},
         {"name": "Mimosa",              "cat": "Bubbels", "glass": "Champagne",
-         "ings": [("Champagne", 90), ("Sinaasappelsap", 60)]},
+         "ings": [("Prosecco", 90), ("Sinaasappelsap", 60)]},
         {"name": "French 75",           "cat": "Bubbels", "glass": "Champagne",
-         "ings": [("Gin", 30), ("Citroensap", 20), ("Suikerstroop", 10), ("Champagne", 80)]},
-        # SHOTS
+         "ings": [("Gin", 30), ("Citroensap", 20), ("Prosecco", 80)]},
+        # Shots
+        {"name": "B-52",                "cat": "Shots", "glass": "Shotglas",
+         "ings": [("Kahlúa", 20), ("Baileys", 20)]},
+        {"name": "Kamikaze",            "cat": "Shots", "glass": "Shotglas",
+         "ings": [("Wodka", 20), ("Triple Sec", 10), ("Limoensap", 10)]},
         {"name": "Tequila Shot",        "cat": "Shots", "glass": "Shotglas",
          "ings": [("Tequila", 40)]},
         {"name": "Wodka Shot",          "cat": "Shots", "glass": "Shotglas",
          "ings": [("Wodka", 40)]},
-        {"name": "Sambuca Shot",        "cat": "Shots", "glass": "Shotglas",
-         "ings": [("Sambuca", 40)]},
-        {"name": "B-52",                "cat": "Shots", "glass": "Shotglas",
-         "ings": [("Kahlúa", 20), ("Baileys", 20)]},
-        {"name": "Kamikaze",            "cat": "Shots", "glass": "Shotglas",
-         "ings": [("Wodka", 20), ("Triple Sec", 10), ("Limoen­sap", 10)]},
-        # PARTY
+        # Party
         {"name": "Long Island Iced Tea","cat": "Party", "glass": "Highball",
-         "ings": [("Wodka", 15), ("Rum", 15), ("Gin", 15), ("Tequila", 15), ("Triple Sec", 15), ("Cola", 100)]},
+         "ings": [("Wodka", 15), ("Witte Rum", 15), ("Gin", 15), ("Tequila", 15), ("Triple Sec", 15), ("Cola", 100)]},
         {"name": "Blue Motorcycle",     "cat": "Party", "glass": "Highball",
-         "ings": [("Wodka", 20), ("Rum", 20), ("Gin", 20), ("Blue Curaçao", 20), ("Sprite", 100)]},
+         "ings": [("Wodka", 20), ("Witte Rum", 20), ("Gin", 20), ("Blue Curaçao", 20), ("Sprite", 100)]},
         {"name": "Jungle Juice",        "cat": "Party", "glass": "Groot",
          "ings": [("Wodka", 50), ("Ananassap", 80), ("Cranberrysap", 60), ("Grenadine", 20)]},
-        {"name": "Sangria Punch",       "cat": "Party", "glass": "Groot",
-         "ings": [("Cognac", 30), ("Triple Sec", 20), ("Sinaasappelsap", 80), ("Cranberrysap", 80), ("Sprite", 60)]},
         {"name": "Vodka Redbull",       "cat": "Party", "glass": "Longdrink",
          "ings": [("Wodka", 50), ("Energy Drink", 200)]},
-        # STERK
+        # Sterk
+        {"name": "Negroni",             "cat": "Sterk", "glass": "Standaard",
+         "ings": [("Gin", 30), ("Campari", 30), ("Aperol", 20)]},
+
+        # ── HANDMATIG (sommige ingrediënten niet op pomp) ────────────────────
+        {"name": "Mojito",              "cat": "Klassiekers", "glass": "Highball",
+         "ings": [("Witte Rum", 50), ("Limoensap", 25), ("Suikerstroop", 15), ("Soda", 100), ("Munt Siroop", 10)]},
+        {"name": "Daiquiri",            "cat": "Fruity", "glass": "Standaard",
+         "ings": [("Witte Rum", 50), ("Limoensap", 25), ("Suikerstroop", 15)]},
+        {"name": "Amaretto Sour",       "cat": "Zomer", "glass": "Standaard",
+         "ings": [("Amaretto", 50), ("Citroensap", 30), ("Suikerstroop", 10)]},
+        {"name": "Whiskey Sour",        "cat": "Sterk", "glass": "Standaard",
+         "ings": [("Whiskey", 50), ("Citroensap", 25), ("Suikerstroop", 15)]},
         {"name": "Old Fashioned",       "cat": "Sterk", "glass": "Standaard",
          "ings": [("Bourbon", 60), ("Suikerstroop", 10), ("Sinaasappelsap", 5)]},
-        {"name": "Cognac Sour",         "cat": "Sterk", "glass": "Standaard",
-         "ings": [("Cognac", 50), ("Citroensap", 25), ("Suikerstroop", 10)]},
-        {"name": "Whiskey Ginger",      "cat": "Sterk", "glass": "Longdrink",
-         "ings": [("Whiskey", 50), ("Ginger Beer", 180)]},
-        {"name": "Gin Gimlet",          "cat": "Sterk", "glass": "Standaard",
-         "ings": [("Gin", 60), ("Limoen­sap", 20), ("Suikerstroop", 10)]},
-        {"name": "Negroni",             "cat": "Sterk", "glass": "Standaard",
-         "ings": [("Gin", 30), ("Campari", 30), ("Cognac", 30)]},
+        {"name": "Piña Colada",         "cat": "Tropisch", "glass": "Groot",
+         "ings": [("Witte Rum", 50), ("Kokosnootcrème", 30), ("Ananassap", 120)]},
+        {"name": "Coconut Kiss",        "cat": "Tropisch", "glass": "Standaard",
+         "ings": [("Malibu", 50), ("Kokosnootcrème", 20), ("Ananassap", 100)]},
+        {"name": "Sangria Punch",       "cat": "Party", "glass": "Groot",
+         "ings": [("Cognac", 30), ("Triple Sec", 20), ("Sinaasappelsap", 80), ("Cranberrysap", 80), ("Sprite", 60)]},
+        {"name": "Margarita",           "cat": "Klassiekers", "glass": "Standaard",
+         "ings": [("Tequila", 50), ("Triple Sec", 25), ("Limoensap", 25), ("Agave Siroop", 10)]},
+
+        # ── NIET MOGELIJK (ingrediënten niet beschikbaar op machine) ─────────
+        {"name": "Bloody Mary",         "cat": "Klassiekers", "glass": "Highball",
+         "ings": [("Wodka", 50), ("Tomatensap", 150), ("Citroensap", 15), ("Worcestershire Sauce", 5), ("Tabasco", 2)]},
+        {"name": "Espresso Martini",    "cat": "Sterk", "glass": "Standaard",
+         "ings": [("Wodka", 40), ("Kahlúa", 20), ("Espresso", 60)]},
+        {"name": "White Russian",       "cat": "Sterk", "glass": "Standaard",
+         "ings": [("Wodka", 50), ("Kahlúa", 20), ("Slagroom", 30)]},
+        {"name": "Caipirinha",          "cat": "Klassiekers", "glass": "Standaard",
+         "ings": [("Cognac", 60), ("Limoensap", 30), ("Suikerstroop", 20)]},
     ]
 
     recipe_objs = []
@@ -293,13 +375,11 @@ def seed_demo_data(db: Session):
             ))
         recipe_objs.append(recipe)
 
-    # ── Demo sessies + pours (afgelopen 30 dagen) ─────────────────────────
+    # ── Demo sessies + pours (afgelopen 30 dagen) ─────────────────────────────
     rng = random.Random(42)
     now = datetime.utcnow()
 
-    # Populariteit per recept (hogere index = populairder)
     weights = [rng.randint(2, 20) for _ in recipe_objs]
-    # Top 5 erg populair maken
     for i in [0, 1, 4, 10, 20]:
         if i < len(weights):
             weights[i] = 30
