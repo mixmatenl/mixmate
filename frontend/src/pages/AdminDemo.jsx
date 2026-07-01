@@ -1,5 +1,11 @@
 import React, { useState } from 'react'
 
+async function apiPost(path) {
+  const r = await fetch(path, { method: 'POST' })
+  if (!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
 const DEMO_KEY     = 'mixmate_demo_enabled'
 const DEMO_MIN_KEY = 'mixmate_demo_minutes'
 
@@ -45,11 +51,13 @@ function Row({ label, hint, right }) {
 }
 
 export default function AdminDemo() {
-  const [enabled, setEnabled] = useState(() => localStorage.getItem(DEMO_KEY) === '1')
-  const [minutes, setMinutes] = useState(() => {
+  const [enabled,   setEnabled]   = useState(() => localStorage.getItem(DEMO_KEY) === '1')
+  const [minutes,   setMinutes]   = useState(() => {
     const v = parseInt(localStorage.getItem(DEMO_MIN_KEY), 10)
     return isNaN(v) || v < 1 ? 5 : v
   })
+  const [seeding,   setSeeding]   = useState(false)
+  const [seedMsg,   setSeedMsg]   = useState(null)
 
   function toggleEnabled(val) {
     setEnabled(val)
@@ -61,6 +69,30 @@ export default function AdminDemo() {
     const n = Math.max(1, Math.min(60, Number(val)))
     setMinutes(n)
     localStorage.setItem(DEMO_MIN_KEY, String(n))
+  }
+
+  async function activateDemo() {
+    setSeeding(true); setSeedMsg(null)
+    try {
+      await apiPost('/api/demo/activate')
+      setSeedMsg({ ok: true, text: 'Demo data geladen — 12 recepten, 7 dagen rapporten.' })
+    } catch {
+      setSeedMsg({ ok: false, text: 'Fout bij laden van demo data.' })
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  async function deactivateDemo() {
+    setSeeding(true); setSeedMsg(null)
+    try {
+      await apiPost('/api/demo/deactivate')
+      setSeedMsg({ ok: true, text: 'Demo data gewist. Machine is leeg en klaar voor echte setup.' })
+    } catch {
+      setSeedMsg({ ok: false, text: 'Fout bij wissen van demo data.' })
+    } finally {
+      setSeeding(false)
+    }
   }
 
   return (
@@ -136,6 +168,45 @@ export default function AdminDemo() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Data sectie */}
+      <div style={{ marginTop: 24 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '0 0 6px' }}>Demo data</h3>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 14px' }}>
+          Laad 12 voorbeeldcocktails, ingrediënten en 7 dagen aan nep-rapportages — of wis alles voor een echte opstart.
+        </p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={activateDemo}
+            disabled={seeding}
+            style={{
+              flex: 1, padding: '12px 0', borderRadius: 12, border: 'none',
+              background: '#1c1c1e', color: '#fff',
+              fontSize: 14, fontWeight: 600, cursor: seeding ? 'wait' : 'pointer',
+              opacity: seeding ? 0.6 : 1,
+            }}
+          >{seeding ? 'Bezig…' : 'Demo data laden'}</button>
+          <button
+            onClick={deactivateDemo}
+            disabled={seeding}
+            style={{
+              flex: 1, padding: '12px 0', borderRadius: 12,
+              border: '1px solid var(--border)',
+              background: 'var(--bg)', color: 'var(--text-secondary)',
+              fontSize: 14, fontWeight: 600, cursor: seeding ? 'wait' : 'pointer',
+              opacity: seeding ? 0.6 : 1,
+            }}
+          >Wis demo data</button>
+        </div>
+        {seedMsg && (
+          <div style={{
+            marginTop: 10, padding: '10px 14px', borderRadius: 10,
+            background: seedMsg.ok ? 'rgba(52,199,89,0.08)' : 'rgba(255,59,48,0.08)',
+            border: `1px solid ${seedMsg.ok ? 'rgba(52,199,89,0.2)' : 'rgba(255,59,48,0.2)'}`,
+            fontSize: 13, color: 'var(--text)',
+          }}>{seedMsg.text}</div>
+        )}
       </div>
 
       {enabled && (

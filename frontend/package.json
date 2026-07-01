@@ -3,7 +3,7 @@
 <<<<<<< HEAD
   "version": "2.3.0",
 =======
-  "version": "4.1.0",
+  "version": "4.2.0",
 >>>>>>> 15c49b2 (feat(demo): demo modus met cocktail-carrousel bij inactiviteit (v4.1.0))
   "type": "module",
   "scripts": {

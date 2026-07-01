@@ -1543,6 +1543,48 @@ def seed_demo(session: Session = Depends(get_session)):
     return {"status": "ok", "message": "Demo data aangemaakt"}
 
 
+@app.post("/api/demo/activate")
+def activate_demo(session: Session = Depends(get_session)):
+    """Wist alles en laadt volledige demo data — voor winkel/beurs opstellingen."""
+    from sqlmodel import select, delete
+    from .models import (
+        Recipe, RecipeIngredient, Ingredient, Category, Glass,
+        Pour, Favorite,
+    )
+    # Wis in juiste volgorde (foreign keys)
+    session.exec(delete(Pour))
+    session.exec(delete(MachineSession))
+    session.exec(delete(Favorite))
+    session.exec(delete(RecipeIngredient))
+    session.exec(delete(Recipe))
+    session.exec(delete(Ingredient))
+    session.exec(delete(Category))
+    session.exec(delete(Glass))
+    session.commit()
+    seed_demo_data(session)
+    return {"status": "ok", "message": "Demo modus geactiveerd"}
+
+
+@app.post("/api/demo/deactivate")
+def deactivate_demo(session: Session = Depends(get_session)):
+    """Wist alle demo data zodat de machine klaar is voor echte setup."""
+    from sqlmodel import delete
+    from .models import (
+        Recipe, RecipeIngredient, Ingredient, Category, Glass,
+        Pour, Favorite,
+    )
+    session.exec(delete(Pour))
+    session.exec(delete(MachineSession))
+    session.exec(delete(Favorite))
+    session.exec(delete(RecipeIngredient))
+    session.exec(delete(Recipe))
+    session.exec(delete(Ingredient))
+    session.exec(delete(Category))
+    session.exec(delete(Glass))
+    session.commit()
+    return {"status": "ok", "message": "Demo data gewist"}
+
+
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
     from fastapi.responses import HTMLResponse

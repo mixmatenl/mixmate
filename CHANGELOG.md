@@ -333,6 +333,14 @@
 - Thema-wisseling verwijderd — alleen donker thema beschikbaar
 - Installer: Python venv aanmaken met --without-pip + get-pip.py om PEP 668 conflict op Debian trixie te vermijden
 =======
+## [4.2.0] - 2026-07-01
+### Nieuw
+- Demo modus volledig herbouwd: Apple Store-stijl attractor met feature slides + cocktail showcase
+- Demo data: 12 recepten, 4 categorieën, 7 dagen nep-rapportages via Instellingen → Demo
+- Standby geblokkeerd wanneer demo modus actief is
+- Na X minuten inactiviteit keert machine automatisch terug naar attractor
+- `/api/demo/activate` en `/api/demo/deactivate` endpoints in de backend
+
 ## [4.1.0] - 2026-07-01
 ### Nieuw
 - Demo modus: automatische cocktail-carrousel bij inactiviteit, ideaal voor winkel/beurs

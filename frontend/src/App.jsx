@@ -41,20 +41,25 @@ export default function App() {
   )
   const demoTimerRef = useRef(null)
 
+  const demoEnabled = () => localStorage.getItem(DEMO_KEY) === '1'
+
   function logout() { sessionStorage.removeItem(SESSION_KEY); setView('login') }
 
-  // Demo modus inactiviteitstimer — alleen actief als demo ingeschakeld is in instellingen
+  // Standby blokkeren wanneer demo modus ingeschakeld is
+  function handleStandby() {
+    if (demoEnabled()) return
+    setStandby(true)
+  }
+
+  // Demo inactiviteitstimer: na X min geen aanraking → attractor
   useEffect(() => {
-    function isDemoEnabled() {
-      return localStorage.getItem(DEMO_KEY) === '1'
-    }
     function getDemoMs() {
       const min = parseInt(localStorage.getItem(DEMO_MIN_KEY), 10)
       return ((isNaN(min) || min < 1) ? DEFAULT_DEMO_MINUTES : min) * 60 * 1000
     }
     function resetTimer() {
       clearTimeout(demoTimerRef.current)
-      if (!isDemoEnabled() || demo || standby || view !== 'app') return
+      if (!demoEnabled() || demo || standby || view !== 'app') return
       demoTimerRef.current = setTimeout(() => setDemo(true), getDemoMs())
     }
 
@@ -92,8 +97,8 @@ export default function App() {
   } else {
     appContent = (
       <VirtualKeyboardProvider>
-        <Layout onLogout={logout} onStandby={() => setStandby(true)}>
-          <AnimatedRoutes onStandby={() => setStandby(true)} />
+        <Layout onLogout={logout} onStandby={handleStandby}>
+          <AnimatedRoutes onStandby={handleStandby} />
         </Layout>
       </VirtualKeyboardProvider>
     )
