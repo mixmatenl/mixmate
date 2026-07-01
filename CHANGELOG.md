@@ -1,3 +1,7 @@
+## [4.7.8] - 2026-07-02
+### Gefixt
+- Schermweergave: CSS zoom vervangen door Chromium `--force-device-scale-factor=1.5` (correcte 1280×800 viewport op 1920×1200 scherm)
+
 ## [4.7.7] - 2026-07-02
 ### Gefixt
 - WiFi verbinden: `wifi-sec.key-mgmt` argument verwijderd (niet ondersteund in nieuwere nmcli versies)
