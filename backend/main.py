@@ -1167,6 +1167,7 @@ async def wifi_connect(body: dict):
             cmd = [
                 "sudo", "nmcli", "dev", "wifi", "connect", ssid,
                 "password", password,
+                "802-11-wireless-security.key-mgmt", "wpa-psk",
             ]
         else:
             cmd = ["sudo", "nmcli", "dev", "wifi", "connect", ssid]

@@ -1,3 +1,7 @@
+## [4.7.11] - 2026-07-02
+### Gefixt
+- WiFi verbinden: juiste property naam `802-11-wireless-security.key-mgmt` (lange vorm) voor nmcli op Pi 4
+
 ## [4.7.10] - 2026-07-02
 ### Gefixt
 - DemoMode crash opgelost: `useNavigate` was niet geïmporteerd maar wel aangeroepen → demo toonde cocktails ipv slides
