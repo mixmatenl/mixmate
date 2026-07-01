@@ -1,3 +1,11 @@
+## [4.7.0] - 2026-07-01
+### Nieuw
+- Demo pour: volledig pomprek zichtbaar (8 pompen naast elkaar)
+- Actieve pomp bobbert, licht op in eigen kleur met glow-effect
+- Vloeistof stroomt zichtbaar door de slang per actieve pomp
+- Glas-visualisatie vult zich in realtime terwijl de cocktail wordt gemaakt
+- Percentage en "Serveerklaar" label in het glas
+
 ## [4.6.0] - 2026-07-01
 ### Nieuw
 - Instellingen > Schermweergave: schaalgrootte instelbaar (75% t/m 200%)
