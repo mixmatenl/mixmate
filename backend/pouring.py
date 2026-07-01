@@ -25,8 +25,8 @@ async def pour_recipe(
 ):
     """
     Pour a recipe step by step.
-    Each step activates a pump/valve until the expected ml is reached (weight-based),
-    with time-based fallback.
+    - With loadcell: weight-based control (stops when target weight reached)
+    - Without loadcell: time-based control (runs for target_ml / ml_per_second seconds)
     """
     global current_session
 
@@ -34,8 +34,11 @@ async def pour_recipe(
     current_session = session
     session.active = True
 
-    loadcell.tare()
-    await asyncio.sleep(0.3)
+    has_loadcell = loadcell._hx is not None
+
+    if has_loadcell:
+        loadcell.tare()
+        await asyncio.sleep(0.3)
 
     total_ml = sum(s["ml"] for s in steps)
     poured_ml = 0.0
@@ -49,43 +52,29 @@ async def pour_recipe(
             target_ml = step["ml"]
             ml_per_second = step["ml_per_second"]
             name = step["name"]
+            expected_seconds = target_ml / ml_per_second
 
             gpio.setup_pin(pin)
-
-            weight_before = loadcell.get_weight_grams()
-            expected_seconds = target_ml / ml_per_second
-            deadline = asyncio.get_event_loop().time() + expected_seconds * 1.5
-
             gpio.activate(pin)
 
-            is_mock = not hasattr(loadcell, '_hx') or loadcell._hx is None
             loop = asyncio.get_event_loop()
             start_time = loop.time()
-            weight_mode_confirmed = False
-            mode = "time"  # default; switch to "weight" if loadcell responds
+            weight_before = loadcell.get_weight_grams() if has_loadcell else 0.0
 
             while not session.cancelled:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 elapsed = loop.time() - start_time
 
-                # Mock simulation
-                if is_mock:
-                    loadcell._mock_add(ml_per_second * 0.1)
-
-                weight_now = loadcell.get_weight_grams()
-                delta = weight_now - weight_before
-
-                # After 1s, decide if loadcell is responding
-                if not weight_mode_confirmed and elapsed >= 1.0:
-                    weight_mode_confirmed = True
-                    mode = "weight" if (delta > 0.5 or is_mock) else "time"
-
-                if mode == "weight":
+                if has_loadcell:
+                    weight_now = loadcell.get_weight_grams()
+                    delta = max(0.0, weight_now - weight_before)
                     step_progress = min(delta / target_ml, 1.0)
                     poured_ml = sum(s["ml"] for s in steps[:i]) + delta
+                    done = delta >= target_ml * 0.95 or elapsed >= expected_seconds * 1.5
                 else:
                     step_progress = min(elapsed / expected_seconds, 1.0)
-                    poured_ml = sum(s["ml"] for s in steps[:i]) + (elapsed / expected_seconds * target_ml)
+                    poured_ml = sum(s["ml"] for s in steps[:i]) + step_progress * target_ml
+                    done = elapsed >= expected_seconds
 
                 await on_progress({
                     "type": "progress",
@@ -93,20 +82,16 @@ async def pour_recipe(
                     "step_name": name,
                     "step_progress": round(step_progress, 3),
                     "total_progress": round(min(poured_ml / total_ml, 1.0), 3),
-                    "poured_ml": round(delta if mode == "weight" else poured_ml - sum(s["ml"] for s in steps[:i]), 1),
+                    "poured_ml": round(step_progress * target_ml, 1),
                     "target_ml": target_ml,
-                    "weight_g": round(weight_now, 1),
-                    "mode": mode,
+                    "mode": "weight" if has_loadcell else "time",
                 })
 
-                elapsed_ok = elapsed >= expected_seconds
-                weight_ok = mode == "weight" and delta >= target_ml * 0.95
-
-                if weight_ok or elapsed_ok:
+                if done:
                     break
 
             gpio.deactivate(pin)
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.05)
 
         status = "cancelled" if session.cancelled else "done"
         await on_progress({"type": status, "total_progress": 1.0})

@@ -1,3 +1,10 @@
+## [4.8.3] - 2026-07-02
+### Gefixt
+- Pouring engine herschreven: geen mock-gewicht meer op echte hardware, puur tijdgebaseerd zonder weegcel
+- Poll-interval van 100ms naar 50ms voor vloeiendere voortgangsbalk
+- Inter-stap vertraging van 200ms naar 50ms
+- Pompsnelheid standaard naar 35 ml/s; migratie update alle pompen < 5 ml/s naar 35 ml/s
+
 ## [4.8.2] - 2026-07-02
 ### Nieuw
 - Easter egg: klok 1,5 seconden ingedrukt houden start de demo slideshow direct
