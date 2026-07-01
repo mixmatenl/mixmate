@@ -923,6 +923,63 @@ async def reset_cloud():
     return {"ok": True}
 
 
+# ── Schermschaal instellen ────────────────────────────────────────────────────
+
+SWAY_CONFIG = Path("/home/pi/.config/sway/config")
+SCALE_FILE  = Path("/home/pi/.display_scale")
+
+def _read_scale() -> float:
+    try:
+        return float(SCALE_FILE.read_text().strip())
+    except Exception:
+        return 1.5
+
+def _write_sway_config(scale: float):
+    chromium_bin = "chromium" if Path("/usr/bin/chromium").exists() else "chromium-browser"
+    SWAY_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    SWAY_CONFIG.write_text(f"""\
+output * scale {scale}
+default_border none
+seat * hide_cursor 1
+focus_follows_mouse no
+exec {chromium_bin} \\
+  --kiosk \\
+  --noerrdialogs \\
+  --disable-infobars \\
+  --no-first-run \\
+  --password-store=basic \\
+  --disable-translate \\
+  --touch-events=enabled \\
+  --enable-touch-drag-drop \\
+  --disable-pinch \\
+  --overscroll-history-navigation=0 \\
+  --ozone-platform=wayland \\
+  --enable-features=UseOzonePlatform \\
+  --disable-features=TranslateUI \\
+  http://localhost:8000
+""")
+
+@app.get("/api/system/display")
+def get_display():
+    return {"scale": _read_scale()}
+
+@app.post("/api/system/display")
+async def set_display(body: dict):
+    scale = float(body.get("scale", 1.5))
+    scale = max(0.5, min(3.0, round(scale * 4) / 4))  # stap van 0.25
+    SCALE_FILE.write_text(str(scale))
+    _write_sway_config(scale)
+    # Sway herladen — past scale toe zonder reboot
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "swaymsg", "reload",
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+        )
+        await asyncio.wait_for(proc.communicate(), timeout=5)
+    except Exception:
+        pass
+    return {"ok": True, "scale": scale}
+
 # ── Systeem beheer ────────────────────────────────────────────────────────────
 
 @app.post("/api/system/restart")

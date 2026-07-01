@@ -1,0 +1,19 @@
+output * scale 1.5
+default_border none
+seat * hide_cursor 1
+focus_follows_mouse no
+exec chromium \
+  --kiosk \
+  --noerrdialogs \
+  --disable-infobars \
+  --no-first-run \
+  --password-store=basic \
+  --disable-translate \
+  --touch-events=enabled \
+  --enable-touch-drag-drop \
+  --disable-pinch \
+  --overscroll-history-navigation=0 \
+  --ozone-platform=wayland \
+  --enable-features=UseOzonePlatform \
+  --disable-features=TranslateUI \
+  http://localhost:8000

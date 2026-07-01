@@ -1,3 +1,10 @@
+## [4.6.0] - 2026-07-01
+### Nieuw
+- Instellingen > Schermweergave: schaalgrootte instelbaar (75% t/m 200%)
+- Backend schrijft sway config en herlaadt via `swaymsg reload` — geen reboot nodig
+- Installer gebruikt sway i.p.v. cage: output-scale werkt correct op Pi 5
+- Cursor permanent verborgen via `seat * hide_cursor 1` in sway config
+
 ## [4.5.0] - 2026-07-01
 ### Gewijzigd
 - Demo slideshow toont alleen feature slides (geen cocktail-slideshow meer)

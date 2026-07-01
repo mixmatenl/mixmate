@@ -282,32 +282,26 @@ EOF
 
 # ── Kiosk autostart ───────────────────────────
 if [ "$DISPLAY_STACK" = "wayland" ]; then
-  # Pi 5: cage (Wayland kiosk compositor) start Chromium direct
-  log "Wayland kiosk autostart instellen..."
+  # Pi 5: sway (Wayland compositor met output-scale support)
+  log "Sway installeren..."
+  apt-get install -y -qq sway || fail "Kan sway niet installeren."
 
+  log "Sway config instellen..."
+  sudo -u $USER mkdir -p /home/${USER}/.config/sway
+  # Schrijf default scale (1.5) — aanpasbaar via Instellingen > Schermweergave
+  echo "1.5" > /home/${USER}/.display_scale
+  chown ${USER}:${USER} /home/${USER}/.display_scale
+  cp "$INSTALL_DIR/sway-config-default" /home/${USER}/.config/sway/config
+  # Vervang chromium placeholder door echte binary naam
+  sed -i "s|exec chromium |exec ${CHROMIUM_BIN} |g" /home/${USER}/.config/sway/config
+  chown ${USER}:${USER} /home/${USER}/.config/sway/config
+
+  log "Wayland kiosk autostart instellen..."
   cat > /home/${USER}/.profile <<PROFILE
 if [ -z "\$WAYLAND_DISPLAY" ] && [ "\$(tty)" = "/dev/tty1" ]; then
-  # Wacht tot de backend beschikbaar is (max 60s)
-  TRIES=0
-  until curl -sf http://localhost:8000 > /dev/null 2>&1 || [ \$TRIES -ge 60 ]; do
-    sleep 1
-    TRIES=\$((TRIES + 1))
-  done
-  exec cage -s -- ${CHROMIUM_BIN} \\
-    --kiosk \\
-    --noerrdialogs \\
-    --disable-infobars \\
-    --no-first-run \\
-    --password-store=basic \\
-    --disable-translate \\
-    --force-device-scale-factor=1.5 \\
-    --disable-pinch \\
-    --overscroll-history-navigation=0 \\
-    --check-for-update-interval=31536000 \\
-    --ozone-platform=wayland \\
-    --enable-features=UseOzonePlatform \\
-    --disable-features=TranslateUI \\
-    http://localhost:8000
+  export WLR_NO_HARDWARE_CURSORS=1
+  until curl -sf http://localhost:8000 > /dev/null 2>&1; do sleep 1; done
+  exec sway
 fi
 PROFILE
   chown ${USER}:${USER} /home/${USER}/.profile
