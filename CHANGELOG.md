@@ -1,3 +1,7 @@
+## [4.8.1] - 2026-07-02
+### Gefixt
+- Demotimer pauzeert 5 minuten bij interactie met een file-input (foto uploaden), zodat de demo niet aanschiet tijdens het bladeren door bestanden
+
 ## [4.8.0] - 2026-07-02
 ### Nieuw
 - Dashboard: swipeable pagina's van 6 cocktails (3×2 grid), vegen van rechts naar links voor volgende pagina

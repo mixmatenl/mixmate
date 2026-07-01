@@ -57,19 +57,23 @@ export default function App() {
       const min = parseInt(localStorage.getItem(DEMO_MIN_KEY), 10)
       return ((isNaN(min) || min < 1) ? DEFAULT_DEMO_MINUTES : min) * 60 * 1000
     }
-    function resetTimer() {
+    function resetTimer(e) {
       clearTimeout(demoTimerRef.current)
       if (!demoEnabled() || demo || standby || view !== 'app') return
-      demoTimerRef.current = setTimeout(() => setDemo(true), getDemoMs())
+      // File-input interactie (upload bezig): geef 5 minuten extra
+      const target = e?.target
+      const isFileInput = target instanceof HTMLInputElement && target.type === 'file'
+      const delay = isFileInput ? 5 * 60 * 1000 : getDemoMs()
+      demoTimerRef.current = setTimeout(() => setDemo(true), delay)
     }
 
-    const events = ['touchstart', 'touchend', 'mousedown', 'keydown']
-    events.forEach(e => document.addEventListener(e, resetTimer, { passive: true }))
+    const events = ['touchstart', 'touchend', 'mousedown', 'keydown', 'focus', 'change']
+    events.forEach(ev => document.addEventListener(ev, resetTimer, { passive: true }))
     resetTimer()
 
     return () => {
       clearTimeout(demoTimerRef.current)
-      events.forEach(e => document.removeEventListener(e, resetTimer))
+      events.forEach(ev => document.removeEventListener(ev, resetTimer))
     }
   }, [demo, standby, view])
 
