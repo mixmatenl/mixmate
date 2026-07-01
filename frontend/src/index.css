@@ -33,6 +33,10 @@
   user-select: none;
 }
 
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;

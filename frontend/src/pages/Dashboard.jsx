@@ -120,7 +120,7 @@ function PourModal({ recipe, glasses, onClose }) {
               <div className="grid grid-cols-2 gap-2.5">
                 {glasses.map(g => (
                   <button key={g.id} onClick={() => setSelectedGlass(g)}
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-all text-left active:scale-[0.97] ${
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 transition-[transform,background-color,border-color,color] duration-100 text-left active:scale-[0.97] ${
                       selectedGlass?.id === g.id
                         ? 'bg-[#111] border-[#111] text-white'
                         : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -137,7 +137,7 @@ function PourModal({ recipe, glasses, onClose }) {
                   </button>
                 ))}
                 <button onClick={() => { setSelectedGlass(null); afterGlass() }}
-                  className="flex items-center justify-center px-4 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm active:scale-[0.97] transition-all">
+                  className="flex items-center justify-center px-4 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 text-sm active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-100">
                   Standaard
                 </button>
               </div>
@@ -162,7 +162,7 @@ function PourModal({ recipe, glasses, onClose }) {
               </div>
               {hasAuto && <p className="text-gray-400 text-xs text-center">De machine vult de rest automatisch aan.</p>}
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
+                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-100">Annuleer</button>
                 <button onClick={() => setStatus(PS.CONFIRM)} className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
                   {hasAuto ? 'Gedaan →' : 'Gereed'}
                 </button>
@@ -191,7 +191,7 @@ function PourModal({ recipe, glasses, onClose }) {
                 : <p className="text-gray-400 text-xs text-center">Zet het glas onder de machine en druk op maken.</p>
               }
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">Annuleer</button>
+                <button onClick={onClose} className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-100">Annuleer</button>
                 <button onClick={hasAuto ? startPour : finishDone}
                   className="btn-dark flex-1 py-3.5 rounded-2xl text-sm font-bold tracking-wide">
                   {hasAuto ? 'Maken' : 'Klaar!'}
@@ -205,7 +205,7 @@ function PourModal({ recipe, glasses, onClose }) {
             <>
               <div className="text-center py-2">
                 <p className="text-gray-400 text-xs tracking-[0.2em] uppercase font-medium mb-1">Bezig met</p>
-                <p className="text-gray-900 text-2xl font-bold tracking-tight transition-all duration-500">
+                <p className="text-gray-900 text-2xl font-bold tracking-tight transition-[color,opacity] duration-500">
                   {progress?.step_name || '…'}
                 </p>
                 {progress?.mode === 'weight' && (
@@ -215,7 +215,7 @@ function PourModal({ recipe, glasses, onClose }) {
 
               <div className="flex flex-wrap gap-1.5 justify-center">
                 {autoIngredients.map(ing => (
-                  <span key={ing.ingredient_id} className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all duration-400 ${
+                  <span key={ing.ingredient_id} className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-[background-color,border-color,color] duration-400 ${
                     progress?.step_name === ing.ingredient_name
                       ? 'bg-[#111] text-white border-[#111] scale-105 pour-pulse'
                       : 'bg-gray-50 text-gray-300 border-gray-100'
@@ -232,12 +232,12 @@ function PourModal({ recipe, glasses, onClose }) {
                   <span className="text-gray-700 font-bold tabular-nums">{pct}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#111] rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-[#111] rounded-full transition-[width] duration-300" style={{ width: `${pct}%` }} />
                 </div>
               </div>
 
               <button onClick={cancel}
-                className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-all">
+                className="w-full py-3.5 rounded-2xl border border-gray-200 text-gray-400 text-sm font-medium active:scale-[0.97] transition-[transform,background-color,border-color,color] duration-100">
                 Stoppen
               </button>
             </>
@@ -269,7 +269,7 @@ function PourModal({ recipe, glasses, onClose }) {
             <div className="space-y-4">
               <p className="text-red-500 text-sm text-center">{progress?.error}</p>
               <button onClick={onClose}
-                className="w-full py-3 rounded-2xl border border-gray-200 text-gray-400 text-sm transition-all">
+                className="w-full py-3 rounded-2xl border border-gray-200 text-gray-400 text-sm transition-colors">
                 Sluiten
               </button>
             </div>

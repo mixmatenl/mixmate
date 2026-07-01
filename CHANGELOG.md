@@ -1,3 +1,10 @@
+## [4.8.6] - 2026-07-02
+### Verbeterd
+- Google Fonts verwijderd uit index.html (Inter werd niet gebruikt, blokkeert render op Pi bij netwerk-delay)
+- `touch-action: manipulation` op alle buttons — elimineert 300ms tap-delay in Chromium
+- `transition-all` overal vervangen door specifieke transitions — scheelt zware stijlherberekeningen op Pi
+- Recipe bewerken: bevestiging "✓ Opgeslagen" is nu zichtbaar (1,5s) vóór het formulier sluit
+
 ## [4.8.5] - 2026-07-02
 ### Nieuw
 - Dashboard: pijltjes links/rechts naast het swipe-scherm om te klikken naar vorige/volgende pagina

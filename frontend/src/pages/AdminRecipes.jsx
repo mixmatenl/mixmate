@@ -108,7 +108,7 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
       if (result) {
         setSaved(true)
         onReload?.()
-        setTimeout(() => setSaved(false), 2500)
+        setTimeout(() => { setSaved(false); onCancel?.() }, 1500)
       }
     } catch (err) {
       setError(err?.message || 'Opslaan mislukt — probeer opnieuw.')
@@ -227,11 +227,7 @@ function RecipeCard({ recipe, ingredients, categories, glasses, onUpdated, onDel
         ingredients={ingredients}
         categories={categories}
         glasses={glasses}
-        onSave={async data => {
-          const saved = await api.updateRecipe(recipe.id, data)
-          setEditing(false)
-          return saved
-        }}
+        onSave={async data => api.updateRecipe(recipe.id, data)}
         onReload={onUpdated}
         onCancel={() => setEditing(false)}
       />
@@ -323,11 +319,7 @@ export default function AdminRecipes() {
       {adding && (
         <RecipeForm
           ingredients={ingredients} categories={categories} glasses={glasses}
-          onSave={async data => {
-            const saved = await api.createRecipe(data)
-            setAdding(false)
-            return saved
-          }}
+          onSave={async data => api.createRecipe(data)}
           onReload={load}
           onCancel={() => setAdding(false)}
         />
