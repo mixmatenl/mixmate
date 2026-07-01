@@ -1,3 +1,11 @@
+## [4.8.5] - 2026-07-02
+### Nieuw
+- Dashboard: pijltjes links/rechts naast het swipe-scherm om te klikken naar vorige/volgende pagina
+- Demo modus: cocktails worden gesimuleerd in ~4 seconden (geen GPIO), pomp snelheid 25 ml/s
+- Demo modus: fake pour via WebSocket met realistische voortgangsbalk
+### Verbeterd
+- Recepten opslaan: betere foutafhandeling, validatie en gebruikersfeedback (rode/groene balk)
+
 ## [4.8.4] - 2026-07-02
 ### Verbeterd
 - Demo slideshow volledig herschreven: geen gradients, geen blur, geen SVG-achtergronden

@@ -548,34 +548,63 @@ function SwipeablePages({ items, renderItem, pageKey }) {
 
   const slideX = widthRef.current ? -(page * widthRef.current) + dragOffset : 0
 
+  function NavArrow({ dir }) {
+    const canGo = dir === 'left' ? page > 0 : page < pages.length - 1
+    return (
+      <button
+        onClick={() => canGo && setPage(p => p + (dir === 'left' ? -1 : 1))}
+        onTouchEnd={e => { e.preventDefault(); canGo && setPage(p => p + (dir === 'left' ? -1 : 1)) }}
+        style={{
+          flexShrink: 0,
+          width: 36, alignSelf: 'stretch',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'none', border: 'none', cursor: canGo ? 'pointer' : 'default',
+          opacity: canGo ? 1 : 0.15,
+          transition: 'opacity 0.2s ease',
+          color: 'var(--text)',
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          {dir === 'left'
+            ? <polyline points="15 18 9 12 15 6" />
+            : <polyline points="9 18 15 12 9 6" />}
+        </svg>
+      </button>
+    )
+  }
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div
-        ref={containerRef}
-        style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <div style={{
-          display: 'flex', height: '100%',
-          transform: `translateX(${slideX}px)`,
-          transition: isDraggingRef.current ? 'none' : 'transform 0.38s cubic-bezier(0.25,1,0.5,1)',
-          willChange: 'transform',
-        }}>
-          {pages.map((pageItems, pi) => (
-            <div key={pi} style={{
-              flexShrink: 0,
-              width: widthRef.current || '100%',
-              height: '100%',
-              display: 'grid',
-              gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-              gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-              gap: 20,
-            }}>
-              {pageItems.map((item, ii) => renderItem(item, pi * PER_PAGE + ii))}
-            </div>
-          ))}
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <NavArrow dir="left" />
+        <div
+          ref={containerRef}
+          style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          <div style={{
+            display: 'flex', height: '100%',
+            transform: `translateX(${slideX}px)`,
+            transition: isDraggingRef.current ? 'none' : 'transform 0.38s cubic-bezier(0.25,1,0.5,1)',
+            willChange: 'transform',
+          }}>
+            {pages.map((pageItems, pi) => (
+              <div key={pi} style={{
+                flexShrink: 0,
+                width: widthRef.current || '100%',
+                height: '100%',
+                display: 'grid',
+                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+                gap: 20,
+              }}>
+                {pageItems.map((item, ii) => renderItem(item, pi * PER_PAGE + ii))}
+              </div>
+            ))}
+          </div>
         </div>
+        <NavArrow dir="right" />
       </div>
 
       {/* Pagina-dots */}

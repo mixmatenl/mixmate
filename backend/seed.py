@@ -187,7 +187,7 @@ def seed_demo_data(db: Session):
     for slot, ing_name, gpio_pin in DEMO_PUMP_SLOTS:
         ing = ingredients.get(ing_name)
         if ing:
-            pump = Pump(slot=slot, gpio_pin=gpio_pin, ingredient_id=ing.id, enabled=True)
+            pump = Pump(slot=slot, gpio_pin=gpio_pin, ingredient_id=ing.id, enabled=True, ml_per_second=25.0)
             db.add(pump)
     db.flush()
 

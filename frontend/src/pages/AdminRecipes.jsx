@@ -73,6 +73,8 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
       : [{ ingredient_id: '', amount_ml: 50 }]
   )
   const [saving, setSaving] = useState(false)
+  const [error,  setError]  = useState(null)
+  const [saved,  setSaved]  = useState(false)
 
   const addStep    = () => setSteps(s => [...s, { ingredient_id: '', amount_ml: 50 }])
   const removeStep = i  => setSteps(s => s.filter((_, idx) => idx !== i))
@@ -80,10 +82,12 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim()) return
-    const ingredientSteps = steps.filter(s => s.ingredient_id)
-    if (!ingredientSteps.length) return
+    if (!name.trim()) { setError('Vul een naam in.'); return }
+    const ingredientSteps = steps.filter(s => s.ingredient_id && parseFloat(s.amount_ml) > 0)
+    if (!ingredientSteps.length) { setError('Voeg minimaal één ingrediënt toe.'); return }
     setSaving(true)
+    setError(null)
+    setSaved(false)
     try {
       const data = {
         name: name.trim(),
@@ -97,13 +101,17 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
           order: i,
         })),
       }
-      const saved = await onSave(data)
-      // Upload foto als er een pending bestand is (bij nieuw recept)
-      if (pendingFile && saved?.id) {
-        await api.uploadRecipeImage(saved.id, pendingFile)
+      const result = await onSave(data)
+      if (pendingFile && result?.id) {
+        await api.uploadRecipeImage(result.id, pendingFile)
       }
-      // Nu pas lijst herladen zodat foto ook zichtbaar is
-      if (saved) onReload?.()
+      if (result) {
+        setSaved(true)
+        onReload?.()
+        setTimeout(() => setSaved(false), 2500)
+      }
+    } catch (err) {
+      setError(err?.message || 'Opslaan mislukt — probeer opnieuw.')
     } finally {
       setSaving(false)
     }
@@ -183,6 +191,17 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
         </button>
       </div>
 
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          {error}
+        </div>
+      )}
+      {saved && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          ✓ Opgeslagen
+        </div>
+      )}
+
       <div className="flex justify-end gap-2 pt-1 border-t border-gray-100">
         <button type="button" onClick={onCancel}
           className="text-sm text-gray-400 hover:text-gray-700 px-4 py-2.5 transition-colors">
@@ -190,7 +209,7 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
         </button>
         <button type="submit" disabled={saving}
           className="text-sm bg-[#111] text-white font-bold rounded-xl px-6 py-2.5 hover:bg-[#333] disabled:opacity-50 transition-all">
-          {saving ? 'Opslaan…' : isEdit ? 'Wijzigingen opslaan' : 'Recept aanmaken'}
+          {saving ? 'Opslaan…' : saved ? '✓ Opgeslagen' : isEdit ? 'Wijzigingen opslaan' : 'Recept aanmaken'}
         </button>
       </div>
     </form>

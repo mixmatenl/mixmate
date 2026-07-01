@@ -419,6 +419,7 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 
 _flush_state: dict = {"active": False}
 _machine_blocked: bool = False
+_demo_mode_active: bool = False
 _current_session_id: Optional[int] = None
 
 
@@ -837,7 +838,30 @@ async def websocket_pour(websocket: WebSocket, recipe_id: int, scale: float = 1.
         except Exception: pass
 
     try:
-        await pour_recipe(steps, send_progress)
+        if _demo_mode_active:
+            # Nep-gieten: snelle simulatie zonder GPIO, indrukwekkend voor demo
+            total_ml = sum(s["ml"] for s in steps)
+            DEMO_POUR_SECONDS = 4.0
+            elapsed = 0.0
+            interval = 0.05
+            while elapsed < DEMO_POUR_SECONDS:
+                await asyncio.sleep(interval)
+                elapsed += interval
+                progress = min(elapsed / DEMO_POUR_SECONDS, 1.0)
+                step_idx = min(int(progress * len(steps)), len(steps) - 1)
+                await send_progress({
+                    "type": "progress",
+                    "step": step_idx,
+                    "step_name": steps[step_idx]["name"],
+                    "step_progress": progress,
+                    "total_progress": round(progress, 3),
+                    "poured_ml": round(progress * total_ml, 1),
+                    "target_ml": total_ml,
+                    "mode": "demo",
+                })
+            await send_progress({"type": "done", "total_progress": 1.0})
+        else:
+            await pour_recipe(steps, send_progress)
     except WebSocketDisconnect:
         cancel_pour()
 
@@ -1632,6 +1656,8 @@ def seed_demo(session: Session = Depends(get_session)):
 @app.post("/api/demo/activate")
 def activate_demo(session: Session = Depends(get_session)):
     """Wist alles en laadt volledige demo data — voor winkel/beurs opstellingen."""
+    global _demo_mode_active
+    _demo_mode_active = True
     from sqlmodel import select, delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,
@@ -1655,6 +1681,8 @@ def activate_demo(session: Session = Depends(get_session)):
 @app.post("/api/demo/deactivate")
 def deactivate_demo(session: Session = Depends(get_session)):
     """Wist alle demo data zodat de machine klaar is voor echte setup."""
+    global _demo_mode_active
+    _demo_mode_active = False
     from sqlmodel import delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,
