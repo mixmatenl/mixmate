@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react'
 import { api, createPourSocket } from '../api'
 import { Sidebar } from './Layout'
 
@@ -472,6 +472,135 @@ function SearchBar({ value, onChange }) {
 
 const CACHE_KEY = 'mm_recipes_cache'
 
+/* ── Swipeable pages (iPhone-stijl) ─────────────────────────────────── */
+function SwipeablePages({ items, renderItem, pageKey }) {
+  const COLS = 3, ROWS = 2, PER_PAGE = COLS * ROWS
+
+  const pages = []
+  for (let i = 0; i < items.length; i += PER_PAGE) pages.push(items.slice(i, i + PER_PAGE))
+
+  const [page, setPage]           = useState(0)
+  const [dragOffset, setDragOffset] = useState(0)
+  const containerRef  = useRef(null)
+  const widthRef      = useRef(0)
+  const pageRef       = useRef(0)
+  const pagesLenRef   = useRef(pages.length)
+  const touchStartRef = useRef(null)
+  const isDraggingRef = useRef(false)
+
+  // Sync refs
+  useEffect(() => { pageRef.current = page }, [page])
+  useEffect(() => { pagesLenRef.current = pages.length })
+
+  // Reset to page 0 when category / search changes
+  useEffect(() => { setPage(0) }, [pageKey])
+
+  // Measure container width (kiosk: no resize)
+  useLayoutEffect(() => {
+    if (containerRef.current) widthRef.current = containerRef.current.offsetWidth
+  }, [])
+
+  // Non-passive touchmove needed for e.preventDefault()
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    function onMove(e) {
+      if (!touchStartRef.current) return
+      const dx = e.touches[0].clientX - touchStartRef.current.x
+      const dy = e.touches[0].clientY - touchStartRef.current.y
+
+      if (!isDraggingRef.current) {
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) isDraggingRef.current = true
+        else if (Math.abs(dy) > 8) { touchStartRef.current = null; return }
+        else return
+      }
+
+      if (isDraggingRef.current) {
+        e.preventDefault()
+        window.__dragScrollDidScroll = () => true
+        const p = pageRef.current, n = pagesLenRef.current
+        const rubber = (p === 0 && dx > 0) || (p === n - 1 && dx < 0)
+        setDragOffset(rubber ? dx * 0.2 : dx)
+      }
+    }
+
+    el.addEventListener('touchmove', onMove, { passive: false })
+    return () => el.removeEventListener('touchmove', onMove)
+  }, [])
+
+  function onTouchStart(e) {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    isDraggingRef.current = false
+    window.__dragScrollDidScroll = () => false
+  }
+
+  function onTouchEnd() {
+    if (isDraggingRef.current) {
+      if (dragOffset < -60 && pageRef.current < pagesLenRef.current - 1) setPage(p => p + 1)
+      else if (dragOffset > 60 && pageRef.current > 0) setPage(p => p - 1)
+      setDragOffset(0)
+      setTimeout(() => { window.__dragScrollDidScroll = () => false }, 350)
+    }
+    isDraggingRef.current = false
+    touchStartRef.current = null
+  }
+
+  const slideX = widthRef.current ? -(page * widthRef.current) + dragOffset : 0
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div
+        ref={containerRef}
+        style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        <div style={{
+          display: 'flex', height: '100%',
+          transform: `translateX(${slideX}px)`,
+          transition: isDraggingRef.current ? 'none' : 'transform 0.38s cubic-bezier(0.25,1,0.5,1)',
+          willChange: 'transform',
+        }}>
+          {pages.map((pageItems, pi) => (
+            <div key={pi} style={{
+              flexShrink: 0,
+              width: widthRef.current || '100%',
+              height: '100%',
+              display: 'grid',
+              gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+              gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+              gap: 20,
+            }}>
+              {pageItems.map((item, ii) => renderItem(item, pi * PER_PAGE + ii))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pagina-dots */}
+      {pages.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, padding: '12px 0 0', flexShrink: 0 }}>
+          {pages.map((_, i) => (
+            <div
+              key={i}
+              onTouchEnd={e => { e.preventDefault(); setPage(i) }}
+              onClick={() => setPage(i)}
+              style={{
+                width: i === page ? 22 : 6, height: 6, borderRadius: 3,
+                background: 'var(--text)',
+                opacity: i === page ? 0.65 : 0.18,
+                transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Dashboard ───────────────────────────────────────────────────────── */
 export default function Dashboard({ onStandby }) {
   const [recipes,    setRecipes]    = useState(() => {
@@ -559,16 +688,18 @@ export default function Dashboard({ onStandby }) {
         onStandby={onStandby}
       />
 
-      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--bg)' }}>
-        <div className="min-h-full px-8 py-8">
+      <main className="flex-1" style={{ background: 'var(--bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '32px 32px 16px', flexShrink: 0 }}>
           <SearchBar value={search} onChange={setSearch} />
+        </div>
 
+        <div style={{ flex: 1, padding: '0 32px 24px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {loading && recipes.length === 0 ? (
-            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-secondary)' }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
                 <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
               </svg>
@@ -580,8 +711,10 @@ export default function Dashboard({ onStandby }) {
               )}
             </div>
           ) : (
-            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-              {filtered.map((r, i) => (
+            <SwipeablePages
+              items={filtered}
+              pageKey={activeCategory + term}
+              renderItem={(r, i) => (
                 <CocktailCard
                   key={r.id}
                   recipe={r}
@@ -590,8 +723,8 @@ export default function Dashboard({ onStandby }) {
                   onToggleFavorite={toggleFavorite}
                   isPopular={r.pour_count > 0 && i < 3 && activeCategory === 'all' && !searching}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       </main>

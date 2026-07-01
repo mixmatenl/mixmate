@@ -1,3 +1,9 @@
+## [4.8.0] - 2026-07-02
+### Nieuw
+- Dashboard: swipeable pagina's van 6 cocktails (3×2 grid), vegen van rechts naar links voor volgende pagina
+- Pagina-dots onderaan zoals iPhone homescherm, aantikken om direct naar pagina te springen
+- Rubber-band effect aan de randen
+
 ## [4.7.13] - 2026-07-02
 ### Gefixt
 - Demo slideshow stutter: nextFeature crossfade verwijderd, GPU-compositing geforceerd via will-change + translateZ(0), blur verminderd
