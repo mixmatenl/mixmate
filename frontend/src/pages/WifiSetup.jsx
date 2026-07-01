@@ -166,6 +166,8 @@ export default function WifiSetup({ onClose }) {
                               onChange={e => setPassword(e.target.value)}
                               placeholder="WiFi wachtwoord"
                               autoFocus
+                              autoComplete="current-password"
+                              inputMode="text"
                               style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e5e7eb', borderRadius: 8, padding: '11px 44px 11px 12px', fontSize: 15, color: '#111', background: '#fff', outline: 'none' }}
                             />
                             <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', display: 'flex', padding: 0 }}>

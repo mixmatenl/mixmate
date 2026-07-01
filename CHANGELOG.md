@@ -1,3 +1,10 @@
+## [4.3.0] - 2026-07-01
+### Gefixt
+- WiFi verbinden werkt nu betrouwbaar: alle nmcli-aanroepen gebruiken sudo (vereist voor NetworkManager-privileges)
+- wpa_cli fallback repaired: schrijft nu correct wpa_supplicant.conf via wpa_passphrase
+- WiFi wachtwoordveld toont virtueel toetsenbord op touchscreen (inputMode=text)
+- sudoers uitgebreid met wpa_cli en wpa_passphrase rechten
+
 ## [2.3.0] - 2026-06-16
 ### Nieuw
 - Sessie-tracking: elke keer dat de machine opstart begint een nieuwe dienst

@@ -940,7 +940,7 @@ async def wifi_status():
     # Probeer nmcli
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi",
+            "sudo", "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         out, _ = await proc.communicate()
@@ -1026,7 +1026,7 @@ async def wifi_networks():
     # Primair: nmcli met --rescan yes (wacht intern tot scan klaar is, max ~10s)
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
+            "sudo", "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
             "dev", "wifi", "list", "--rescan", "yes",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
@@ -1041,7 +1041,7 @@ async def wifi_networks():
     # Fallback: nmcli zonder rescan (cached resultaten)
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
+            "sudo", "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,IN-USE",
             "dev", "wifi", "list",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
@@ -1097,7 +1097,7 @@ async def wifi_connect(body: dict):
     # Verwijder bestaand nmcli-profiel voor dit SSID (voorkomt "connection exists" fout)
     try:
         proc = await asyncio.create_subprocess_exec(
-            "nmcli", "connection", "delete", ssid,
+            "sudo", "nmcli", "connection", "delete", ssid,
             stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
         )
         await asyncio.wait_for(proc.communicate(), timeout=5)
@@ -1108,12 +1108,12 @@ async def wifi_connect(body: dict):
     try:
         if password:
             cmd = [
-                "nmcli", "dev", "wifi", "connect", ssid,
+                "sudo", "nmcli", "dev", "wifi", "connect", ssid,
                 "password", password,
                 "wifi-sec.key-mgmt", "wpa-psk",
             ]
         else:
-            cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+            cmd = ["sudo", "nmcli", "dev", "wifi", "connect", ssid]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -1138,8 +1138,31 @@ async def wifi_connect(body: dict):
     except Exception as e:
         return {"ok": False, "message": str(e)}
 
-    # Fallback: wpa_cli
+    # Fallback: wpa_passphrase + wpa_cli
     try:
+        import tempfile, os as _os
+        conf_line = f'network={{\n  ssid="{ssid}"\n'
+        if password:
+            # wpa_passphrase genereert PSK hash
+            gen = await asyncio.create_subprocess_exec(
+                "wpa_passphrase", ssid, password,
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+            )
+            gen_out, _ = await asyncio.wait_for(gen.communicate(), timeout=5)
+            conf_line = gen_out.decode()
+        else:
+            conf_line += '  key_mgmt=NONE\n}\n'
+
+        wpa_conf = Path("/etc/wpa_supplicant/wpa_supplicant.conf")
+        existing = wpa_conf.read_text() if wpa_conf.exists() else 'ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\nupdate_config=1\ncountry=NL\n'
+        # Verwijder oude entry voor dit SSID
+        import re as _re
+        existing = _re.sub(
+            r'network=\{[^}]*ssid="' + _re.escape(ssid) + r'"[^}]*\}', '', existing
+        )
+        new_conf = existing.strip() + '\n\n' + conf_line
+        wpa_conf.write_text(new_conf)
+
         proc = await asyncio.create_subprocess_exec(
             "wpa_cli", "-i", "wlan0", "reconfigure",
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
