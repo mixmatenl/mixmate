@@ -1,3 +1,7 @@
+## [4.7.9] - 2026-07-02
+### Gefixt
+- Schermweergave: terug naar CSS zoom=1.5 (force-device-scale-factor werkt niet met cage)
+
 ## [4.7.8] - 2026-07-02
 ### Gefixt
 - Schermweergave: CSS zoom vervangen door Chromium `--force-device-scale-factor=1.5` (correcte 1280×800 viewport op 1920×1200 scherm)
