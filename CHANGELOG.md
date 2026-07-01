@@ -1,3 +1,7 @@
+## [4.7.7] - 2026-07-02
+### Gefixt
+- WiFi verbinden: `wifi-sec.key-mgmt` argument verwijderd (niet ondersteund in nieuwere nmcli versies)
+
 ## [4.7.1] - 2026-07-01
 ### Gefixt
 - Demo data seed maakt nu 8 pompslots aan met de meest gebruikte ingrediënten
