@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 // ── Timing ────────────────────────────────────────────────────────────────────
 const SLIDE_MS = 6000
@@ -113,12 +112,6 @@ export default function DemoMode({ onExit }) {
     exitingRef.current = true
     setExiting(true)
     setTimeout(onExit, 600)
-  }
-
-  function goToDashboard() {
-    clearTimeout(timerRef.current)
-    fetch('/api/demo/deactivate', { method: 'POST' }).catch(() => {})
-    navigate('/')
   }
 
   const current   = FEATURES[idx]
@@ -251,18 +244,17 @@ export default function DemoMode({ onExit }) {
           ))}
         </div>
 
-        {/* Probeer-knop + afsluiten */}
+        {/* Probeer-knop */}
         <div style={{
-          display: 'flex', gap: 12,
           opacity: entered ? 1 : 0,
           transition: 'opacity 1.2s ease 1.2s',
           pointerEvents: entered ? 'auto' : 'none',
         }}>
           <button
-            onClick={goToDashboard}
-            onTouchEnd={e => { e.preventDefault(); goToDashboard() }}
+            onClick={handleExit}
+            onTouchEnd={e => { e.preventDefault(); handleExit() }}
             style={{
-              flex: 1, padding: '18px 0', borderRadius: 18,
+              width: '100%', padding: '18px 0', borderRadius: 18,
               background: '#fff', color: '#000',
               fontSize: 16, fontWeight: 700,
               border: 'none', cursor: 'pointer',
@@ -272,20 +264,6 @@ export default function DemoMode({ onExit }) {
             onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
           >
             Probeer het zelf →
-          </button>
-          <button
-            onClick={handleExit}
-            onTouchEnd={e => { e.preventDefault(); handleExit() }}
-            style={{
-              padding: '18px 24px', borderRadius: 18,
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.45)',
-              fontSize: 15, fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Afsluiten
           </button>
         </div>
       </div>

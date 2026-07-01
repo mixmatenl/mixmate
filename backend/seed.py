@@ -285,7 +285,7 @@ def seed_demo_data(db: Session):
          "ings": [("Donkere Rum", 30), ("Malibu", 20), ("Ananassap", 80), ("Sinaasappelsap", 60), ("Grenadine", 10)]},
         # Zomer
         {"name": "Aperol Spritz",       "cat": "Zomer", "glass": "Groot",
-         "ings": [("Aperol", 60), ("Prosecco", 90), ("Soda", 30)]},
+         "ings": [("Aperol", 60), ("Prosecco", 90), ("Sprite", 30)]},
         {"name": "Campari Orange",      "cat": "Zomer", "glass": "Longdrink",
          "ings": [("Campari", 50), ("Sinaasappelsap", 150)]},
         {"name": "Rosé Lemonade",       "cat": "Zomer", "glass": "Highball",
@@ -317,8 +317,6 @@ def seed_demo_data(db: Session):
          "ings": [("Wodka", 20), ("Witte Rum", 20), ("Gin", 20), ("Blue Curaçao", 20), ("Sprite", 100)]},
         {"name": "Jungle Juice",        "cat": "Party", "glass": "Groot",
          "ings": [("Wodka", 50), ("Ananassap", 80), ("Cranberrysap", 60), ("Grenadine", 20)]},
-        {"name": "Vodka Redbull",       "cat": "Party", "glass": "Longdrink",
-         "ings": [("Wodka", 50), ("Energy Drink", 200)]},
         # Sterk
         {"name": "Negroni",             "cat": "Sterk", "glass": "Standaard",
          "ings": [("Gin", 30), ("Campari", 30), ("Aperol", 20)]},
