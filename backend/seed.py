@@ -1,7 +1,57 @@
 from datetime import datetime, timedelta
 import random
+import urllib.request
+import json as _json
 from sqlmodel import Session
 from .models import Ingredient, Category, Glass, Recipe, RecipeIngredient, Pour, Session as MachineSession
+
+_COCKTAILDB = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s="
+
+# Handmatige mapping voor recepten waarvan de naam afwijkt van TheCocktailDB
+_NAME_MAP = {
+    "Wodka Cola":        "Vodka Cola",
+    "Rum & Cola":        "Rum and Cola",
+    "Whiskey Cola":      "Whiskey and Cola",
+    "Woo Woo":           "Woo Woo",
+    "Passion Star":      "Passion Star Martini",
+    "Mango Tango":       None,
+    "Rosé Lemonade":     None,
+    "Cucumber Cooler":   None,
+    "Coconut Kiss":      None,
+    "Caribbean Breeze":  None,
+    "Malibu Sunset":     None,
+    "Bay Breeze":        "Bay Breeze",
+    "Blue Motorcycle":   None,
+    "Jungle Juice":      None,
+    "Sangria Punch":     "Sangria",
+    "Vodka Redbull":     "Vodka Red Bull",
+    "Grapefruit Gin":    None,
+    "Tropical Punch":    None,
+    "Bahama Mama":       "Bahama Mama",
+    "Appletini":         "Appletini",
+    "Campari Orange":    None,
+    "Cognac Sour":       None,
+    "Whiskey Ginger":    "Whiskey Highball",
+    "Gin Gimlet":        "Gimlet",
+    "Dark & Stormy":     "Dark and Stormy",
+    "Rosé Lemonade":     None,
+}
+
+def _fetch_image(name: str) -> str:
+    """Zoek cocktailafbeelding op TheCocktailDB. Geeft lege string bij mislukking."""
+    try:
+        search = _NAME_MAP.get(name, name)
+        if search is None:
+            return ""
+        url = _COCKTAILDB + urllib.request.quote(search)
+        with urllib.request.urlopen(url, timeout=5) as r:
+            data = _json.loads(r.read())
+        drinks = data.get("drinks") or []
+        if drinks:
+            return drinks[0].get("strDrinkThumb", "")
+        return ""
+    except Exception:
+        return ""
 
 
 def seed_demo_data(db: Session):
@@ -205,11 +255,13 @@ def seed_demo_data(db: Session):
 
     recipe_objs = []
     for rd in recipes_data:
+        image_url = _fetch_image(rd["name"])
         recipe = Recipe(
             name=rd["name"],
             category_id=categories[rd["cat"]].id,
             glass_id=glasses[rd["glass"]].id,
             enabled=True,
+            image_url=image_url,
         )
         db.add(recipe)
         db.flush()
