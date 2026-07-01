@@ -101,7 +101,7 @@ export default function App() {
   } else {
     appContent = (
       <VirtualKeyboardProvider>
-        <Layout onLogout={logout} onStandby={handleStandby}>
+        <Layout onLogout={logout} onStandby={handleStandby} onStartDemo={() => setDemo(true)}>
           <AnimatedRoutes onStandby={handleStandby} />
         </Layout>
       </VirtualKeyboardProvider>

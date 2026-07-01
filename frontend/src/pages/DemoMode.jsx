@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 // ── Timing ────────────────────────────────────────────────────────────────────
 const SLIDE_MS = 6000
-const FADE_MS  = 900
+const FADE_MS  = 550
 
 // ── Feature slides — elke USP van MIXMATE ────────────────────────────────────
 const FEATURES = [
@@ -116,20 +116,38 @@ export default function DemoMode({ onExit }) {
   const current   = FEATURES[idx]
   const nextFeature = nextIdx !== null ? FEATURES[nextIdx] : null
 
-  const [a, b] = current.bg
+  const next = nextIdx !== null ? FEATURES[nextIdx] : null
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9990,
-      background: `linear-gradient(160deg, ${a} 0%, ${b} 100%)`,
+      background: '#040810',
       userSelect: 'none', WebkitUserSelect: 'none',
       opacity: exiting ? 0 : entered ? 1 : 0,
       transition: exiting
-        ? 'opacity 0.6s cubic-bezier(0.4,0,1,1)'
-        : 'opacity 1s cubic-bezier(0,0,0.2,1)',
+        ? 'opacity 0.5s cubic-bezier(0.4,0,1,1)'
+        : 'opacity 0.8s cubic-bezier(0,0,0.2,1)',
       overflow: 'hidden',
       willChange: 'opacity',
     }}>
+
+      {/* ── Achtergrond gradient — crossfade via opacity (geen repaint) ── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(160deg, ${current.bg[0]} 0%, ${current.bg[1]} 100%)`,
+        opacity: fading ? 0 : 1,
+        transition: `opacity ${FADE_MS}ms ease`,
+        willChange: 'opacity',
+      }} />
+      {next && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(160deg, ${next.bg[0]} 0%, ${next.bg[1]} 100%)`,
+          opacity: fading ? 1 : 0,
+          transition: `opacity ${FADE_MS}ms ease`,
+          willChange: 'opacity',
+        }} />
+      )}
 
       {/* ── Achtergrond visual (groot, subtiel) ── */}
       <div style={{
@@ -150,10 +168,10 @@ export default function DemoMode({ onExit }) {
       <div style={{
         position: 'absolute', bottom: -120, left: '50%',
         transform: 'translateX(-50%) translateZ(0)',
-        width: 600, height: 300,
+        width: 500, height: 260,
         borderRadius: '50%',
         background: current.accent,
-        filter: 'blur(80px)',
+        filter: 'blur(70px)',
         opacity: fading ? 0 : 0.10,
         transition: `opacity ${FADE_MS}ms ease`,
         zIndex: 1, pointerEvents: 'none',

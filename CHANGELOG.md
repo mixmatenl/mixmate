@@ -1,3 +1,10 @@
+## [4.8.2] - 2026-07-02
+### Nieuw
+- Easter egg: klok 1,5 seconden ingedrukt houden start de demo slideshow direct
+- Voortgangsbalkje verschijnt onder de klok terwijl je indrukt
+### Verbeterd
+- Demo slideshow soepeler: achtergrond-gradients crossfaden nu via opacity (geen repaint), FADE_MS van 900 naar 550ms
+
 ## [4.8.1] - 2026-07-02
 ### Gefixt
 - Demotimer pauzeert 5 minuten bij interactie met een file-input (foto uploaden), zodat de demo niet aanschiet tijdens het bladeren door bestanden

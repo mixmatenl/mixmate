@@ -53,26 +53,70 @@ function useStatusPoll() {
   return { wifi, cloud }
 }
 
-function Clock() {
+function Clock({ onLongPress }) {
   const [time, setTime] = useState(new Date())
+  const [pressing, setPressing] = useState(false)
+  const holdRef = useRef(null)
+  const progressRef = useRef(null)
+  const HOLD_MS = 1500
+
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
+
+  function startHold(e) {
+    e.preventDefault()
+    setPressing(true)
+    holdRef.current = setTimeout(() => {
+      setPressing(false)
+      onLongPress?.()
+    }, HOLD_MS)
+  }
+
+  function cancelHold() {
+    clearTimeout(holdRef.current)
+    setPressing(false)
+  }
+
   const h = time.getHours().toString().padStart(2, '0')
   const m = time.getMinutes().toString().padStart(2, '0')
   return (
-    <span style={{
-      color: '#1c1c1e',
-      fontSize: 15,
-      fontWeight: 600,
-      fontVariantNumeric: 'tabular-nums',
-      letterSpacing: 0.5,
-    }}>{h}:{m}</span>
+    <span
+      onMouseDown={startHold}
+      onMouseUp={cancelHold}
+      onMouseLeave={cancelHold}
+      onTouchStart={startHold}
+      onTouchEnd={cancelHold}
+      style={{
+        color: '#1c1c1e',
+        fontSize: 15,
+        fontWeight: 600,
+        fontVariantNumeric: 'tabular-nums',
+        letterSpacing: 0.5,
+        cursor: 'default',
+        position: 'relative',
+        padding: '4px 6px',
+        borderRadius: 6,
+        background: pressing ? 'rgba(0,0,0,0.06)' : 'transparent',
+        transition: 'background 0.15s',
+        userSelect: 'none',
+      }}
+    >
+      {h}:{m}
+      {pressing && (
+        <span style={{
+          position: 'absolute', bottom: 0, left: 0,
+          height: 2, borderRadius: 1,
+          background: '#1c1c1e',
+          animation: `clockHold ${HOLD_MS}ms linear forwards`,
+        }} />
+      )}
+    </span>
   )
 }
 
-export default function Layout({ children }) {
+export default function Layout({ children, onStartDemo }) {
   const { wifi, cloud } = useStatusPoll()
 
   return (
@@ -132,7 +176,7 @@ export default function Layout({ children }) {
           <div title={cloud.connected ? 'Cloud verbonden' : cloud.paired ? 'Gekoppeld, niet verbonden' : 'Niet gekoppeld'}>
             <CloudIcon connected={cloud.connected} paired={cloud.paired} />
           </div>
-          <Clock />
+          <Clock onLongPress={onStartDemo} />
         </div>
       </header>
 

@@ -126,3 +126,9 @@ select option { background: #ffffff; color: #1c1c1e; }
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ── Clock long-press indicator ─────────────────────────────────────── */
+@keyframes clockHold {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
