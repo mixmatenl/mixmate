@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { api } from '../api'
+import { useNavigate } from 'react-router-dom'
 
 // ── Timing ────────────────────────────────────────────────────────────────────
-const SLIDE_MS       = 6000
-const FADE_MS        = 900
-const POUR_MS_PER_ML = 120
-const DONE_HOLD_MS   = 4000
+const SLIDE_MS = 6000
+const FADE_MS  = 900
 
 // ── Feature slides — elke USP van MIXMATE ────────────────────────────────────
 const FEATURES = [
@@ -76,13 +74,12 @@ const FEATURES = [
 
 // ── Hoofd component ───────────────────────────────────────────────────────────
 export default function DemoMode({ onExit }) {
-  const [recipes,       setRecipes]       = useState([])
-  const [idx,           setIdx]           = useState(0)
-  const [nextIdx,       setNextIdx]       = useState(null)
-  const [fading,        setFading]        = useState(false)
-  const [entered,       setEntered]       = useState(false)
-  const [exiting,       setExiting]       = useState(false)
-  const [pouringRecipe, setPouringRecipe] = useState(null)
+  const navigate = useNavigate()
+  const [idx,      setIdx]     = useState(0)
+  const [nextIdx,  setNextIdx] = useState(null)
+  const [fading,   setFading]  = useState(false)
+  const [entered,  setEntered] = useState(false)
+  const [exiting,  setExiting] = useState(false)
   const timerRef  = useRef(null)
   const exitingRef = useRef(false)
 
@@ -93,7 +90,6 @@ export default function DemoMode({ onExit }) {
 
   useEffect(() => {
     fetch('/api/demo/activate', { method: 'POST' }).catch(() => {})
-    api.getRecipes().then(list => setRecipes(list || [])).catch(() => {})
   }, [])
 
   const advance = useCallback(() => {
@@ -108,10 +104,9 @@ export default function DemoMode({ onExit }) {
   }, [idx])
 
   useEffect(() => {
-    if (pouringRecipe) return
     timerRef.current = setTimeout(advance, SLIDE_MS)
     return () => clearTimeout(timerRef.current)
-  }, [idx, advance, pouringRecipe])
+  }, [idx, advance])
 
   function handleExit() {
     if (exitingRef.current) return
@@ -120,11 +115,10 @@ export default function DemoMode({ onExit }) {
     setTimeout(onExit, 600)
   }
 
-  function startDemoPour() {
-    if (recipes.length === 0) return
-    const pick = recipes[Math.floor(Math.random() * recipes.length)]
+  function goToDashboard() {
     clearTimeout(timerRef.current)
-    setPouringRecipe(pick)
+    fetch('/api/demo/deactivate', { method: 'POST' }).catch(() => {})
+    navigate('/')
   }
 
   const current   = FEATURES[idx]
@@ -264,23 +258,21 @@ export default function DemoMode({ onExit }) {
           transition: 'opacity 1.2s ease 1.2s',
           pointerEvents: entered ? 'auto' : 'none',
         }}>
-          {recipes.length > 0 && (
-            <button
-              onClick={startDemoPour}
-              onTouchEnd={e => { e.preventDefault(); startDemoPour() }}
-              style={{
-                flex: 1, padding: '18px 0', borderRadius: 18,
-                background: '#fff', color: '#000',
-                fontSize: 16, fontWeight: 700,
-                border: 'none', cursor: 'pointer',
-                transition: 'transform 0.12s ease, opacity 0.12s ease',
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              Probeer het zelf →
-            </button>
-          )}
+          <button
+            onClick={goToDashboard}
+            onTouchEnd={e => { e.preventDefault(); goToDashboard() }}
+            style={{
+              flex: 1, padding: '18px 0', borderRadius: 18,
+              background: '#fff', color: '#000',
+              fontSize: 16, fontWeight: 700,
+              border: 'none', cursor: 'pointer',
+              transition: 'transform 0.12s ease, opacity 0.12s ease',
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Probeer het zelf →
+          </button>
           <button
             onClick={handleExit}
             onTouchEnd={e => { e.preventDefault(); handleExit() }}
@@ -299,364 +291,13 @@ export default function DemoMode({ onExit }) {
       </div>
 
       {/* Voortgangsbalk */}
-      {!pouringRecipe && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: 2, background: 'rgba(255,255,255,0.05)',
-          zIndex: 20, pointerEvents: 'none',
-        }}>
-          <ProgressBar duration={SLIDE_MS} index={idx} accent={current.accent} />
-        </div>
-      )}
-
-      {/* ── Demo pour overlay ── */}
-      {pouringRecipe && (
-        <DemoPourOverlay
-          recipe={pouringRecipe}
-          onDone={() => { setPouringRecipe(null); advance() }}
-          onExit={handleExit}
-        />
-      )}
-    </div>
-  )
-}
-
-// ── Demo pour overlay ─────────────────────────────────────────────────────────
-// Kleuren per pomp-slot (herhalen als er meer ingrediënten zijn)
-const PUMP_COLORS = [
-  '#f59e0b','#3b82f6','#10b981','#ef4444',
-  '#8b5cf6','#ec4899','#06b6d4','#84cc16',
-]
-const NUM_PUMPS = 8   // visueel altijd 8 pompen tonen
-
-function DemoPourOverlay({ recipe, onDone, onExit }) {
-  const IDLE    = 'idle'
-  const POURING = 'pouring'
-  const DONE    = 'done'
-
-  const [phase,    setPhase]    = useState(IDLE)
-  const [stepIdx,  setStepIdx]  = useState(0)
-  const [stepPct,  setStepPct]  = useState(0)   // voortgang binnen huidige stap 0-1
-  const [totalPct, setTotalPct] = useState(0)
-  const [visible,  setVisible]  = useState(false)
-  const rafRef   = useRef(null)
-  const startRef = useRef(null)
-
-  const ings    = recipe.ingredients || []
-  const totalMl = ings.reduce((s, i) => s + (i.amount_ml || 0), 0) || 1
-
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 30)
-    return () => clearTimeout(t)
-  }, [])
-
-  function startPour() {
-    setPhase(POURING)
-    setStepIdx(0); setStepPct(0); setTotalPct(0)
-    startRef.current = null
-    cancelAnimationFrame(rafRef.current)
-
-    const durations = ings.map(i => (i.amount_ml || 0) * POUR_MS_PER_ML)
-    const totalDur  = durations.reduce((s, d) => s + d, 0) || 1
-
-    function tick(now) {
-      if (!startRef.current) startRef.current = now
-      const elapsed = now - startRef.current
-      let step = 0, cumDur = 0
-      for (let i = 0; i < durations.length; i++) {
-        if (elapsed < cumDur + durations[i]) { step = i; break }
-        cumDur += durations[i]
-        if (i === durations.length - 1) step = i
-      }
-      // cumDur opnieuw berekenen voor huidige stap
-      let cd = 0
-      for (let i = 0; i < step; i++) cd += durations[i]
-      const sp = durations[step] > 0 ? Math.min((elapsed - cd) / durations[step], 1) : 1
-      const tp = Math.min(elapsed / totalDur, 1)
-
-      setStepIdx(step); setStepPct(sp); setTotalPct(tp * 100)
-
-      if (tp < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setPhase(DONE); setTotalPct(100)
-        setTimeout(onDone, DONE_HOLD_MS)
-      }
-    }
-    rafRef.current = requestAnimationFrame(tick)
-  }
-
-  useEffect(() => () => cancelAnimationFrame(rafRef.current), [])
-
-  const isDone    = phase === DONE
-  const isPouring = phase === POURING
-
-  // Glasvulling: stijgt van 0 naar 100% naarmate totalPct toeneemt
-  const glasFill = isDone ? 100 : totalPct
-
-  return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 20,
-      background: '#080808',
-      display: 'flex', flexDirection: 'column',
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(40px)',
-      transition: 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.2,0,0,1)',
-    }}>
-      <style>{`
-        @keyframes mm-pulse{0%,100%{opacity:.5}50%{opacity:1}}
-        @keyframes mm-flow{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
-        @keyframes mm-drip{0%{transform:translateY(0);opacity:1}100%{transform:translateY(28px);opacity:0}}
-        @keyframes mm-pump-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-        @keyframes mm-glow-pulse{0%,100%{opacity:0.5}50%{opacity:1}}
-      `}</style>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '36px 36px 32px', gap: 20 }}>
-
-        {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>
-              {isDone ? 'Klaar!' : isPouring ? 'Mixen…' : 'Demo cocktail'}
-            </div>
-            <h1 style={{ fontSize: 'clamp(28px, 5vw, 46px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', margin: 0, lineHeight: 1.05 }}>
-              {recipe.name}
-            </h1>
-          </div>
-          <button onClick={onExit} onTouchEnd={e => { e.preventDefault(); onExit() }}
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '7px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0, marginTop: 4 }}>
-            Afsluiten
-          </button>
-        </div>
-
-        {/* ── Pomprek + glas — het hart van de demo ── */}
-        <div style={{ flex: 1, display: 'flex', gap: 32, alignItems: 'center', justifyContent: 'center' }}>
-
-          {/* Pomprek */}
-          <PompRek ings={ings} stepIdx={stepIdx} stepPct={stepPct} isPouring={isPouring} isDone={isDone} />
-
-          {/* Glas */}
-          <GlasVisualisatie fillPct={glasFill} isDone={isDone} color={isPouring ? PUMP_COLORS[stepIdx % PUMP_COLORS.length] : (isDone ? '#fff' : 'rgba(255,255,255,0.3)')} />
-        </div>
-
-        {/* ── Ingrediënt-pills ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {ings.map((ing, i) => {
-            const isActive = isPouring && stepIdx === i
-            const isPast   = (isPouring && stepIdx > i) || isDone
-            const col      = PUMP_COLORS[i % PUMP_COLORS.length]
-            return (
-              <span key={i} style={{
-                fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20,
-                background: isActive ? col : isPast ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
-                color:      isActive ? '#000' : isPast ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
-                border:     `1px solid ${isActive ? col : 'rgba(255,255,255,0.08)'}`,
-                transition: 'all 0.3s ease',
-                boxShadow:  isActive ? `0 0 12px ${col}66` : 'none',
-              }}>
-                {ing.ingredient_name} <span style={{ opacity: 0.6 }}>{ing.amount_ml}ml</span>
-              </span>
-            )
-          })}
-        </div>
-
-        {/* ── Status + knop ── */}
-        <div>
-          <div style={{ textAlign: 'center', height: 22, marginBottom: 12 }}>
-            {isPouring && ings[stepIdx] && (
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', margin: 0, animation: 'mm-pulse 1.4s ease-in-out infinite' }}>
-                Pomp {stepIdx + 1} actief — {ings[stepIdx].ingredient_name}
-              </p>
-            )}
-            {isDone && <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', fontWeight: 600, margin: 0 }}>Geniet van je {recipe.name}! 🍹</p>}
-          </div>
-
-          {!isPouring && !isDone && (
-            <button onClick={startPour} onTouchEnd={e => { e.preventDefault(); startPour() }}
-              style={{ width: '100%', padding: '18px 0', borderRadius: 18, background: '#fff', color: '#000', fontSize: 17, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
-              Mix mijn cocktail
-            </button>
-          )}
-          {isDone && (
-            <button onClick={onDone} onTouchEnd={e => { e.preventDefault(); onDone() }}
-              style={{ width: '100%', padding: '16px 0', borderRadius: 18, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              Terug naar overzicht
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Pomprek: 8 pompen naast elkaar ────────────────────────────────────────────
-function PompRek({ ings, stepIdx, stepPct, isPouring, isDone }) {
-  const PUMP_H   = 120
-  const PUMP_W   = 28
-  const TUBE_H   = 80
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      {/* Label */}
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)' }}>
-        Pompen
-      </div>
-
-      {/* Rek-frame */}
       <div style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.07)',
-        borderRadius: 16,
-        padding: '16px 12px 10px',
-        display: 'flex', gap: 10, alignItems: 'flex-end',
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 2, background: 'rgba(255,255,255,0.05)',
+        zIndex: 20, pointerEvents: 'none',
       }}>
-        {Array.from({ length: NUM_PUMPS }).map((_, i) => {
-          const ing      = ings[i]
-          const isActive = isPouring && stepIdx === i
-          const isPast   = (isPouring && stepIdx > i) || (isDone && i < ings.length)
-          const color    = ing ? PUMP_COLORS[i % PUMP_COLORS.length] : 'rgba(255,255,255,0.08)'
-
-          return (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, width: PUMP_W }}>
-
-              {/* Pomp-body */}
-              <div style={{
-                width: PUMP_W, height: 36,
-                background: isActive ? color : isPast ? `${color}44` : 'rgba(255,255,255,0.06)',
-                border: `1.5px solid ${isActive ? color : 'rgba(255,255,255,0.1)'}`,
-                borderRadius: '8px 8px 4px 4px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 0.3s ease, border-color 0.3s ease',
-                boxShadow: isActive ? `0 0 16px ${color}66, 0 0 32px ${color}22` : 'none',
-                animation: isActive ? 'mm-pump-bob 0.5s ease-in-out infinite' : 'none',
-                position: 'relative', flexShrink: 0,
-              }}>
-                {/* Pomp-motor icoon */}
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: isActive ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.15)' }} />
-                {/* Nummer */}
-                <div style={{ position: 'absolute', bottom: -14, fontSize: 8, fontWeight: 700, color: isActive ? color : 'rgba(255,255,255,0.15)', letterSpacing: 0 }}>
-                  {i + 1}
-                </div>
-              </div>
-
-              {/* Slang (tube) */}
-              <div style={{
-                width: 8, height: TUBE_H,
-                background: `rgba(255,255,255,0.05)`,
-                border: `1px solid ${isActive ? color + '66' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 4,
-                position: 'relative', overflow: 'hidden',
-                marginTop: 18,
-              }}>
-                {/* Vloeistof in slang */}
-                {(isActive || isPast) && (
-                  <div style={{
-                    position: 'absolute', left: 0, right: 0, bottom: 0,
-                    height: isPast ? '100%' : `${stepPct * 100}%`,
-                    background: isPast && !isActive ? `${color}55` : color,
-                    borderRadius: 4,
-                    transition: isActive ? 'none' : 'height 0.4s ease',
-                    opacity: isPast && !isActive ? 0.4 : 0.85,
-                  }} />
-                )}
-                {/* Stromings-animatie */}
-                {isActive && (
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    background: `linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)`,
-                    animation: 'mm-flow 0.6s linear infinite',
-                  }} />
-                )}
-              </div>
-
-              {/* Druppel onderaan bij actief */}
-              {isActive && (
-                <div style={{
-                  width: 6, height: 8,
-                  background: color,
-                  borderRadius: '50% 50% 60% 60%',
-                  animation: 'mm-drip 0.7s ease-in infinite',
-                  boxShadow: `0 0 8px ${color}`,
-                }} />
-              )}
-            </div>
-          )
-        })}
+        <ProgressBar duration={SLIDE_MS} index={idx} accent={current.accent} />
       </div>
-
-      {/* Horizontale rail onderaan (machine body) */}
-      <div style={{ height: 6, width: '100%', background: 'rgba(255,255,255,0.06)', borderRadius: 3, marginTop: 4 }} />
-    </div>
-  )
-}
-
-// ── Glas-visualisatie ─────────────────────────────────────────────────────────
-function GlasVisualisatie({ fillPct, isDone, color }) {
-  const GH = 160   // glas hoogte px
-  const GW = 80
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)' }}>
-        Glas
-      </div>
-
-      {/* SVG glas */}
-      <svg width={GW + 20} height={GH + 30} viewBox={`0 0 ${GW + 20} ${GH + 30}`} style={{ overflow: 'visible' }}>
-        <defs>
-          <clipPath id="glass-clip">
-            {/* Glas-vorm: iets smaller bovenaan, breder onderaan */}
-            <path d={`M ${10 + 8} 0 L ${10} ${GH} L ${10 + GW} ${GH} L ${10 + GW - 8} 0 Z`} />
-          </clipPath>
-          <linearGradient id="liq-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.9" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.6" />
-          </linearGradient>
-        </defs>
-
-        {/* Glas-body */}
-        <path
-          d={`M ${10 + 8} 0 L ${10} ${GH} L ${10 + GW} ${GH} L ${10 + GW - 8} 0 Z`}
-          fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5"
-        />
-
-        {/* Vloeistof */}
-        <g clipPath="url(#glass-clip)">
-          <rect
-            x={10} y={GH - (fillPct / 100) * GH}
-            width={GW} height={(fillPct / 100) * GH}
-            fill="url(#liq-grad)"
-            style={{ transition: 'y 0.3s ease, height 0.3s ease' }}
-          />
-          {/* Golfje bovenop vloeistof */}
-          {fillPct > 2 && !isDone && (
-            <ellipse cx={10 + GW / 2} cy={GH - (fillPct / 100) * GH} rx={GW / 2} ry={4}
-              fill={color} fillOpacity="0.4" />
-          )}
-        </g>
-
-        {/* Glazen glans */}
-        <rect x={10 + 8} y={4} width={8} height={GH - 8} rx={4} fill="rgba(255,255,255,0.06)" />
-
-        {/* Voetje */}
-        <rect x={10 - 6} y={GH} width={GW + 12} height={8} rx={4} fill="rgba(255,255,255,0.08)" />
-
-        {/* Percentage label */}
-        {fillPct > 8 && (
-          <text x={10 + GW / 2} y={GH - (fillPct / 100) * GH + 16} textAnchor="middle"
-            fill="rgba(255,255,255,0.6)" fontSize="11" fontWeight="700" fontFamily="system-ui">
-            {Math.round(fillPct)}%
-          </text>
-        )}
-      </svg>
-
-      {isDone && (
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>
-          Serveerklaar
-        </div>
-      )}
     </div>
   )
 }
