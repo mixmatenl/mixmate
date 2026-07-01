@@ -219,6 +219,14 @@ async def handle_message(message: dict) -> dict | None:
                 r = await c.post(f"{LOCAL}/api/demo/exit-slideshow", timeout=3)
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "activate_demo":
+                r = await c.post(f"{LOCAL}/api/demo/activate", timeout=25)
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "deactivate_demo":
+                r = await c.post(f"{LOCAL}/api/demo/deactivate", timeout=10)
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "get_pours":
                 date_param = message.get("date", "")
                 url = f"{LOCAL}/api/pours?limit=200"
