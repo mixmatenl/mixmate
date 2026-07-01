@@ -293,6 +293,7 @@
 
 # MIXMATE OS — Changelog
 
+<<<<<<< HEAD
 ## [5.0.0] - 2026-06-11
 ### Nieuw
 - Stabiele release voor MATE.1 PRO
@@ -331,6 +332,12 @@
 ### Gefixt
 - Thema-wisseling verwijderd — alleen donker thema beschikbaar
 - Installer: Python venv aanmaken met --without-pip + get-pip.py om PEP 668 conflict op Debian trixie te vermijden
+=======
+## [4.1.0] - 2026-07-01
+### Nieuw
+- Demo modus: automatische cocktail-carrousel bij inactiviteit, ideaal voor winkel/beurs
+- Demo-instellingen onder Instellingen → Demo (aan/uit + wachttijd 1–60 min)
+>>>>>>> 15c49b2 (feat(demo): demo modus met cocktail-carrousel bij inactiviteit (v4.1.0))
 
 ## [4.0.0] - 2026-06-11
 ### Nieuw

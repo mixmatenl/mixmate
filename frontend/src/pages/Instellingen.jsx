@@ -7,6 +7,7 @@ import AdminCategories from './AdminCategories'
 import AdminGlasses from './AdminGlasses'
 import PumpCalibrationWizard from './PumpCalibrationWizard'
 import AppUpdate from './AppUpdate'
+import AdminDemo from './AdminDemo'
 import WifiSetup from './WifiSetup'
 import CloudPairing from './CloudPairing'
 import MachineSpoelen from './MachineSpoelen'
@@ -223,6 +224,11 @@ const IconRecipe = () => (
     <polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>
   </svg>
 )
+const IconDemo = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <polygon points="5 3 19 12 5 21 5 3"/>
+  </svg>
+)
 const IconUpdate = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
@@ -355,6 +361,7 @@ function SettingsHome() {
       </Section>
 
       <Section title="Systeem">
+        <SettingsRow icon={<IconDemo />}    iconBg="#ff6b35" label="Demo modus"     sublabel="Automatische showcase bij inactiviteit" onClick={() => navigate('/instellingen/demo')} />
         <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie" onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    iconBg="#8e8e93" label="Over deze machine"  sublabel="Serienummer, netwerk en hardware" onClick={() => navigate('/instellingen/info')} />
         <SettingsRow icon={<IconRestart />} iconBg="#ff9500" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} />
@@ -489,6 +496,7 @@ export default function Instellingen() {
         <Route path="categorieen"  element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminCategories /></div></SubPage>} />
         <Route path="recepten"     element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminRecipes /></div></SubPage>} />
         <Route path="update"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AppUpdate /></div></SubPage>} />
+        <Route path="demo"         element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminDemo /></div></SubPage>} />
         <Route path="info"         element={<SubPage><MachineInfo /></SubPage>} />
       </Routes>
     </div>
