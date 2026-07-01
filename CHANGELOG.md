@@ -1,3 +1,9 @@
+## [4.3.1] - 2026-07-01
+### Gefixt
+- Installer detecteert Pi 5 automatisch en gebruikt Wayland + cage i.p.v. X11 + openbox
+- Pi 5 boot probleem opgelost: blinkend balkje links boven doordat X11 niet kon starten op Pi 5 GPU
+- Pi 4 en ouder: X11 stack ongewijzigd (backwards compatible)
+
 ## [4.3.0] - 2026-07-01
 ### Gefixt
 - WiFi verbinden werkt nu betrouwbaar: alle nmcli-aanroepen gebruiken sudo (vereist voor NetworkManager-privileges)

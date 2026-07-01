@@ -65,18 +65,17 @@ try:
     versions = data.get("versions", {})
     app_ver = "$APP_VERSION"
     model = "$MACHINE_MODEL"
-    # Bepaal minor-lijn (x.y) van de te installeren versie
     parts = app_ver.split(".")
     minor = f"{parts[0]}.{parts[1]}" if len(parts) >= 2 else app_ver
     allowed = versions.get(minor) or versions.get(app_ver)
     if allowed is None:
-        print("ok")  # geen restrictie bekend → toestaan
+        print("ok")
     elif model in allowed:
         print("ok")
     else:
         print(",".join(allowed))
 except Exception:
-    print("ok")  # bij twijfel toestaan
+    print("ok")
 PYEOF
 )
 
@@ -105,20 +104,42 @@ apt-get install -y -qq git python3 python3-full curl ca-certificates \
   plymouth plymouth-themes \
   || fail "Kan basispackages niet installeren."
 
-# ── X11 kiosk display stack ───────────────────
-log "X11 kiosk display installeren..."
-apt-get install -y -qq \
-  --no-install-recommends \
-  xserver-xorg \
-  xinit \
-  openbox \
-  x11-xserver-utils \
-  xdg-utils \
-  unclutter \
-  || fail "Kan X11 packages niet installeren."
+# ── Pi hardware detecteren ────────────────────
+PI_MODEL=$(cat /proc/device-tree/model 2>/dev/null || echo "")
+if echo "$PI_MODEL" | grep -q "Raspberry Pi 5"; then
+  DISPLAY_STACK="wayland"
+  log "Pi 5 gedetecteerd — Wayland kiosk stack gebruiken"
+else
+  DISPLAY_STACK="x11"
+  log "Pi hardware: X11 kiosk stack gebruiken"
+fi
 
-# xset zit in x11-xserver-utils, controleer of het beschikbaar is
-command -v xset &>/dev/null || apt-get install -y -qq x11-utils 2>/dev/null || true
+# ── Kiosk display stack installeren ──────────
+if [ "$DISPLAY_STACK" = "wayland" ]; then
+  log "Wayland kiosk display installeren (Pi 5)..."
+  apt-get install -y -qq \
+    --no-install-recommends \
+    cage \
+    xwayland \
+    libgles2 \
+    libwayland-client0 \
+    libwayland-cursor0 \
+    libwayland-egl1 \
+    weston \
+    || fail "Kan Wayland packages niet installeren."
+else
+  log "X11 kiosk display installeren..."
+  apt-get install -y -qq \
+    --no-install-recommends \
+    xserver-xorg \
+    xinit \
+    openbox \
+    x11-xserver-utils \
+    xdg-utils \
+    unclutter \
+    || fail "Kan X11 packages niet installeren."
+  command -v xset &>/dev/null || apt-get install -y -qq x11-utils 2>/dev/null || true
+fi
 
 # ── Chromium ──────────────────────────────────
 log "Chromium installeren..."
@@ -167,7 +188,6 @@ log "Python omgeving instellen..."
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 log "Python versie: ${PYVER}"
 
-# Installeer versie-specifiek venv package (vereist op Debian trixie)
 if apt-cache show "python${PYVER}-venv" &>/dev/null; then
   apt-get install -y -qq "python${PYVER}-venv" \
     || warn "python${PYVER}-venv installatie mislukt — probeer door te gaan"
@@ -176,12 +196,10 @@ else
     || warn "python3-venv installatie mislukt — probeer door te gaan"
 fi
 
-# Maak venv aan zonder pip (--without-pip vermijdt PEP 668 bootstrap-conflict op Debian trixie)
 rm -rf "$INSTALL_DIR/.venv"
 python3 -m venv --without-pip "$INSTALL_DIR/.venv" \
   || fail "Kan Python venv niet aanmaken. Probeer: sudo apt install python${PYVER}-venv"
 
-# Bootstrap pip via get-pip.py (werkt altijd, omzeilt systeem-pip en PEP 668)
 log "pip installeren..."
 curl -sSL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py \
   || fail "Kan get-pip.py niet downloaden."
@@ -191,14 +209,11 @@ rm -f /tmp/get-pip.py
 
 chown -R ${USER}:${USER} "$INSTALL_DIR/.venv"
 
-# Installeer Python packages
 log "Python packages installeren..."
 sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet \
   -r "$INSTALL_DIR/backend/requirements.txt" \
   || fail "Kan Python packages niet installeren."
 
-# Controleer of uvicorn binary aanwezig is
-# (kan ontbreken ondanks succesvolle pip install bij edge cases)
 if [ ! -f "$INSTALL_DIR/.venv/bin/uvicorn" ]; then
   warn "uvicorn binary ontbreekt — force-reinstall..."
   sudo -u $USER "$INSTALL_DIR/.venv/bin/pip" install --quiet --force-reinstall "uvicorn[standard]" \
@@ -221,17 +236,13 @@ log "Frontend: OK"
 log "Plymouth boot splash instellen..."
 THEME_DIR="/usr/share/plymouth/themes/mixmate"
 mkdir -p "$THEME_DIR"
-
-# Theme bestanden kopiëren vanuit repo
 cp "$INSTALL_DIR/plymouth/mixmate/mixmate.plymouth" "$THEME_DIR/"
 cp "$INSTALL_DIR/plymouth/mixmate/mixmate.script"   "$THEME_DIR/"
 cp "$INSTALL_DIR/frontend/public/logo.png"          "$THEME_DIR/"
 
-# Plymouth activeren
 plymouth-set-default-theme mixmate 2>/dev/null || warn "Plymouth theme instellen mislukt — doorgaan"
 update-initramfs -u 2>/dev/null || warn "initramfs update mislukt — doorgaan"
 
-# Boottext verbergen: voeg quiet splash toe aan cmdline.txt (Pi OS Bookworm + Bullseye)
 for CMDLINE in /boot/firmware/cmdline.txt /boot/cmdline.txt; do
   if [ -f "$CMDLINE" ] && ! grep -q "quiet" "$CMDLINE"; then
     sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' "$CMDLINE"
@@ -269,38 +280,66 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin ${USER} --noclear %I \$TERM
 EOF
 
-# ── Kiosk autostart via .profile ─────────────
-# .profile werkt voor zowel bash als sh op Debian/Pi OS Lite
-cat > /home/${USER}/.profile <<'PROFILE'
+# ── Kiosk autostart ───────────────────────────
+if [ "$DISPLAY_STACK" = "wayland" ]; then
+  # Pi 5: cage (Wayland kiosk compositor) start Chromium direct
+  log "Wayland kiosk autostart instellen..."
+
+  cat > /home/${USER}/.profile <<PROFILE
+if [ -z "\$WAYLAND_DISPLAY" ] && [ "\$(tty)" = "/dev/tty1" ]; then
+  # Wacht tot de backend beschikbaar is (max 60s)
+  TRIES=0
+  until curl -sf http://localhost:8000 > /dev/null 2>&1 || [ \$TRIES -ge 60 ]; do
+    sleep 1
+    TRIES=\$((TRIES + 1))
+  done
+  exec cage -s -- ${CHROMIUM_BIN} \\
+    --kiosk \\
+    --noerrdialogs \\
+    --disable-infobars \\
+    --no-first-run \\
+    --password-store=basic \\
+    --disable-translate \\
+    --force-device-scale-factor=1.5 \\
+    --disable-pinch \\
+    --overscroll-history-navigation=0 \\
+    --check-for-update-interval=31536000 \\
+    --ozone-platform=wayland \\
+    --enable-features=UseOzonePlatform \\
+    --disable-features=TranslateUI \\
+    http://localhost:8000
+fi
+PROFILE
+  chown ${USER}:${USER} /home/${USER}/.profile
+
+else
+  # Pi 4 en ouder: X11 + openbox
+  log "X11 kiosk autostart instellen..."
+
+  cat > /home/${USER}/.profile <<'PROFILE'
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
   exec startx -- -nocursor 2>/dev/null
 fi
 PROFILE
-chown ${USER}:${USER} /home/${USER}/.profile
+  chown ${USER}:${USER} /home/${USER}/.profile
 
-# ── X11 sessie: openbox + chromium ───────────
-cat > /home/${USER}/.xinitrc <<XINITRC
+  cat > /home/${USER}/.xinitrc <<XINITRC
 #!/bin/bash
 
-# Schermbeveiliging en energiebeheer uitschakelen
 xset s off
 xset s noblank
 xset -dpms
 
-# Cursor verbergen na 0.5s inactiviteit
 unclutter -idle 0.5 -root &
 
-# Openbox starten als vensterbeheerder
 openbox &
 
-# Wacht tot de backend beschikbaar is (max 30s)
 TRIES=0
 until curl -sf http://localhost:8000 > /dev/null 2>&1 || [ \$TRIES -ge 30 ]; do
   sleep 1
   TRIES=\$((TRIES + 1))
 done
 
-# Chromium starten in kiosk-modus
 exec ${CHROMIUM_BIN} \\
   --kiosk \\
   --noerrdialogs \\
@@ -319,8 +358,9 @@ exec ${CHROMIUM_BIN} \\
   --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\
   http://localhost:8000
 XINITRC
-chown ${USER}:${USER} /home/${USER}/.xinitrc
-chmod +x /home/${USER}/.xinitrc
+  chown ${USER}:${USER} /home/${USER}/.xinitrc
+  chmod +x /home/${USER}/.xinitrc
+fi
 
 # ── Sudoers voor WiFi en systeembeheer ──────────────────
 log "Sudoers instellen..."
@@ -349,6 +389,7 @@ echo -e "${GREEN}╚════════════════════
 echo ""
 log "Versie  : v${VERSION}"
 log "Model   : ${MACHINE_MODEL}"
+log "Display : ${DISPLAY_STACK}"
 log "Backend : http://localhost:8000"
 echo ""
 log "Pi herstart over 5 seconden..."
