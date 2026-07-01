@@ -13,6 +13,7 @@ import BlockedOverlay from './components/BlockedOverlay'
 import DemoMode from './pages/DemoMode'
 import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 import { DragScrollProvider } from './components/DragScroll'
+import { api } from './api'
 
 const SESSION_KEY  = 'mixmate_auth'
 const DEMO_KEY     = 'mixmate_demo_enabled'
@@ -39,7 +40,8 @@ export default function App() {
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
-  const demoTimerRef = useRef(null)
+  const demoTimerRef  = useRef(null)
+  const demoFromBackend = useRef(false)
 
   const demoEnabled = () => localStorage.getItem(DEMO_KEY) === '1'
 
@@ -77,6 +79,35 @@ export default function App() {
     }
   }, [demo, standby, view])
 
+  // Poll backend demo status — synchroniseer met portaal
+  useEffect(() => {
+    let cancelled = false
+    async function poll() {
+      try {
+        const s = await api.getDemoStatus()
+        if (cancelled) return
+        if (s.slideshow_active && !demo) {
+          demoFromBackend.current = true
+          setDemo(true)
+        } else if (!s.slideshow_active && demo && demoFromBackend.current) {
+          demoFromBackend.current = false
+          setDemo(false)
+        }
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 3000)
+    return () => { cancelled = true; clearInterval(iv) }
+  }, [demo])
+
+  async function exitDemo() {
+    if (demoFromBackend.current) {
+      demoFromBackend.current = false
+      api.exitDemoSlideshow().catch(() => {})
+    }
+    setDemo(false)
+  }
+
   if (showSplash) return (
     <DragScrollProvider>
       <SplashScreen onDone={() => {
@@ -112,7 +143,7 @@ export default function App() {
     <DragScrollProvider>
       {appContent}
       {standby && <StandbyScreen onWake={() => setStandby(false)} />}
-      {demo && !standby && <DemoMode onExit={() => setDemo(false)} />}
+      {demo && !standby && <DemoMode onExit={exitDemo} />}
       <BlockedOverlay />
       <FlushOverlay />
     </DragScrollProvider>

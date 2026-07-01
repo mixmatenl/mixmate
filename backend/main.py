@@ -420,6 +420,8 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 _flush_state: dict = {"active": False}
 _machine_blocked: bool = False
 _demo_mode_active: bool = False
+_demo_slideshow_active: bool = False
+_demo_data_loaded: bool = False
 _current_session_id: Optional[int] = None
 
 
@@ -1653,11 +1655,27 @@ def seed_demo(session: Session = Depends(get_session)):
     return {"status": "ok", "message": "Demo data aangemaakt"}
 
 
+@app.get("/api/demo/status")
+def demo_status():
+    """Geeft terug of de demo slideshow actief is (voor synchronisatie tussen kiosk en portaal)."""
+    return {"slideshow_active": _demo_slideshow_active, "data_loaded": _demo_data_loaded}
+
+
+@app.post("/api/demo/exit-slideshow")
+def exit_slideshow():
+    """Sluit de demo slideshow op alle apparaten — aangeroepen als iemand het scherm aanraakt."""
+    global _demo_slideshow_active
+    _demo_slideshow_active = False
+    return {"ok": True}
+
+
 @app.post("/api/demo/activate")
 def activate_demo(session: Session = Depends(get_session)):
     """Wist alles en laadt volledige demo data — voor winkel/beurs opstellingen."""
-    global _demo_mode_active
+    global _demo_mode_active, _demo_slideshow_active, _demo_data_loaded
     _demo_mode_active = True
+    _demo_slideshow_active = True
+    _demo_data_loaded = True
     from sqlmodel import select, delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,
@@ -1681,8 +1699,10 @@ def activate_demo(session: Session = Depends(get_session)):
 @app.post("/api/demo/deactivate")
 def deactivate_demo(session: Session = Depends(get_session)):
     """Wist alle demo data zodat de machine klaar is voor echte setup."""
-    global _demo_mode_active
+    global _demo_mode_active, _demo_slideshow_active, _demo_data_loaded
     _demo_mode_active = False
+    _demo_slideshow_active = False
+    _demo_data_loaded = False
     from sqlmodel import delete
     from .models import (
         Recipe, RecipeIngredient, Ingredient, Category, Glass,

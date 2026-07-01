@@ -79,6 +79,10 @@ export const api = {
   // Machine model
   getMachineInfo: () => request('GET', '/system/machine'),
   setMachineModel: (model) => request('POST', '/system/machine', { model }),
+
+  // Demo mode sync
+  getDemoStatus: () => request('GET', '/demo/status'),
+  exitDemoSlideshow: () => request('POST', '/demo/exit-slideshow'),
 }
 
 export function createPourSocket(recipeId, scale, onMessage) {

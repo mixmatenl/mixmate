@@ -1,3 +1,10 @@
+## [4.8.7] - 2026-07-02
+### Nieuw
+- Portal demo modus: aantrekkelijk attractor-scherm met voordelen en "Tik om te proberen" CTA
+- Kiosk en portaal synchroniseren demo status via backend — activeren en stoppen tegelijk
+- Tapping op kiosk of portaal sluit demo op beide apparaten tegelijk
+- Live status-dot in AdminDemo toont wanneer slideshow actief is + "Stoppen" knop
+
 ## [4.8.6] - 2026-07-02
 ### Verbeterd
 - Google Fonts verwijderd uit index.html (Inter werd niet gebruikt, blokkeert render op Pi bij netwerk-delay)
