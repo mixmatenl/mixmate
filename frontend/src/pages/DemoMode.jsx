@@ -46,7 +46,7 @@ const FEATURES = [
     id: 'remote',
     label: 'Beheer',
     headline: 'Volledig beheer op afstand',
-    sub: 'Recepten aanpassen, prijzen wijzigen, live meekijken — vanuit elke locatie.',
+    sub: 'Recepten aanpassen, pompen configureren en de machinestatus live bekijken — vanuit elke locatie.',
     bg: ['#060a06', '#0a1408'],
     accent: '#4ade80',
     visual: <RemoteVisual />,
@@ -55,7 +55,7 @@ const FEATURES = [
     id: 'reports',
     label: 'Rapporten',
     headline: 'Automatische dienstrapportages',
-    sub: 'Elke dienst een volledig overzicht: omzet, topcocktails, gebruiksuren en meer.',
+    sub: 'Elke dienst een volledig overzicht: topcocktails, uitgifte per recept, gebruiksuren en meer.',
     bg: ['#0a0800', '#181200'],
     accent: '#fbbf24',
     visual: <ReportsVisual />,
@@ -128,47 +128,36 @@ export default function DemoMode({ onExit }) {
         ? 'opacity 0.6s cubic-bezier(0.4,0,1,1)'
         : 'opacity 1s cubic-bezier(0,0,0.2,1)',
       overflow: 'hidden',
+      willChange: 'opacity',
     }}>
 
       {/* ── Achtergrond visual (groot, subtiel) ── */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 1,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        opacity: fading ? 0 : 0.09,
-        transform: fading ? 'scale(1.06)' : 'scale(1)',
-        transition: `opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease`,
+        opacity: fading ? 0 : 0.07,
+        transition: `opacity ${FADE_MS}ms ease`,
         pointerEvents: 'none',
+        willChange: 'opacity',
+        transform: 'translateZ(0)',
       }}>
         <div style={{ transform: 'scale(2.2)', color: '#fff' }}>
           {current.visual}
         </div>
       </div>
-      {nextFeature && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 1,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: fading ? 0.09 : 0,
-          transform: fading ? 'scale(1)' : 'scale(1.06)',
-          transition: `opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease`,
-          pointerEvents: 'none',
-        }}>
-          <div style={{ transform: 'scale(2.2)', color: '#fff' }}>
-            {nextFeature.visual}
-          </div>
-        </div>
-      )}
 
       {/* ── Accent glow ── */}
       <div style={{
         position: 'absolute', bottom: -120, left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translateX(-50%) translateZ(0)',
         width: 600, height: 300,
         borderRadius: '50%',
         background: current.accent,
-        filter: 'blur(120px)',
-        opacity: fading ? 0 : 0.12,
+        filter: 'blur(80px)',
+        opacity: fading ? 0 : 0.10,
         transition: `opacity ${FADE_MS}ms ease`,
         zIndex: 1, pointerEvents: 'none',
+        willChange: 'opacity',
       }} />
 
       {/* ── Logo + badge ── */}
@@ -196,8 +185,9 @@ export default function DemoMode({ onExit }) {
           flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
           paddingBottom: 32,
           opacity: fading ? 0 : entered ? 1 : 0,
-          transform: fading ? 'translateY(6px)' : 'translateY(0)',
+          transform: fading ? 'translateY(6px) translateZ(0)' : 'translateY(0) translateZ(0)',
           transition: `opacity ${FADE_MS * 0.6}ms ease, transform ${FADE_MS * 0.6}ms ease`,
+          willChange: 'opacity, transform',
         }}>
           {/* Gekleurde label pill */}
           <div style={{

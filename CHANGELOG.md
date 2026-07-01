@@ -1,3 +1,9 @@
+## [4.7.13] - 2026-07-02
+### Gefixt
+- Demo slideshow stutter: nextFeature crossfade verwijderd, GPU-compositing geforceerd via will-change + translateZ(0), blur verminderd
+- Slide "Beheer": prijzen wijzigen verwijderd (niet ondersteund)
+- Slide "Rapporten": omzet verwijderd (wordt niet bijgehouden)
+
 ## [4.7.12] - 2026-07-02
 ### Gefixt
 - Pompsnelheid verhoogd van 1.0 naar 20.0 ml/s standaard — cocktail klaar in ~7-8 seconden
