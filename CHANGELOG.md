@@ -1,3 +1,10 @@
+## [4.8.4] - 2026-07-02
+### Verbeterd
+- Demo slideshow volledig herschreven: geen gradients, geen blur, geen SVG-achtergronden
+- Alleen solide kleuren + opacity/transform animaties (compositing-only, nul repaint)
+- Watermerk-getal als pure CSS tekst, accent bovenlijn, schone typografie
+- Fade-out 280ms, fade-in 420ms — soepel op Pi 4
+
 ## [4.8.3] - 2026-07-02
 ### Gefixt
 - Pouring engine herschreven: geen mock-gewicht meer op echte hardware, puur tijdgebaseerd zonder weegcel
