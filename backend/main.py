@@ -431,6 +431,12 @@ def _auto_migrate_sessions():
             conn.commit()
         except Exception:
             pass  # kolom bestaat al
+        # Zet alle pompen die nog op de oude standaard (1.0 ml/s) staan naar 20.0
+        try:
+            conn.execute(text("UPDATE pump SET ml_per_second = 20.0 WHERE ml_per_second = 1.0"))
+            conn.commit()
+        except Exception:
+            pass
 
 
 def _start_new_session():

@@ -36,7 +36,7 @@ class Pump(SQLModel, table=True):
     slot: int
     pump_type: str = "peristaltic"   # peristaltic | valve
     gpio_pin: int
-    ml_per_second: float = 1.0
+    ml_per_second: float = 20.0
     enabled: bool = True
     ingredient_id: Optional[int] = Field(default=None, foreign_key="ingredient.id")
     ingredient: Optional[Ingredient] = Relationship(back_populates="pumps")

@@ -1,3 +1,8 @@
+## [4.7.12] - 2026-07-02
+### Gefixt
+- Pompsnelheid verhoogd van 1.0 naar 20.0 ml/s standaard — cocktail klaar in ~7-8 seconden
+- Bestaande pompen in database automatisch bijgewerkt bij herstart
+
 ## [4.7.11] - 2026-07-02
 ### Gefixt
 - WiFi verbinden: juiste property naam `802-11-wireless-security.key-mgmt` (lange vorm) voor nmcli op Pi 4
