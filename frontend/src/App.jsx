@@ -42,6 +42,7 @@ export default function App() {
   )
   const demoTimerRef    = useRef(null)
   const demoFromBackend = useRef(false)
+  const demoExitedAt    = useRef(0)
   const [demoSlideIndex, setDemoSlideIndex] = useState(0)
 
   const demoEnabled = () => localStorage.getItem(DEMO_KEY) === '1'
@@ -87,7 +88,7 @@ export default function App() {
       try {
         const s = await api.getDemoStatus()
         if (cancelled) return
-        if (s.slideshow_active && !demo) {
+        if (s.slideshow_active && !demo && Date.now() - demoExitedAt.current > 3000) {
           demoFromBackend.current = true
           setDemo(true)
         } else if (!s.slideshow_active && demo && demoFromBackend.current) {
@@ -105,6 +106,7 @@ export default function App() {
   }, [demo])
 
   async function exitDemo() {
+    demoExitedAt.current = Date.now()
     if (demoFromBackend.current) {
       demoFromBackend.current = false
       api.exitDemoSlideshow().catch(() => {})

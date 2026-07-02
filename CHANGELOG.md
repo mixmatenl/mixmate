@@ -1,3 +1,8 @@
+## [4.9.0] - 2026-07-02
+### Opgelost
+- Kiosk liep vast na tikken op "Probeer het zelf" — poll zag nog `slideshow_active: true` en herstartte demo direct
+- Fix: 3 seconden cooldown na exitDemo voordat poll de demo opnieuw kan activeren
+
 ## [4.8.9] - 2026-07-02
 ### Verbeterd
 - Backend `/api/demo/status` geeft `slide_index` terug (berekend via servertijd)
