@@ -1,3 +1,8 @@
+## [4.9.1] - 2026-07-02
+### Opgelost
+- Demo exit-slideshow zette `_demo_mode_active` niet uit — machine startte in demo-modus op na tikken op "Probeer het zelf"
+- Fix: `POST /api/demo/exit-slideshow` stopt nu ook `_demo_mode_active` zodat de machine normaal opstart
+
 ## [4.9.0] - 2026-07-02
 ### Opgelost
 - Kiosk liep vast na tikken op "Probeer het zelf" — poll zag nog `slideshow_active: true` en herstartte demo direct

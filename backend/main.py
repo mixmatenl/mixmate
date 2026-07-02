@@ -1672,9 +1672,10 @@ def demo_status():
 
 @app.post("/api/demo/exit-slideshow")
 def exit_slideshow():
-    """Sluit de demo slideshow op alle apparaten — aangeroepen als iemand het scherm aanraakt."""
-    global _demo_slideshow_active
+    """Sluit de demo slideshow — stopt ook de demo modus zodat de machine normaal opstart."""
+    global _demo_slideshow_active, _demo_mode_active
     _demo_slideshow_active = False
+    _demo_mode_active = False
     return {"ok": True}
 
 
