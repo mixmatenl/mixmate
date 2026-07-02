@@ -1,3 +1,9 @@
+## [4.8.8] - 2026-07-02
+### Verbeterd
+- Demo overlay portaal identiek aan kiosk DemoMode: zelfde slides, achtergronden, accentkleuren, watermerk, voortgangsbalk
+- Beide schermen wisselen tegelijk van dia via wall-clock sync (elke 5 seconden exact op hetzelfde moment)
+- Slide-interval verlaagd van 6s naar 5s op kiosk
+
 ## [4.8.7] - 2026-07-02
 ### Nieuw
 - Portal demo modus: aantrekkelijk attractor-scherm met voordelen en "Tik om te proberen" CTA

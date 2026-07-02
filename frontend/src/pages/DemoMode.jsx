@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-const SLIDE_MS    = 6000
+const SLIDE_MS    = 5000
 const FADE_OUT_MS = 280
 const FADE_IN_MS  = 420
+
+function clockIdx(len) {
+  return Math.floor(Date.now() / SLIDE_MS) % len
+}
 
 const FEATURES = [
   {
@@ -71,12 +75,12 @@ const FEATURES = [
 ]
 
 export default function DemoMode({ onExit }) {
-  const [idx, setIdx]         = useState(0)
+  const [idx, setIdx]         = useState(() => clockIdx(FEATURES.length))
   const [visible, setVisible] = useState(false)
   const [exiting, setExiting] = useState(false)
-  const timerRef  = useRef(null)
   const busyRef   = useRef(false)
   const exitRef   = useRef(false)
+  const prevIdxRef = useRef(idx)
 
   // Eerste fade-in
   useEffect(() => {
@@ -88,23 +92,26 @@ export default function DemoMode({ onExit }) {
     fetch('/api/demo/activate', { method: 'POST' }).catch(() => {})
   }, [])
 
-  function advance() {
-    if (busyRef.current || exitRef.current) return
-    busyRef.current = true
-    setVisible(false)
-    setTimeout(() => {
-      setIdx(i => (i + 1) % FEATURES.length)
-      setTimeout(() => {
-        setVisible(true)
-        busyRef.current = false
-      }, 40)
-    }, FADE_OUT_MS)
-  }
-
+  // Wall-clock sync: check every 200ms of de idx veranderd is
   useEffect(() => {
-    timerRef.current = setTimeout(advance, SLIDE_MS)
-    return () => clearTimeout(timerRef.current)
-  }, [idx])
+    const iv = setInterval(() => {
+      if (busyRef.current || exitRef.current) return
+      const next = clockIdx(FEATURES.length)
+      if (next !== prevIdxRef.current) {
+        prevIdxRef.current = next
+        busyRef.current = true
+        setVisible(false)
+        setTimeout(() => {
+          setIdx(next)
+          setTimeout(() => {
+            setVisible(true)
+            busyRef.current = false
+          }, 40)
+        }, FADE_OUT_MS)
+      }
+    }, 200)
+    return () => clearInterval(iv)
+  }, [])
 
   function handleExit() {
     if (exitRef.current) return
