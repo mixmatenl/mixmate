@@ -40,8 +40,9 @@ export default function App() {
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
-  const demoTimerRef  = useRef(null)
+  const demoTimerRef    = useRef(null)
   const demoFromBackend = useRef(false)
+  const [demoSlideIndex, setDemoSlideIndex] = useState(0)
 
   const demoEnabled = () => localStorage.getItem(DEMO_KEY) === '1'
 
@@ -93,10 +94,13 @@ export default function App() {
           demoFromBackend.current = false
           setDemo(false)
         }
+        if (s.slideshow_active && s.slide_index !== undefined) {
+          setDemoSlideIndex(s.slide_index)
+        }
       } catch {}
     }
     poll()
-    const iv = setInterval(poll, 3000)
+    const iv = setInterval(poll, demo ? 800 : 3000)
     return () => { cancelled = true; clearInterval(iv) }
   }, [demo])
 
@@ -143,7 +147,7 @@ export default function App() {
     <DragScrollProvider>
       {appContent}
       {standby && <StandbyScreen onWake={() => setStandby(false)} />}
-      {demo && !standby && <DemoMode onExit={exitDemo} />}
+      {demo && !standby && <DemoMode onExit={exitDemo} slideIndex={demoSlideIndex} />}
       <BlockedOverlay />
       <FlushOverlay />
     </DragScrollProvider>

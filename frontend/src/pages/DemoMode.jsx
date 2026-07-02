@@ -74,12 +74,13 @@ const FEATURES = [
   },
 ]
 
-export default function DemoMode({ onExit }) {
-  const [idx, setIdx]         = useState(() => clockIdx(FEATURES.length))
+export default function DemoMode({ onExit, slideIndex }) {
+  const controlled = slideIndex !== undefined
+  const [idx, setIdx]         = useState(() => controlled ? slideIndex : clockIdx(FEATURES.length))
   const [visible, setVisible] = useState(false)
   const [exiting, setExiting] = useState(false)
-  const busyRef   = useRef(false)
-  const exitRef   = useRef(false)
+  const busyRef    = useRef(false)
+  const exitRef    = useRef(false)
   const prevIdxRef = useRef(idx)
 
   // Eerste fade-in
@@ -92,8 +93,26 @@ export default function DemoMode({ onExit }) {
     fetch('/api/demo/activate', { method: 'POST' }).catch(() => {})
   }, [])
 
-  // Wall-clock sync: check every 200ms of de idx veranderd is
+  // Als slideIndex van buiten komt (App-level poll), gebruik dat
   useEffect(() => {
+    if (!controlled) return
+    if (slideIndex === prevIdxRef.current) return
+    if (busyRef.current || exitRef.current) return
+    prevIdxRef.current = slideIndex
+    busyRef.current = true
+    setVisible(false)
+    setTimeout(() => {
+      setIdx(slideIndex)
+      setTimeout(() => {
+        setVisible(true)
+        busyRef.current = false
+      }, 40)
+    }, FADE_OUT_MS)
+  }, [slideIndex, controlled])
+
+  // Zonder externe slideIndex: val terug op lokale wall-clock sync
+  useEffect(() => {
+    if (controlled) return
     const iv = setInterval(() => {
       if (busyRef.current || exitRef.current) return
       const next = clockIdx(FEATURES.length)
@@ -111,12 +130,11 @@ export default function DemoMode({ onExit }) {
       }
     }, 200)
     return () => clearInterval(iv)
-  }, [])
+  }, [controlled])
 
   function handleExit() {
     if (exitRef.current) return
     exitRef.current = true
-    clearTimeout(timerRef.current)
     setExiting(true)
     setTimeout(onExit, 480)
   }

@@ -1655,10 +1655,19 @@ def seed_demo(session: Session = Depends(get_session)):
     return {"status": "ok", "message": "Demo data aangemaakt"}
 
 
+_DEMO_NUM_SLIDES = 7   # moet overeenkomen met FEATURES.length in de frontend
+_DEMO_SLIDE_MS   = 5000
+
 @app.get("/api/demo/status")
 def demo_status():
     """Geeft terug of de demo slideshow actief is (voor synchronisatie tussen kiosk en portaal)."""
-    return {"slideshow_active": _demo_slideshow_active, "data_loaded": _demo_data_loaded}
+    import math
+    slide_index = int(math.floor(time.time() / (_DEMO_SLIDE_MS / 1000))) % _DEMO_NUM_SLIDES if _demo_slideshow_active else 0
+    return {
+        "slideshow_active": _demo_slideshow_active,
+        "data_loaded": _demo_data_loaded,
+        "slide_index": slide_index,
+    }
 
 
 @app.post("/api/demo/exit-slideshow")

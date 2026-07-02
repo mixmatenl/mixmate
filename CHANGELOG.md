@@ -1,3 +1,10 @@
+## [4.8.9] - 2026-07-02
+### Verbeterd
+- Backend `/api/demo/status` geeft `slide_index` terug (berekend via servertijd)
+- Kiosk DemoMode accepteert `slideIndex` prop van App.jsx — volgt backend ipv eigen klok
+- App.jsx pollt elke 800ms als demo actief is, geeft `slide_index` door aan DemoMode
+- Portaal gebruikt `slide_index` van Pi backend — gegarandeerd gesynchroniseerd
+
 ## [4.8.8] - 2026-07-02
 ### Verbeterd
 - Demo overlay portaal identiek aan kiosk DemoMode: zelfde slides, achtergronden, accentkleuren, watermerk, voortgangsbalk
