@@ -130,7 +130,6 @@ _update_cache: dict = {"updates_available": False, "changelog": [], "compatible"
 
 async def _update_check_loop():
     """Achtergrondtaak: checkt elke 10 minuten op updates en slaat resultaat op in cache."""
-    await asyncio.sleep(30)  # wacht even na opstarten zodat netwerk klaar is
     while True:
         try:
             has_updates, changelog = await check_updates_available()

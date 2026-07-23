@@ -1,3 +1,7 @@
+## [4.9.19] - 2026-07-23
+### Gewijzigd
+- Update-check start direct bij opstarten (geen 30s vertraging meer)
+
 ## [4.9.18] - 2026-07-23
 ### Test
 - Testversie om update-notificatie te testen
