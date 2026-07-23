@@ -1,3 +1,7 @@
+## [4.9.15] - 2026-07-23
+### Gewijzigd
+- Update-status wordt elke 10 seconden gepolld i.p.v. elke 60 seconden
+
 ## [4.9.14] - 2026-07-23
 ### Opgelost
 - Update-knop in topbalk navigeert nu naar bestaand update-scherm in Instellingen (navigatie werkt weer normaal)

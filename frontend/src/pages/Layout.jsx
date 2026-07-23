@@ -57,7 +57,7 @@ function useStatusPoll() {
     poll()
     pollUpdate()
     const t1 = setInterval(poll, 10000)
-    const t2 = setInterval(pollUpdate, 60000)
+    const t2 = setInterval(pollUpdate, 10000)
     return () => { clearInterval(t1); clearInterval(t2) }
   }, [])
   return { wifi, cloud, updateAvailable }
