@@ -1,3 +1,8 @@
+## [4.9.3] - 2026-07-23
+### Gewijzigd
+- "Wijzig glas" knop in cocktailmodal: standaard glas direct zichtbaar, glas aanpassen zonder extra stap
+- Pi stuurt lokaal IP en poort mee in cloud heartbeat (voor machineapp discovery)
+
 ## [4.9.2] - 2026-07-23
 ### Gewijzigd
 - Glasselectie overgeslagen bij het starten van een cocktail — modal gaat direct naar bevestiging of handmatige ingrediënten

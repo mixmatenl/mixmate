@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import os
+import socket
 import uuid
 from pathlib import Path
 
@@ -321,7 +322,25 @@ async def cloud_loop():
                 except Exception:
                     version = model = ""
 
-                await ws.send(json.dumps({"type": "heartbeat", "version": version, "model": model}))
+                # Stuur het hardware-serienummer mee zodat de cloud het kan opslaan en vergrendelen
+                raw_serial = machine_id.replace("pi-", "").upper() if machine_id.startswith("pi-") else machine_id
+                try:
+                    _s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    _s.connect(("8.8.8.8", 80))
+                    local_ip = _s.getsockname()[0]
+                    _s.close()
+                except Exception:
+                    local_ip = None
+
+                await ws.send(json.dumps({
+                    "type": "heartbeat",
+                    "version": version,
+                    "model": model,
+                    "serial_number": raw_serial,
+                    "local_ip": local_ip,
+                    "local_port": int(os.getenv("MIXMATE_PORT", "8000")),
+                    "ssl": os.path.exists("/home/pi/mixmate/certs/cert.pem"),
+                }))
 
                 async def heartbeat():
                     while True:

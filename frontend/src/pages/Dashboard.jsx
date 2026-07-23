@@ -42,6 +42,7 @@ function PourModal({ recipe, glasses, onClose }) {
   const scale = Math.round(scaleFactor * 1000) / 1000
   function scaledMl(ml) { const v = ml * scale; return v % 1 === 0 ? v : v.toFixed(1) }
 
+  const [glassPickerOpen, setGlassPickerOpen] = useState(false)
   const firstStep = hasManual ? PS.MANUAL : PS.CONFIRM
   const [status, setStatus] = useState(firstStep)
   const [progress, setProgress] = useState(null)
@@ -102,18 +103,56 @@ function PourModal({ recipe, glasses, onClose }) {
               {recipe.category_name || ''}
             </p>
             <h2 className="text-white font-bold text-2xl tracking-tight leading-tight">{recipe.name}</h2>
-            {selectedGlass && (
-              <span className="text-xs text-white/55 mt-1 inline-block">
-                {selectedGlass.name} · {selectedGlass.volume_ml} ml
-                {scale !== 1.0 && <span className="ml-1">({scale > 1 ? '+' : ''}{Math.round((scale-1)*100)}%)</span>}
-              </span>
+            {glasses.length > 0 && (
+              <button
+                onClick={() => setGlassPickerOpen(v => !v)}
+                className="mt-1.5 flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors"
+              >
+                <svg viewBox="0 0 24 32" className="w-3 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 2 L2 20 L22 20 L20 2 Z" strokeLinejoin="round"/>
+                  <line x1="12" y1="20" x2="12" y2="27"/>
+                  <line x1="8" y1="27" x2="16" y2="27"/>
+                </svg>
+                {selectedGlass ? `${selectedGlass.name} · ${selectedGlass.volume_ml} ml` : 'Standaard'}
+                {scale !== 1.0 && <span className="text-white/40 ml-0.5">({scale > 1 ? '+' : ''}{Math.round((scale-1)*100)}%)</span>}
+                <span className="text-white/40">· Wijzig</span>
+              </button>
             )}
           </div>
         </div>
 
         <div className="p-6 space-y-5">
 
-          {/* Glasselect */}
+          {/* Inline glas-picker */}
+          {glassPickerOpen && status !== PS.POURING && status !== PS.DONE && (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {glasses.map(g => (
+                  <button key={g.id} onClick={() => { setSelectedGlass(g); setGlassPickerOpen(false) }}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 transition-all duration-100 text-left active:scale-[0.97] ${
+                      selectedGlass?.id === g.id
+                        ? 'bg-[#111] border-[#111] text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
+                    }`}>
+                    <svg viewBox="0 0 24 32" className="w-4 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 2 L2 20 L22 20 L20 2 Z" strokeLinejoin="round"/>
+                      <line x1="12" y1="20" x2="12" y2="27"/><line x1="8" y1="27" x2="16" y2="27"/>
+                    </svg>
+                    <div>
+                      <p className="text-sm font-semibold leading-tight">{g.name}</p>
+                      <p className={`text-xs ${selectedGlass?.id === g.id ? 'text-white/50' : 'text-gray-400'}`}>{g.volume_ml} ml</p>
+                    </div>
+                  </button>
+                ))}
+                <button onClick={() => { setSelectedGlass(null); setGlassPickerOpen(false) }}
+                  className="flex items-center justify-center px-3 py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 text-sm bg-white active:scale-[0.97] transition-all">
+                  Standaard
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Glasselect (oud, niet meer gebruikt) */}
           {status === PS.GLASS && (
             <>
               <p className="text-gray-500 text-xs font-semibold tracking-[0.18em] uppercase">Kies een glasformaat</p>
