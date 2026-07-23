@@ -1,3 +1,8 @@
+## [4.9.14] - 2026-07-23
+### Opgelost
+- Update-knop in topbalk navigeert nu naar bestaand update-scherm in Instellingen (navigatie werkt weer normaal)
+- AppUpdate terug naar originele ingebedde weergave (geen overlay meer)
+
 ## [4.9.13] - 2026-07-23
 ### Nieuw
 - Update-icoontje in topbalk zodra er een update beschikbaar is — klik om direct te installeren

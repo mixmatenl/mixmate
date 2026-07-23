@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
-import AppUpdate from './AppUpdate'
+import { NavLink, useNavigate } from 'react-router-dom'
 
 const NAV = [
   { to: '/', label: 'Dashboard', exact: true },
@@ -129,9 +128,7 @@ function Clock({ onLongPress }) {
 
 export default function Layout({ children, onStartDemo }) {
   const { wifi, cloud, updateAvailable } = useStatusPoll()
-  const [showUpdate, setShowUpdate] = useState(false)
-
-  if (showUpdate) return <AppUpdate onClose={() => setShowUpdate(false)} />
+  const navigate = useNavigate()
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -186,7 +183,7 @@ export default function Layout({ children, onStartDemo }) {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
           {updateAvailable && (
             <button
-              onClick={() => setShowUpdate(true)}
+              onClick={() => navigate('/instellingen/update')}
               title="Update beschikbaar — klik om te installeren"
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
