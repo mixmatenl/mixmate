@@ -96,7 +96,32 @@ def get_machine_id() -> str:
 
     return mid
 
-async def handle_message(message: dict) -> dict | None:
+_active_pour_task: asyncio.Task | None = None
+
+
+async def _stream_pour(cloud_ws, recipe_id: int, scale: float):
+    import websockets as _ws
+    global _active_pour_task
+    scale_param = f"?scale={scale:.4f}" if scale != 1.0 else ""
+    uri = f"ws://localhost:8000/ws/pour/{recipe_id}{scale_param}"
+    try:
+        async with _ws.connect(uri) as pour_ws:
+            async for raw in pour_ws:
+                msg = json.loads(raw)
+                msg_type = msg.get("type", "")
+                await cloud_ws.send(json.dumps({"type": f"pour_{msg_type}", **msg}))
+                if msg_type in ("done", "error", "cancelled"):
+                    break
+    except Exception as e:
+        try:
+            await cloud_ws.send(json.dumps({"type": "pour_error", "message": str(e)}))
+        except Exception:
+            pass
+    finally:
+        _active_pour_task = None
+
+
+async def handle_message(message: dict, cloud_ws=None) -> dict | None:
     msg_type = message.get("type")
     req_id   = message.get("req_id")
 
@@ -244,6 +269,55 @@ async def handle_message(message: dict) -> dict | None:
                 asyncio.create_task(_run_ota_update())
                 return {"req_id": req_id, "ok": True}
 
+            # ── Machineapp (tablet UI via cloud) ─────────────────────────────
+            elif msg_type == "verify_pin":
+                r = await c.post(f"{LOCAL}/api/auth/verify-pin", json={"pin": message.get("pin")}, timeout=5)
+                return {"req_id": req_id, "ok": r.status_code == 200}
+
+            elif msg_type == "cancel_pour":
+                r = await c.post(f"{LOCAL}/api/pour/cancel", timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            elif msg_type == "create_pour":
+                r = await c.post(f"{LOCAL}/api/pours", json=message.get("data", {}), timeout=5)
+                return {"req_id": req_id, **(r.json() if r.status_code < 300 else {})}
+
+            elif msg_type == "get_favorites":
+                r = await c.get(f"{LOCAL}/api/favorites", timeout=5)
+                return {"req_id": req_id, "items": r.json() if r.status_code == 200 else []}
+
+            elif msg_type == "add_favorite":
+                r = await c.post(f"{LOCAL}/api/favorites/{message.get('id')}", timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            elif msg_type == "remove_favorite":
+                r = await c.delete(f"{LOCAL}/api/favorites/{message.get('id')}", timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            elif msg_type == "start_pour":
+                global _active_pour_task
+                if cloud_ws and not _active_pour_task:
+                    _active_pour_task = asyncio.create_task(
+                        _stream_pour(cloud_ws, message.get("recipe_id"), message.get("scale", 1.0))
+                    )
+                return {"req_id": req_id, "ok": True}
+
+            elif msg_type == "http_proxy":
+                method  = message.get("method", "GET")
+                path    = message.get("path", "/")
+                body    = message.get("body")
+                params  = message.get("params") or {}
+                url     = f"{LOCAL}{path}"
+                kwargs: dict = {"params": params, "timeout": 15.0}
+                if body is not None:
+                    kwargs["json"] = body
+                r = await c.request(method, url, **kwargs)
+                try:
+                    data = r.json()
+                except Exception:
+                    data = None
+                return {"req_id": req_id, "status": r.status_code, "data": data}
+
     except Exception as e:
         log.error("Fout bij verwerken commando %s: %s", msg_type, e)
         if req_id:
@@ -340,6 +414,7 @@ async def cloud_loop():
                     "local_ip": local_ip,
                     "local_port": int(os.getenv("MIXMATE_PORT", "8000")),
                     "ssl": os.path.exists("/home/pi/mixmate/certs/cert.pem"),
+                    "pairing_mode": True,
                 }))
 
                 async def heartbeat():
@@ -410,7 +485,7 @@ async def cloud_loop():
 
                         # Verwerk commando met timeout zodat één traag verzoek de loop niet blokkeert
                         try:
-                            response = await asyncio.wait_for(handle_message(message), timeout=20)
+                            response = await asyncio.wait_for(handle_message(message, ws), timeout=20)
                         except asyncio.TimeoutError:
                             req_id = message.get("req_id")
                             log.warning("Timeout bij verwerken commando %s", msg_type)

@@ -1,3 +1,10 @@
+## [4.9.4] - 2026-07-23
+### Nieuw
+- cloud_client.py: generieke `http_proxy` message-handler zodat cloud alle REST-calls kan forwarden
+- cloud_client.py: `start_pour` / `cancel_pour` handlers voor pour-WS-brug via cloud
+- cloud_client.py: heartbeat stuurt pairing_mode=true, lokaal IP en poort mee
+- network-setup.sh: automatisch WiFi-hotspot (MIXMATE-Setup / mixmate123) als Pi geen internet heeft
+
 ## [4.9.3] - 2026-07-23
 ### Gewijzigd
 - "Wijzig glas" knop in cocktailmodal: standaard glas direct zichtbaar, glas aanpassen zonder extra stap
