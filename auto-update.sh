@@ -49,6 +49,10 @@ git reset --hard origin/main --quiet || { log "Git reset mislukt"; exit 1; }
 # Herstel database en .env direct na de reset
 [ -f /tmp/mixmate_db_backup.db ] && cp /tmp/mixmate_db_backup.db "$APP_DIR/mixmate.db"
 [ -f /tmp/mixmate_env_backup   ] && cp /tmp/mixmate_env_backup   "$APP_DIR/.env"
+
+# Zorg dat scripts uitvoerbaar blijven (git reset --hard verliest execute-bit)
+chmod +x "$APP_DIR/network-setup.sh" "$APP_DIR/auto-update.sh" "$APP_DIR/start.sh" 2>/dev/null || true
+
 log "Code bijgewerkt naar $(git rev-parse --short HEAD)"
 
 # Python dependencies

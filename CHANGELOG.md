@@ -1,3 +1,8 @@
+## [4.9.11] - 2026-07-23
+### Opgelost
+- auto-update.sh herstelt execute-bit van scripts na git reset --hard (permanente fix voor network-setup.sh 203/EXEC)
+- setup-service.sh voegt chmod +x en network-setup.sh toe aan systemd service bij installatie
+
 ## [4.9.10] - 2026-07-23
 ### Opgelost
 - network-setup.sh execute-bit opnieuw permanent vastgezet in git (was per ongeluk 100644 geworden)
