@@ -2,9 +2,81 @@ import React, { useState, useEffect, useRef } from 'react'
 
 const P = { ENTRY: 0, LOGO_IN: 1, STANDBY: 2, WAKING: 3, REVEALING: 4 }
 
-const WAKE_MS    = 6000   // totale opstarttijd
-const FADE_START = 3500   // ms na start waking dat het logo begint te vervagen
-const FADE_DUR   = 2000   // ms dat de fade duurt
+const WAKE_MS      = 6000  // totale opstarttijd
+const FADE_START   = 3500  // ms na start waking dat het logo begint te vervagen
+const FADE_DUR     = 2000  // ms dat de fade duurt
+const DIM_AFTER_MS = 60000 // ms stilte waarna scherm dimt
+const MOTION_THR   = 20    // pixelverschil drempel (0-255)
+const MOTION_PCT   = 0.01  // minimaal % pixels dat moet bewegen
+
+function useMotionDim(active) {
+  const [dimmed, setDimmed] = useState(false)
+  const videoRef   = useRef(null)
+  const canvasRef  = useRef(null)
+  const prevData   = useRef(null)
+  const timerRef   = useRef(null)
+  const ivRef      = useRef(null)
+  const streamRef  = useRef(null)
+
+  function resetTimer() {
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setDimmed(true), DIM_AFTER_MS)
+  }
+
+  function onMotion() {
+    setDimmed(false)
+    resetTimer()
+  }
+
+  useEffect(() => {
+    if (!active) return
+
+    let stopped = false
+
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(stream => {
+        if (stopped) { stream.getTracks().forEach(t => t.stop()); return }
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          videoRef.current.play().catch(() => {})
+        }
+
+        ivRef.current = setInterval(() => {
+          const video  = videoRef.current
+          const canvas = canvasRef.current
+          if (!video || !canvas || video.readyState < 2) return
+          const ctx = canvas.getContext('2d')
+          canvas.width  = 64
+          canvas.height = 48
+          ctx.drawImage(video, 0, 0, 64, 48)
+          const curr = ctx.getImageData(0, 0, 64, 48).data
+
+          if (prevData.current) {
+            let diff = 0
+            for (let i = 0; i < curr.length; i += 4) {
+              if (Math.abs(curr[i] - prevData.current[i]) > MOTION_THR) diff++
+            }
+            if (diff / (64 * 48) > MOTION_PCT) onMotion()
+          }
+          prevData.current = curr
+        }, 500)
+
+        resetTimer()
+      })
+      .catch(() => {}) // geen camera beschikbaar — gewoon niets doen
+
+    return () => {
+      stopped = true
+      clearInterval(ivRef.current)
+      clearTimeout(timerRef.current)
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      prevData.current = null
+    }
+  }, [active])
+
+  return { dimmed, videoRef, canvasRef }
+}
 
 export default function StandbyScreen({ onWake }) {
   const panelBg   = '#000'
@@ -82,6 +154,8 @@ export default function StandbyScreen({ onWake }) {
     return () => clearTimeout(t)
   }, [phase])
 
+  const { dimmed, videoRef, canvasRef } = useMotionDim(phase === P.STANDBY)
+
   const isEntry     = phase === P.ENTRY
   const isLogoIn    = phase === P.LOGO_IN
   const isWaking    = phase === P.WAKING
@@ -124,6 +198,19 @@ export default function StandbyScreen({ onWake }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9998, pointerEvents: isRevealing ? 'none' : 'auto' }}>
+      {/* Verborgen camera-elementen voor bewegingsdetectie */}
+      <video ref={videoRef} style={{ display: 'none' }} muted playsInline />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {/* Dim-overlay */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 1,
+        background: '#000',
+        opacity: dimmed ? 0.85 : 0,
+        transition: 'opacity 3s ease',
+        pointerEvents: 'none',
+      }} />
+
       <div style={{
         position: 'absolute', inset: 0,
         background: panelBg,

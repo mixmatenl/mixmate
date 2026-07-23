@@ -1,3 +1,9 @@
+## [4.9.16] - 2026-07-23
+### Nieuw
+- Standby-scherm dimt automatisch na 60 seconden geen beweging (via front-camera)
+- Bij beweging wordt het scherm meteen weer helder
+- Werkt alleen als de browser cameratoegang heeft (HTTPS vereist)
+
 ## [4.9.15] - 2026-07-23
 ### Gewijzigd
 - Update-status wordt elke 10 seconden gepolld i.p.v. elke 60 seconden
