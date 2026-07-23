@@ -24,7 +24,6 @@ Wants=network-online.target
 Type=simple
 User=$USER
 WorkingDirectory=$APP_DIR
-ExecStartPre=$APP_DIR/auto-update.sh
 ExecStartPre=/bin/chmod +x $APP_DIR/network-setup.sh
 ExecStartPre=$APP_DIR/network-setup.sh
 ExecStart=$APP_DIR/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000

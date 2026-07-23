@@ -19,8 +19,8 @@ function stepIndexFromLabel(label) {
   return -1
 }
 
-export default function AppUpdate() {
-  const [status, setStatus] = useState(STATUS.IDLE)
+export default function AppUpdate({ onClose }) {
+  const [status, setStatus] = useState(STATUS.CHECKING)
   const [versionInfo, setVersionInfo] = useState(null)
   const [changelog, setChangelog] = useState([])
   const [compatible, setCompatible] = useState(true)
@@ -35,6 +35,16 @@ export default function AppUpdate() {
 
   useEffect(() => {
     fetch('/api/system/version').then(r => r.json()).then(setVersionInfo).catch(() => {})
+    // Laad direct de gecachte update-status (snel, geen git fetch)
+    fetch('/api/system/update-status')
+      .then(r => r.json())
+      .then(d => {
+        setStatus(d.updates_available ? STATUS.AVAILABLE : STATUS.UP_TO_DATE)
+        if (d.changelog) setChangelog(d.changelog)
+        setCompatible(d.compatible !== false)
+        setCompatMsg(d.compat_message || null)
+      })
+      .catch(() => setStatus(STATUS.IDLE))
   }, [])
 
   useEffect(() => {
@@ -99,10 +109,32 @@ export default function AppUpdate() {
     }
   }
 
-  const isUpdating = status === STATUS.UPDATING
+  const isUpdating = status === STATUS.UPDATING || status === STATUS.DONE
 
   return (
-    <div className="space-y-6 max-w-md">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9000,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    }} onClick={e => { if (!isUpdating && e.target === e.currentTarget) onClose?.() }}>
+      <div style={{
+        background: '#f2f2f7', borderRadius: 28, width: '90%', maxWidth: 440,
+        maxHeight: '85vh', overflowY: 'auto', padding: 24,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f' }}>Software-update</span>
+          {!isUpdating && onClose && (
+            <button onClick={onClose} style={{
+              background: 'rgba(0,0,0,0.07)', border: 'none', borderRadius: 20,
+              width: 28, height: 28, cursor: 'pointer', fontSize: 14, color: '#6e6e73',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>✕</button>
+          )}
+        </div>
+    <div className="space-y-6 max-w-md" style={{ maxWidth: '100%' }}>
 
       {/* Versie kaart */}
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
@@ -334,6 +366,8 @@ export default function AppUpdate() {
           </button>
         </div>
       )}
+    </div>
+      </div>
     </div>
   )
 }

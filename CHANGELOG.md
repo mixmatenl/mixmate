@@ -1,3 +1,11 @@
+## [4.9.13] - 2026-07-23
+### Nieuw
+- Update-icoontje in topbalk zodra er een update beschikbaar is — klik om direct te installeren
+- Backend checkt elke 10 minuten automatisch op updates (geen auto-install meer bij opstarten)
+### Gewijzigd
+- Auto-update bij opstarten verwijderd — updates worden nu handmatig geïnstalleerd via de topbalk
+- AppUpdate-scherm opent als overlay en toont direct de beschikbare update
+
 ## [4.9.12] - 2026-07-23
 ### Gewijzigd
 - RestartScreen: cocktailglas SVG vervangen door /logo.png (zelfde logo als standby-scherm)

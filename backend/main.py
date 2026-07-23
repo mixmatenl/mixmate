@@ -126,6 +126,54 @@ def _load_env():
 
 _cloud_task: asyncio.Task | None = None
 
+_update_cache: dict = {"updates_available": False, "changelog": [], "compatible": True, "compat_message": None, "checked_at": 0}
+
+async def _update_check_loop():
+    """Achtergrondtaak: checkt elke 10 minuten op updates en slaat resultaat op in cache."""
+    await asyncio.sleep(30)  # wacht even na opstarten zodat netwerk klaar is
+    while True:
+        try:
+            has_updates, changelog = await check_updates_available()
+            compatible = True
+            compat_msg = None
+            if has_updates:
+                machine_model = _get_machine_model()
+                if not machine_model:
+                    compatible = False
+                    compat_msg = "Stel eerst het machine model in."
+                elif changelog:
+                    target_version = changelog[0].get("version", "")
+                    try:
+                        compat_path = Path(__file__).parent.parent / "compat.json"
+                        if compat_path.exists():
+                            import json as _json
+                            from packaging.version import Version
+                            compat = _json.loads(compat_path.read_text()).get("versions", {})
+                            tv = Version(target_version)
+                            target_minor = f"{tv.major}.{tv.minor}"
+                            for cv, models in compat.items():
+                                try:
+                                    cv_parsed = Version(cv)
+                                    if f"{cv_parsed.major}.{cv_parsed.minor}" == target_minor or cv == target_version:
+                                        if machine_model not in models:
+                                            compatible = False
+                                            compat_msg = f"Versie {target_version} is niet beschikbaar voor {machine_model}."
+                                        break
+                                except Exception:
+                                    continue
+                    except Exception:
+                        pass
+            _update_cache.update({
+                "updates_available": has_updates,
+                "changelog": changelog,
+                "compatible": compatible,
+                "compat_message": compat_msg,
+                "checked_at": int(time.time()),
+            })
+        except Exception:
+            pass
+        await asyncio.sleep(600)  # 10 minuten
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _cloud_task
@@ -135,6 +183,7 @@ async def lifespan(app: FastAPI):
     _load_env()
     from .cloud_client import cloud_loop
     _cloud_task = asyncio.create_task(cloud_loop())
+    asyncio.create_task(_update_check_loop())
     _schedule_major_update_reboot()
     # Herstel account-info uit DB (overleeft herstart)
     _cloud_pair["account_name"]  = _db_get("account_name")  or None
@@ -1596,6 +1645,11 @@ async def system_check_updates():
         "compatible": compatible,
         "compat_message": compat_msg,
     }
+
+@app.get("/api/system/update-status")
+async def system_update_status():
+    """Geeft de gecachte update-status terug — geen git fetch, altijd snel."""
+    return _update_cache
 
 @app.websocket("/ws/system/update")
 async def websocket_update(websocket: WebSocket):

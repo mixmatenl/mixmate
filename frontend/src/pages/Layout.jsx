@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import AppUpdate from './AppUpdate'
 
 const NAV = [
   { to: '/', label: 'Dashboard', exact: true },
@@ -35,6 +36,8 @@ function CloudIcon({ connected, paired }) {
 function useStatusPoll() {
   const [wifi, setWifi] = useState({ connected: false, signal: -1, ssid: '' })
   const [cloud, setCloud] = useState({ connected: false, paired: false })
+  const [updateAvailable, setUpdateAvailable] = useState(false)
+
   useEffect(() => {
     async function poll() {
       try {
@@ -46,11 +49,19 @@ function useStatusPoll() {
         setCloud({ connected: c.connected || false, paired: c.paired || false })
       } catch {}
     }
+    async function pollUpdate() {
+      try {
+        const u = await fetch('/api/system/update-status').then(r => r.json())
+        setUpdateAvailable(u.updates_available && u.compatible !== false)
+      } catch {}
+    }
     poll()
-    const t = setInterval(poll, 10000)
-    return () => clearInterval(t)
+    pollUpdate()
+    const t1 = setInterval(poll, 10000)
+    const t2 = setInterval(pollUpdate, 60000)
+    return () => { clearInterval(t1); clearInterval(t2) }
   }, [])
-  return { wifi, cloud }
+  return { wifi, cloud, updateAvailable }
 }
 
 function Clock({ onLongPress }) {
@@ -117,7 +128,10 @@ function Clock({ onLongPress }) {
 }
 
 export default function Layout({ children, onStartDemo }) {
-  const { wifi, cloud } = useStatusPoll()
+  const { wifi, cloud, updateAvailable } = useStatusPoll()
+  const [showUpdate, setShowUpdate] = useState(false)
+
+  if (showUpdate) return <AppUpdate onClose={() => setShowUpdate(false)} />
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -170,6 +184,23 @@ export default function Layout({ children, onStartDemo }) {
 
         {/* Status rechts */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
+          {updateAvailable && (
+            <button
+              onClick={() => setShowUpdate(true)}
+              title="Update beschikbaar — klik om te installeren"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: '#1c1c1e', border: 'none', borderRadius: 8,
+                padding: '4px 10px', cursor: 'pointer',
+                animation: 'mm-update-pulse 2s ease-in-out infinite',
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v10m0 0l-3.5-3.5M12 12l3.5-3.5"/><path d="M4 14a8 8 0 1 0 16 0"/>
+              </svg>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#fff', letterSpacing: 0.2 }}>Update</span>
+            </button>
+          )}
           <div title={wifi.connected ? `WiFi: ${wifi.ssid}` : 'Geen WiFi'}>
             <WifiIcon signal={wifi.connected ? (wifi.signal || 50) : -1} />
           </div>
@@ -178,6 +209,12 @@ export default function Layout({ children, onStartDemo }) {
           </div>
           <Clock onLongPress={onStartDemo} />
         </div>
+        <style>{`
+          @keyframes mm-update-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+          }
+        `}</style>
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">

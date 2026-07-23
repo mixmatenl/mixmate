@@ -1,6 +1,6 @@
 {
   "name": "mixmate-frontend",
-  "version": "4.9.12",
+  "version": "4.9.13",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
