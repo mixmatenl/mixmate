@@ -20,7 +20,7 @@ log = logging.getLogger("cloud_client")
 # Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
 _CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
-LOCAL     = "http://localhost:8000"
+LOCAL     = "https://localhost:8000"
 
 _MACHINE_ID_FILE = Path("/etc/mixmate_id")
 
@@ -126,7 +126,7 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
     req_id   = message.get("req_id")
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as c:
+        async with httpx.AsyncClient(timeout=15.0, verify=False) as c:
 
             # ── Recepten ──────────────────────────────────────────────────────
             if msg_type == "get_recipes":
@@ -369,7 +369,7 @@ async def cloud_loop():
 
     for _ in range(30):
         try:
-            async with httpx.AsyncClient() as c:
+            async with httpx.AsyncClient(verify=False) as c:
                 await c.get(f"{LOCAL}/api/system/version", timeout=2)
             break
         except Exception:
@@ -382,13 +382,13 @@ async def cloud_loop():
                 backoff = 5  # reset na succesvolle verbinding
                 log.info("Cloud verbonden")
                 try:
-                    async with httpx.AsyncClient() as c:
+                    async with httpx.AsyncClient(verify=False) as c:
                         await c.post(f"{LOCAL}/api/cloud/pair-code", json={"connected": True}, timeout=3)
                 except Exception:
                     pass
 
                 try:
-                    async with httpx.AsyncClient() as c:
+                    async with httpx.AsyncClient(verify=False) as c:
                         v = await c.get(f"{LOCAL}/api/system/version", timeout=3)
                         m = await c.get(f"{LOCAL}/api/system/machine", timeout=3)
                     version = v.json().get("version", "")
@@ -434,7 +434,7 @@ async def cloud_loop():
 
                         if msg_type == "pair_code":
                             try:
-                                async with httpx.AsyncClient() as c:
+                                async with httpx.AsyncClient(verify=False) as c:
                                     await c.post(
                                         f"{LOCAL}/api/cloud/pair-code",
                                         json={
@@ -451,7 +451,7 @@ async def cloud_loop():
 
                         if msg_type == "paired":
                             try:
-                                async with httpx.AsyncClient() as c:
+                                async with httpx.AsyncClient(verify=False) as c:
                                     await c.post(
                                         f"{LOCAL}/api/cloud/pair-code",
                                         json={
@@ -467,7 +467,7 @@ async def cloud_loop():
 
                         if msg_type == "reset_code":
                             try:
-                                async with httpx.AsyncClient() as c:
+                                async with httpx.AsyncClient(verify=False) as c:
                                     await c.post(
                                         f"{LOCAL}/api/cloud/pair-code",
                                         json={
@@ -499,7 +499,7 @@ async def cloud_loop():
             log.warning("Cloud verbinding verbroken: %s — herverbinden in %ds", e, backoff)
 
         try:
-            async with httpx.AsyncClient() as c:
+            async with httpx.AsyncClient(verify=False) as c:
                 await c.post(f"{LOCAL}/api/cloud/pair-code", json={"connected": False}, timeout=3)
         except Exception:
             pass
