@@ -42,7 +42,7 @@ function PourModal({ recipe, glasses, onClose }) {
   const scale = Math.round(scaleFactor * 1000) / 1000
   function scaledMl(ml) { const v = ml * scale; return v % 1 === 0 ? v : v.toFixed(1) }
 
-  const firstStep = glasses.length > 0 ? PS.GLASS : (hasManual ? PS.MANUAL : PS.CONFIRM)
+  const firstStep = hasManual ? PS.MANUAL : PS.CONFIRM
   const [status, setStatus] = useState(firstStep)
   const [progress, setProgress] = useState(null)
   const [showDoneRing, setShowDoneRing] = useState(false)

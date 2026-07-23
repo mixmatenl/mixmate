@@ -1,3 +1,7 @@
+## [4.9.2] - 2026-07-23
+### Gewijzigd
+- Glasselectie overgeslagen bij het starten van een cocktail — modal gaat direct naar bevestiging of handmatige ingrediënten
+
 ## [4.9.1] - 2026-07-02
 ### Opgelost
 - Demo exit-slideshow zette `_demo_mode_active` niet uit — machine startte in demo-modus op na tikken op "Probeer het zelf"
