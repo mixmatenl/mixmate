@@ -1,3 +1,7 @@
+## [4.9.5] - 2026-07-23
+### Opgelost
+- cloud_client: interne HTTP calls omgezet naar HTTPS na SSL-migratie (koppelcode werkte niet meer)
+
 ## [4.9.4] - 2026-07-23
 ### Nieuw
 - cloud_client.py: generieke `http_proxy` message-handler zodat cloud alle REST-calls kan forwarden
