@@ -1,3 +1,9 @@
+## [4.9.7] - 2026-07-23
+### Nieuw
+- Herstart-animatiescherm met MIXMATE logo en spinner bij "Machine herstarten"
+### Opgelost
+- Herstart-knop werkt nu direct bij eerste klik (wacht niet meer op API-response)
+
 ## [4.9.6] - 2026-07-23
 ### Gewijzigd
 - Koppelscherm: URL gewijzigd van mixmate.nl naar portaal.mixmate.nl

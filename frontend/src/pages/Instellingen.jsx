@@ -323,19 +323,97 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
   )
 }
 
+// ── Herstart animatiescherm ───────────────────────────────────────────────────
+
+function RestartScreen() {
+  const [countdown, setCountdown] = useState(null)
+
+  useEffect(() => {
+    // Na 4s beginnen we met aftellen en proberen herladen
+    const start = setTimeout(() => {
+      let secs = 40
+      setCountdown(secs)
+      const iv = setInterval(() => {
+        secs -= 1
+        setCountdown(secs)
+        if (secs <= 0) clearInterval(iv)
+      }, 1000)
+      // Zodra backend weer reageert: herladen
+      const retry = setInterval(() => {
+        fetch('/api/system/info').then(() => {
+          clearInterval(retry)
+          window.location.reload()
+        }).catch(() => {})
+      }, 2000)
+    }, 4000)
+    return () => clearTimeout(start)
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: '#111',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, fontFamily: 'system-ui, sans-serif',
+    }}>
+      {/* MIXMATE logo */}
+      <div style={{
+        width: 80, height: 80, borderRadius: 22,
+        background: '#1c1c1e',
+        border: '1.5px solid #2c2c2e',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 28,
+        animation: 'mm-restart-pulse 2s ease-in-out infinite',
+      }}>
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
+        </svg>
+      </div>
+
+      <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8, letterSpacing: -0.3 }}>
+        Machine herstarten
+      </div>
+      <div style={{ color: '#636366', fontSize: 14, textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
+        {countdown !== null
+          ? `Wachten tot de machine weer online is…`
+          : 'Even geduld…'}
+      </div>
+
+      {/* Spinner */}
+      <div style={{ marginTop: 40 }}>
+        <div style={{
+          width: 32, height: 32,
+          border: '3px solid #2c2c2e',
+          borderTopColor: '#fff',
+          borderRadius: '50%',
+          animation: 'mm-spin 0.8s linear infinite',
+        }} />
+      </div>
+
+      <style>{`
+        @keyframes mm-restart-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.08); }
+          50%       { box-shadow: 0 0 0 14px rgba(255,255,255,0); }
+        }
+        @keyframes mm-spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  )
+}
+
 // ── Root: overzichtsscherm ────────────────────────────────────────────────────
 
 function SettingsHome() {
   const navigate = useNavigate()
-  const [confirm,         setConfirm]         = useState(null)
-  const [actionBusy,      setActionBusy]      = useState(false)
+  const [confirm,          setConfirm]          = useState(null)
+  const [actionBusy,       setActionBusy]       = useState(false)
+  const [restarting,       setRestarting]       = useState(false)
   const [factoryResetting, setFactoryResetting] = useState(false)
 
   async function doRestart() {
-    setActionBusy(true)
-    await fetch('/api/system/restart', { method: 'POST' }).catch(() => {})
-    setActionBusy(false)
     setConfirm(null)
+    setRestarting(true)
+    fetch('/api/system/restart', { method: 'POST' }).catch(() => {})
   }
 
   async function doFactoryReset() {
@@ -344,6 +422,7 @@ function SettingsHome() {
     await fetch('/api/system/factory-reset', { method: 'POST' }).catch(() => {})
   }
 
+  if (restarting)       return <RestartScreen />
   if (factoryResetting) return <FactoryResetScreen />
 
   return (
