@@ -1,3 +1,9 @@
+## [4.9.9] - 2026-07-23
+### Gewijzigd
+- RestartScreen: MIXMATE logo ademt nu altijd (niet alleen in herstart-fase)
+- RestartScreen: tekst veranderd naar "De machine wordt opnieuw opgestart." in beide fases
+- RestartScreen: na herstart automatisch terug naar dashboard zodra backend weer online is (polling elke 2s na 8s vertraging)
+
 ## [4.9.8] - 2026-07-23
 ### Gewijzigd
 - Herstart-animatie toont eerst 2.5s aankondiging, daarna pas echte restart — tablet bevriest mooi op het animatiescherm

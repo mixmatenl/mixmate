@@ -326,16 +326,27 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
 // ── Herstart animatiescherm ───────────────────────────────────────────────────
 
 function RestartScreen({ onReady }) {
-  // Fase 1 (0-2.5s): aankondiging + fade-in
-  // Fase 2 (2.5s+):  restart wordt aangeroepen, tablet bevriest op dit scherm
   const [phase, setPhase] = useState('announcing') // 'announcing' | 'restarting'
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    // Fase 1: toon 2.5s aankondiging, dan stuur restart
+    const t1 = setTimeout(() => {
       setPhase('restarting')
-      onReady()  // roep nu pas de Pi-restart aan
+      onReady()
     }, 2500)
-    return () => clearTimeout(t)
+
+    // Zodra backend weer reageert: navigeer naar dashboard
+    let retryIv
+    const t2 = setTimeout(() => {
+      retryIv = setInterval(() => {
+        fetch('/api/system/info')
+          .then(() => { clearInterval(retryIv); navigate('/') })
+          .catch(() => {})
+      }, 2000)
+    }, 8000) // begin pas na 8s te pollen (Pi heeft tijd nodig om neer te gaan)
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearInterval(retryIv) }
   }, [])
 
   return (
@@ -347,40 +358,35 @@ function RestartScreen({ onReady }) {
       zIndex: 9999, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       animation: 'mm-fadein 0.35s ease-out',
     }}>
-      {/* MIXMATE logo */}
+      {/* MIXMATE logo — ademt */}
       <div style={{
-        width: 88, height: 88, borderRadius: 24,
+        width: 96, height: 96, borderRadius: 26,
         background: '#1c1c1e',
         border: '1.5px solid #2c2c2e',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 32,
-        animation: phase === 'restarting' ? 'mm-restart-pulse 1.6s ease-in-out infinite' : 'none',
-        transition: 'box-shadow 0.4s',
+        animation: 'mm-breathe 2.4s ease-in-out infinite',
       }}>
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
           <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
         </svg>
       </div>
 
       <div style={{ color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 10, letterSpacing: -0.4 }}>
-        {phase === 'announcing' ? 'Machine herstarten' : 'Even geduld…'}
+        Machine herstarten
       </div>
       <div style={{ color: '#555', fontSize: 14, textAlign: 'center', maxWidth: 260, lineHeight: 1.7 }}>
         {phase === 'announcing'
           ? 'De machine wordt opnieuw opgestart.'
-          : 'De verbinding wordt hersteld. Dit duurt ongeveer 30 seconden.'}
+          : 'De machine wordt opnieuw opgestart.'}
       </div>
 
-      {/* Spinner — verschijnt pas in fase 2 */}
-      <div style={{
-        marginTop: 48,
-        opacity: phase === 'restarting' ? 1 : 0,
-        transition: 'opacity 0.5s',
-      }}>
+      {/* Spinner */}
+      <div style={{ marginTop: 48, opacity: phase === 'restarting' ? 1 : 0, transition: 'opacity 0.6s' }}>
         <div style={{
           width: 28, height: 28,
           border: '2.5px solid #2c2c2e',
-          borderTopColor: '#636366',
+          borderTopColor: '#555',
           borderRadius: '50%',
           animation: 'mm-spin 0.9s linear infinite',
         }} />
@@ -388,9 +394,9 @@ function RestartScreen({ onReady }) {
 
       <style>{`
         @keyframes mm-fadein { from { opacity:0 } to { opacity:1 } }
-        @keyframes mm-restart-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.1); }
-          50%       { box-shadow: 0 0 0 18px rgba(255,255,255,0); }
+        @keyframes mm-breathe {
+          0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(255,255,255,.06); }
+          50%       { transform: scale(1.06); box-shadow: 0 0 0 20px rgba(255,255,255,0); }
         }
         @keyframes mm-spin { to { transform: rotate(360deg); } }
       `}</style>
