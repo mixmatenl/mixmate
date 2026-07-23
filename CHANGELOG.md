@@ -1,3 +1,7 @@
+## [4.9.12] - 2026-07-23
+### Gewijzigd
+- RestartScreen: cocktailglas SVG vervangen door /logo.png (zelfde logo als standby-scherm)
+
 ## [4.9.11] - 2026-07-23
 ### Opgelost
 - auto-update.sh herstelt execute-bit van scripts na git reset --hard (permanente fix voor network-setup.sh 203/EXEC)

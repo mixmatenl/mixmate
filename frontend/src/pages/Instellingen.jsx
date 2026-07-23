@@ -359,18 +359,16 @@ function RestartScreen({ onReady }) {
       animation: 'mm-fadein 0.35s ease-out',
     }}>
       {/* MIXMATE logo — ademt */}
-      <div style={{
-        width: 96, height: 96, borderRadius: 26,
-        background: '#1c1c1e',
-        border: '1.5px solid #2c2c2e',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 32,
-        animation: 'mm-breathe 2.4s ease-in-out infinite',
-      }}>
-        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
-        </svg>
-      </div>
+      <img
+        src="/logo.png"
+        alt="MIXMATE"
+        style={{
+          width: 120, height: 120,
+          objectFit: 'contain',
+          marginBottom: 32,
+          animation: 'mm-breathe 2.4s ease-in-out infinite',
+        }}
+      />
 
       <div style={{ color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 10, letterSpacing: -0.4 }}>
         Machine herstarten
