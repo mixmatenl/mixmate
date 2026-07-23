@@ -1,3 +1,8 @@
+## [4.9.8] - 2026-07-23
+### Gewijzigd
+- Herstart-animatie toont eerst 2.5s aankondiging, daarna pas echte restart — tablet bevriest mooi op het animatiescherm
+- network-setup.sh execute-bit permanent in git opgeslagen (geen chmod meer nodig na git pull)
+
 ## [4.9.7] - 2026-07-23
 ### Nieuw
 - Herstart-animatiescherm met MIXMATE logo en spinner bij "Machine herstarten"

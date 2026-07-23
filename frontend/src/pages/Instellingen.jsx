@@ -325,75 +325,72 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
 
 // ── Herstart animatiescherm ───────────────────────────────────────────────────
 
-function RestartScreen() {
-  const [countdown, setCountdown] = useState(null)
+function RestartScreen({ onReady }) {
+  // Fase 1 (0-2.5s): aankondiging + fade-in
+  // Fase 2 (2.5s+):  restart wordt aangeroepen, tablet bevriest op dit scherm
+  const [phase, setPhase] = useState('announcing') // 'announcing' | 'restarting'
 
   useEffect(() => {
-    // Na 4s beginnen we met aftellen en proberen herladen
-    const start = setTimeout(() => {
-      let secs = 40
-      setCountdown(secs)
-      const iv = setInterval(() => {
-        secs -= 1
-        setCountdown(secs)
-        if (secs <= 0) clearInterval(iv)
-      }, 1000)
-      // Zodra backend weer reageert: herladen
-      const retry = setInterval(() => {
-        fetch('/api/system/info').then(() => {
-          clearInterval(retry)
-          window.location.reload()
-        }).catch(() => {})
-      }, 2000)
-    }, 4000)
-    return () => clearTimeout(start)
+    const t = setTimeout(() => {
+      setPhase('restarting')
+      onReady()  // roep nu pas de Pi-restart aan
+    }, 2500)
+    return () => clearTimeout(t)
   }, [])
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#111',
+      position: 'fixed', inset: 0,
+      background: '#0a0a0a',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, fontFamily: 'system-ui, sans-serif',
+      zIndex: 9999, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      animation: 'mm-fadein 0.35s ease-out',
     }}>
       {/* MIXMATE logo */}
       <div style={{
-        width: 80, height: 80, borderRadius: 22,
+        width: 88, height: 88, borderRadius: 24,
         background: '#1c1c1e',
         border: '1.5px solid #2c2c2e',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: 28,
-        animation: 'mm-restart-pulse 2s ease-in-out infinite',
+        marginBottom: 32,
+        animation: phase === 'restarting' ? 'mm-restart-pulse 1.6s ease-in-out infinite' : 'none',
+        transition: 'box-shadow 0.4s',
       }}>
-        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M8 22h8"/><path d="M12 11v11"/><path d="M20 4H4l6 7.5V17"/><path d="M20 4l-6 7.5"/>
         </svg>
       </div>
 
-      <div style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8, letterSpacing: -0.3 }}>
-        Machine herstarten
+      <div style={{ color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 10, letterSpacing: -0.4 }}>
+        {phase === 'announcing' ? 'Machine herstarten' : 'Even geduld…'}
       </div>
-      <div style={{ color: '#636366', fontSize: 14, textAlign: 'center', maxWidth: 260, lineHeight: 1.6 }}>
-        {countdown !== null
-          ? `Wachten tot de machine weer online is…`
-          : 'Even geduld…'}
+      <div style={{ color: '#555', fontSize: 14, textAlign: 'center', maxWidth: 260, lineHeight: 1.7 }}>
+        {phase === 'announcing'
+          ? 'De machine wordt opnieuw opgestart.'
+          : 'De verbinding wordt hersteld. Dit duurt ongeveer 30 seconden.'}
       </div>
 
-      {/* Spinner */}
-      <div style={{ marginTop: 40 }}>
+      {/* Spinner — verschijnt pas in fase 2 */}
+      <div style={{
+        marginTop: 48,
+        opacity: phase === 'restarting' ? 1 : 0,
+        transition: 'opacity 0.5s',
+      }}>
         <div style={{
-          width: 32, height: 32,
-          border: '3px solid #2c2c2e',
-          borderTopColor: '#fff',
+          width: 28, height: 28,
+          border: '2.5px solid #2c2c2e',
+          borderTopColor: '#636366',
           borderRadius: '50%',
-          animation: 'mm-spin 0.8s linear infinite',
+          animation: 'mm-spin 0.9s linear infinite',
         }} />
       </div>
 
       <style>{`
+        @keyframes mm-fadein { from { opacity:0 } to { opacity:1 } }
         @keyframes mm-restart-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.08); }
-          50%       { box-shadow: 0 0 0 14px rgba(255,255,255,0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.1); }
+          50%       { box-shadow: 0 0 0 18px rgba(255,255,255,0); }
         }
         @keyframes mm-spin { to { transform: rotate(360deg); } }
       `}</style>
@@ -410,10 +407,9 @@ function SettingsHome() {
   const [restarting,       setRestarting]       = useState(false)
   const [factoryResetting, setFactoryResetting] = useState(false)
 
-  async function doRestart() {
+  function doRestart() {
     setConfirm(null)
     setRestarting(true)
-    fetch('/api/system/restart', { method: 'POST' }).catch(() => {})
   }
 
   async function doFactoryReset() {
@@ -422,7 +418,7 @@ function SettingsHome() {
     await fetch('/api/system/factory-reset', { method: 'POST' }).catch(() => {})
   }
 
-  if (restarting)       return <RestartScreen />
+  if (restarting)       return <RestartScreen onReady={() => fetch('/api/system/restart', { method: 'POST' }).catch(() => {})} />
   if (factoryResetting) return <FactoryResetScreen />
 
   return (
