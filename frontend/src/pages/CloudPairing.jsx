@@ -9,7 +9,7 @@ export default function CloudPairing({ onClose }) {
 
   useEffect(() => {
     load()
-    const iv = setInterval(load, 5000)
+    const iv = setInterval(load, 30000)
     return () => clearInterval(iv)
   }, [])
 
@@ -163,14 +163,14 @@ export default function CloudPairing({ onClose }) {
       <div style={{ background: '#fff', borderRadius: 16, padding: '16px 20px', maxWidth: 300, width: '100%', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', marginBottom: 10 }}>Hoe koppelen:</div>
         <ol style={{ margin: 0, padding: '0 0 0 16px', fontSize: 13, color: '#6e6e73', lineHeight: 1.9 }}>
-          <li>Ga naar <strong style={{ color: '#1d1d1f' }}>mixmate.nl</strong></li>
+          <li>Ga naar <strong style={{ color: '#1d1d1f' }}>portaal.mixmate.nl</strong></li>
           <li>Log in of maak een account aan</li>
-          <li>Klik op <strong style={{ color: '#1d1d1f' }}>Machine koppelen</strong></li>
+          <li>Ga naar <strong style={{ color: '#1d1d1f' }}>Mijn machines</strong> → <strong style={{ color: '#1d1d1f' }}>Machine koppelen</strong></li>
           <li>Voer bovenstaande code in</li>
         </ol>
       </div>
 
-      <div style={{ fontSize: 12, color: '#c7c7cc', marginTop: 20 }}>Code wordt elke 5 seconden vernieuwd</div>
+      <div style={{ fontSize: 12, color: '#c7c7cc', marginTop: 20 }}>Code wordt elke 30 seconden vernieuwd</div>
     </div>
   )
 

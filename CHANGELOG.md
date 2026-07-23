@@ -1,3 +1,9 @@
+## [4.9.6] - 2026-07-23
+### Gewijzigd
+- Koppelscherm: URL gewijzigd van mixmate.nl naar portaal.mixmate.nl
+- Koppelscherm: stap 3 verduidelijkt naar "Mijn machines → Machine koppelen"
+- Koppelscherm: code vernieuwd elke 30 seconden i.p.v. elke 5 seconden
+
 ## [4.9.5] - 2026-07-23
 ### Opgelost
 - cloud_client: interne HTTP calls omgezet naar HTTPS na SSL-migratie (koppelcode werkte niet meer)
