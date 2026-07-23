@@ -1,3 +1,7 @@
+## [4.9.10] - 2026-07-23
+### Opgelost
+- network-setup.sh execute-bit opnieuw permanent vastgezet in git (was per ongeluk 100644 geworden)
+
 ## [4.9.9] - 2026-07-23
 ### Gewijzigd
 - RestartScreen: MIXMATE logo ademt nu altijd (niet alleen in herstart-fase)
