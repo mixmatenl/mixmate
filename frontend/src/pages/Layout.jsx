@@ -126,12 +126,75 @@ function Clock({ onLongPress }) {
   )
 }
 
+function UpdateNotification({ onInstall, onLater }) {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 50); return () => clearTimeout(t) }, [])
+  return (
+    <div style={{
+      position: 'fixed', top: 16, left: '50%',
+      transform: `translateX(-50%) translateY(${visible ? 0 : -120}px)`,
+      transition: 'transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1)',
+      zIndex: 9999,
+      background: 'rgba(28,28,30,0.96)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: 20,
+      padding: '14px 16px',
+      width: 340,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          overflow: 'hidden',
+        }}>
+          <img src="/logo.png" alt="MIXMATE" style={{ width: 34, height: 34, objectFit: 'contain' }} />
+        </div>
+        <div>
+          <div style={{ color: '#fff', fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
+            Software-update beschikbaar
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 1 }}>
+            MIXMATE OS
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={onLater} style={{
+          flex: 1, padding: '9px 0',
+          background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 12,
+          color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+        }}>Later</button>
+        <button onClick={onInstall} style={{
+          flex: 1, padding: '9px 0',
+          background: '#0a84ff', border: 'none', borderRadius: 12,
+          color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        }}>Nu installeren</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Layout({ children, onStartDemo }) {
   const { wifi, cloud, updateAvailable } = useStatusPoll()
   const navigate = useNavigate()
+  const [dismissed, setDismissed] = useState(false)
+
+  const showNotif = updateAvailable && !dismissed
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
+
+      {/* iOS-stijl update-melding */}
+      {showNotif && (
+        <UpdateNotification
+          onInstall={() => { setDismissed(true); navigate('/instellingen/update') }}
+          onLater={() => setDismissed(true)}
+        />
+      )}
+
       {/* Header */}
       <header style={{
         height: 52,
@@ -181,23 +244,6 @@ export default function Layout({ children, onStartDemo }) {
 
         {/* Status rechts */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
-          {updateAvailable && (
-            <button
-              onClick={() => navigate('/instellingen/update')}
-              title="Update beschikbaar — klik om te installeren"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: '#1c1c1e', border: 'none', borderRadius: 8,
-                padding: '4px 10px', cursor: 'pointer',
-                animation: 'mm-update-pulse 2s ease-in-out infinite',
-              }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v10m0 0l-3.5-3.5M12 12l3.5-3.5"/><path d="M4 14a8 8 0 1 0 16 0"/>
-              </svg>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#fff', letterSpacing: 0.2 }}>Update</span>
-            </button>
-          )}
           <div title={wifi.connected ? `WiFi: ${wifi.ssid}` : 'Geen WiFi'}>
             <WifiIcon signal={wifi.connected ? (wifi.signal || 50) : -1} />
           </div>
@@ -206,12 +252,6 @@ export default function Layout({ children, onStartDemo }) {
           </div>
           <Clock onLongPress={onStartDemo} />
         </div>
-        <style>{`
-          @keyframes mm-update-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-          }
-        `}</style>
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">

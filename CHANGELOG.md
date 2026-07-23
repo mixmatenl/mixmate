@@ -1,3 +1,8 @@
+## [4.9.17] - 2026-07-23
+### Gewijzigd
+- Update-melding is nu een iOS-stijl popup bovenin het scherm met "Nu installeren" en "Later" knoppen
+- Update-icoontje in de statusbalk verwijderd
+
 ## [4.9.16] - 2026-07-23
 ### Nieuw
 - Standby-scherm dimt automatisch na 60 seconden geen beweging (via front-camera)
