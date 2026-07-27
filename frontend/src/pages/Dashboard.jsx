@@ -35,12 +35,11 @@ function PourModal({ recipe, glasses, onClose }) {
   const hasManual = manualIngredients.length > 0
   const hasAuto   = autoIngredients.length > 0
 
-  const defaultGlass = glasses.find(g => g.id === recipe.glass_id) || (glasses.length > 0 ? glasses[0] : null)
+  const defaultGlass = glasses.find(g => g.id === recipe.glass_id) || null
   const [selectedGlass, setSelectedGlass] = useState(defaultGlass)
-  const scaleFactor = selectedGlass && recipe.total_volume_ml > 0
-    ? selectedGlass.volume_ml / recipe.total_volume_ml : 1.0
-  const scale = Math.round(scaleFactor * 1000) / 1000
-  function scaledMl(ml) { const v = ml * scale; return v % 1 === 0 ? v : v.toFixed(1) }
+  const scale = 1.0
+  function scaledMl(ml) { return ml % 1 === 0 ? ml : ml.toFixed(1) }
+  const glassTooSmall = selectedGlass && selectedGlass.volume_ml > 0 && recipe.total_volume_ml > selectedGlass.volume_ml
 
   const [glassPickerOpen, setGlassPickerOpen] = useState(false)
   const firstStep = hasManual ? PS.MANUAL : PS.CONFIRM
@@ -113,8 +112,8 @@ function PourModal({ recipe, glasses, onClose }) {
                   <line x1="12" y1="20" x2="12" y2="27"/>
                   <line x1="8" y1="27" x2="16" y2="27"/>
                 </svg>
-                {selectedGlass ? `${selectedGlass.name} · ${selectedGlass.volume_ml} ml` : 'Standaard'}
-                {scale !== 1.0 && <span className="text-white/40 ml-0.5">({scale > 1 ? '+' : ''}{Math.round((scale-1)*100)}%)</span>}
+                {selectedGlass ? `${selectedGlass.name} · ${selectedGlass.volume_ml} ml` : 'Geen glas'}
+                {glassTooSmall && <span className="text-orange-400 ml-1">⚠️</span>}
                 <span className="text-white/40">· Wijzig</span>
               </button>
             )}
@@ -149,6 +148,16 @@ function PourModal({ recipe, glasses, onClose }) {
                   Standaard
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Waarschuwing: glas te klein */}
+          {glassTooSmall && (
+            <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 text-orange-700 text-sm">
+              <span className="text-base leading-none mt-0.5 shrink-0">⚠️</span>
+              <span>
+                Deze cocktail is <strong>{Math.round(recipe.total_volume_ml)} ml</strong> maar het geselecteerde glas ({selectedGlass.name}) heeft een inhoud van slechts <strong>{selectedGlass.volume_ml} ml</strong>. Kies een groter glas.
+              </span>
             </div>
           )}
 

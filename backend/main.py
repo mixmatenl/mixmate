@@ -346,6 +346,19 @@ def delete_glass(glass_id: int, session: Session = Depends(get_session)):
     session.delete(glass); session.commit()
     return {"ok": True}
 
+@app.get("/api/glass-catalog")
+async def glass_catalog():
+    """Haalt de glazencatalogus op uit de MIXMATE webshop (cloud) en geeft deze terug aan de frontend."""
+    import httpx as _httpx
+    cloud_url = (os.environ.get("MIXMATE_CLOUD_URL") or "https://mixmate-cloud-production.up.railway.app").rstrip("/")
+    try:
+        async with _httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(f"{cloud_url}/api/glass-catalog")
+            r.raise_for_status()
+            return r.json()
+    except Exception:
+        return []
+
 
 # ── Categories ────────────────────────────────────────────────────────────────
 

@@ -2,15 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { api } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 
-const PRESET_GLASSES = [
-  { name: 'Shot', volume_ml: 40 },
-  { name: 'Tumbler klein', volume_ml: 200 },
-  { name: 'Tumbler groot', volume_ml: 300 },
-  { name: 'Highball', volume_ml: 350 },
-  { name: 'Cocktailglas', volume_ml: 180 },
-  { name: 'Longdrink', volume_ml: 400 },
-]
-
 function GlassIcon({ volume }) {
   const h = Math.min(100, Math.max(30, (volume / 500) * 100))
   return (
@@ -25,15 +16,27 @@ function GlassIcon({ volume }) {
 }
 
 export default function AdminGlasses() {
-  const [glasses, setGlasses] = useState([])
-  const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState(null)
-  const [form, setForm] = useState({ name: '', volume_ml: '' })
-  const [editForm, setEditForm] = useState({})
-  const [confirmId, setConfirmId] = useState(null)
+  const [glasses, setGlasses]         = useState([])
+  const [catalog, setCatalog]         = useState([])  // webshop-glazen
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [adding, setAdding]           = useState(false)
+  const [editId, setEditId]           = useState(null)
+  const [form, setForm]               = useState({ name: '', volume_ml: '' })
+  const [editForm, setEditForm]       = useState({})
+  const [confirmId, setConfirmId]     = useState(null)
 
   function load() { api.getGlasses().then(setGlasses).catch(() => {}) }
   useEffect(load, [])
+
+  useEffect(() => {
+    if (!adding) return
+    setCatalogLoading(true)
+    fetch('/api/glass-catalog')
+      .then(r => r.json())
+      .then(setCatalog)
+      .catch(() => setCatalog([]))
+      .finally(() => setCatalogLoading(false))
+  }, [adding])
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -41,6 +44,13 @@ export default function AdminGlasses() {
     try {
       await api.createGlass({ name: form.name, volume_ml: parseFloat(form.volume_ml) })
       setForm({ name: '', volume_ml: '' }); setAdding(false); load()
+    } catch (err) { alert('Fout: ' + err.message) }
+  }
+
+  async function addFromCatalog(item) {
+    try {
+      await api.createGlass({ name: item.name, volume_ml: item.volume_ml })
+      load()
     } catch (err) { alert('Fout: ' + err.message) }
   }
 
@@ -60,6 +70,8 @@ export default function AdminGlasses() {
     setEditId(g.id)
     setEditForm({ name: g.name, volume_ml: String(g.volume_ml) })
   }
+
+  const addedNames = new Set(glasses.map(g => g.name.toLowerCase()))
 
   const inp = "border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-gray-400 bg-white"
 
@@ -85,39 +97,88 @@ export default function AdminGlasses() {
         </button>
       </div>
 
-      {/* Snel toevoegen via presets */}
       {adding && (
-        <div className="border border-gray-200 rounded-2xl p-5 space-y-4 bg-gray-50">
-          <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Snel toevoegen</p>
-          <div className="flex flex-wrap gap-2">
-            {PRESET_GLASSES.map(p => (
-              <button key={p.name}
-                onClick={() => setForm({ name: p.name, volume_ml: String(p.volume_ml) })}
-                className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
-                  form.name === p.name
-                    ? 'bg-[#111] text-white border-[#111]'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-400'
-                }`}>
-                {p.name} <span className="text-xs opacity-60">{p.volume_ml}ml</span>
-              </button>
-            ))}
+        <div className="border border-gray-200 rounded-2xl p-5 space-y-5 bg-gray-50">
+
+          {/* Webshop glazen */}
+          <div>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-3">
+              Glazen uit de MIXMATE webshop
+            </p>
+            {catalogLoading ? (
+              <p className="text-gray-400 text-sm">Laden…</p>
+            ) : catalog.length === 0 ? (
+              <p className="text-gray-400 text-sm">Geen glazen gevonden in de webshop, of geen verbinding met de cloud.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {catalog.map(item => {
+                  const alreadyAdded = addedNames.has(item.name.toLowerCase())
+                  return (
+                    <button
+                      key={item.id}
+                      disabled={alreadyAdded}
+                      onClick={() => addFromCatalog(item)}
+                      className={`relative flex flex-col rounded-2xl border overflow-hidden text-left transition-all ${
+                        alreadyAdded
+                          ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                          : 'border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
+                      }`}
+                    >
+                      {/* Afbeelding */}
+                      <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-gray-300">
+                            <GlassIcon volume={item.volume_ml} />
+                          </div>
+                        )}
+                      </div>
+                      {/* Info */}
+                      <div className="p-3">
+                        <p className="text-gray-800 text-sm font-medium truncate">{item.name}</p>
+                        <p className="text-gray-400 text-xs">{item.volume_ml} ml</p>
+                      </div>
+                      {alreadyAdded && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          Toegevoegd
+                        </div>
+                      )}
+                      {!alreadyAdded && (
+                        <div className="absolute top-2 right-2 bg-[#111] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          + Toevoegen
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
-          <form onSubmit={handleAdd} className="flex gap-3">
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="Naam" className={`flex-1 ${inp}`} />
-            <input type="number" value={form.volume_ml} onChange={e => setForm(f => ({ ...f, volume_ml: e.target.value }))}
-              placeholder="ml" className={`w-24 ${inp}`} />
-            <button type="submit" className="px-4 py-2 bg-[#111] text-white text-sm font-medium rounded-lg hover:bg-[#333] transition-all">
-              Opslaan
-            </button>
-            <button type="button" onClick={() => setAdding(false)} className="px-3 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors">
-              Annuleer
-            </button>
-          </form>
+
+          {/* Eigen glas toevoegen */}
+          <div>
+            <p className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-3">Of voeg een eigen glas toe</p>
+            <form onSubmit={handleAdd} className="flex gap-3">
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Naam" className={`flex-1 ${inp}`} />
+              <input type="number" value={form.volume_ml} onChange={e => setForm(f => ({ ...f, volume_ml: e.target.value }))}
+                placeholder="ml" className={`w-24 ${inp}`} />
+              <button type="submit" className="px-4 py-2 bg-[#111] text-white text-sm font-medium rounded-lg hover:bg-[#333] transition-all">
+                Opslaan
+              </button>
+              <button type="button" onClick={() => setAdding(false)} className="px-3 py-2 text-gray-400 text-sm hover:text-gray-600 transition-colors">
+                Annuleer
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Glazenlijst */}
       {glasses.length === 0 && !adding && (
         <p className="text-gray-400 text-sm text-center py-10">Nog geen glazen ingesteld. Voeg er een toe.</p>
       )}

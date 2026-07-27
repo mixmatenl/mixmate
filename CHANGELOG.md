@@ -1,3 +1,15 @@
+## [5.0.0] - 2026-07-27
+### Gewijzigd
+- Glas bepaalt niet langer hoeveel er wordt geschonken — de machine volgt altijd de recepthoeveelheden
+- Glas-kiezen in het gieten-scherm schaalt cocktail niet meer op/af naar glasinhoud
+- Waarschuwing in gieten-scherm als geselecteerd glas te klein is voor de cocktail
+- Waarschuwing in receptbeheer als glas te klein is voor totaalvolume recept
+### Nieuw
+- "Snel toevoegen" voor glazen toont nu webshop-glazen (MIXMATE portaal) met foto
+- Eigen glazen toevoegen blijft mogelijk naast de webshop-glazen
+- Pi-backend haalt glazencatalogus op via `/api/glass-catalog` van de cloud
+- Cloud: `GlassProduct` heeft nu `volume_ml` veld voor machinekoppeling
+
 ## [4.9.19] - 2026-07-23
 ### Gewijzigd
 - Update-check start direct bij opstarten (geen 30s vertraging meer)

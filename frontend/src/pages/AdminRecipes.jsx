@@ -80,6 +80,10 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
   const removeStep = i  => setSteps(s => s.filter((_, idx) => idx !== i))
   const updateStep = (i, k, v) => setSteps(s => s.map((st, idx) => idx === i ? { ...st, [k]: v } : st))
 
+  const totalMl = steps.reduce((sum, s) => sum + (parseFloat(s.amount_ml) || 0), 0)
+  const selectedGlass = glassId ? glasses.find(g => g.id === parseInt(glassId)) : null
+  const glassTooSmall = selectedGlass && selectedGlass.volume_ml > 0 && totalMl > selectedGlass.volume_ml
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) { setError('Vul een naam in.'); return }
@@ -156,12 +160,22 @@ function RecipeForm({ recipe, ingredients, categories, glasses, onSave, onCancel
         </div>
         <div>
           <label className="text-xs text-gray-500 mb-1 block font-medium">Standaard glas</label>
-          <select value={glassId} onChange={e => setGlassId(e.target.value)} className={`${inp} cursor-pointer`}>
+          <select value={glassId} onChange={e => setGlassId(e.target.value)} className={`${inp} cursor-pointer ${glassTooSmall ? 'border-orange-400' : ''}`}>
             <option value="">— Geen —</option>
             {glasses.map(g => <option key={g.id} value={g.id}>{g.name} ({g.volume_ml}ml)</option>)}
           </select>
         </div>
       </div>
+      {glassTooSmall && (
+        <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-orange-700 text-sm">
+          <span className="text-base leading-none mt-0.5">⚠️</span>
+          <span>
+            Deze cocktail is <strong>{Math.round(totalMl)} ml</strong> maar het geselecteerde glas
+            ({selectedGlass.name}) heeft een inhoud van slechts <strong>{selectedGlass.volume_ml} ml</strong>.
+            Kies een groter glas of verklein de hoeveelheden.
+          </span>
+        </div>
+      )}
 
       {/* Ingrediënten */}
       <div className="space-y-2">
