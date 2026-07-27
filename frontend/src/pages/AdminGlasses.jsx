@@ -17,13 +17,15 @@ function GlassIcon({ volume }) {
 
 export default function AdminGlasses() {
   const [glasses, setGlasses]         = useState([])
-  const [catalog, setCatalog]         = useState([])  // webshop-glazen
+  const [catalog, setCatalog]         = useState([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [adding, setAdding]           = useState(false)
   const [editId, setEditId]           = useState(null)
   const [form, setForm]               = useState({ name: '', volume_ml: '' })
   const [editForm, setEditForm]       = useState({})
   const [confirmId, setConfirmId]     = useState(null)
+  // volumes die de gebruiker invult voor catalog-glazen zonder volume
+  const [catalogVolumes, setCatalogVolumes] = useState({})
 
   function load() { api.getGlasses().then(setGlasses).catch(() => {}) }
   useEffect(load, [])
@@ -48,8 +50,13 @@ export default function AdminGlasses() {
   }
 
   async function addFromCatalog(item) {
+    const vol = item.volume_ml > 0 ? item.volume_ml : parseFloat(catalogVolumes[item.id] || 0)
+    if (!vol || vol <= 0) {
+      alert('Vul eerst de inhoud (ml) in voor dit glas.')
+      return
+    }
     try {
-      await api.createGlass({ name: item.name, volume_ml: item.volume_ml })
+      await api.createGlass({ name: item.name, volume_ml: vol })
       load()
     } catch (err) { alert('Fout: ' + err.message) }
   }
@@ -113,47 +120,60 @@ export default function AdminGlasses() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {catalog.map(item => {
                   const alreadyAdded = addedNames.has(item.name.toLowerCase())
+                  const needsVolume  = !alreadyAdded && item.volume_ml <= 0
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      disabled={alreadyAdded}
-                      onClick={() => addFromCatalog(item)}
-                      className={`relative flex flex-col rounded-2xl border overflow-hidden text-left transition-all ${
-                        alreadyAdded
-                          ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                          : 'border-gray-200 bg-white hover:border-gray-400 hover:shadow-sm cursor-pointer'
+                      className={`relative flex flex-col rounded-2xl border overflow-hidden transition-all ${
+                        alreadyAdded ? 'border-gray-100 bg-gray-50 opacity-50' : 'border-gray-200 bg-white'
                       }`}
                     >
                       {/* Afbeelding */}
                       <div className="w-full aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                         {item.image_url ? (
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="text-gray-300">
-                            <GlassIcon volume={item.volume_ml} />
-                          </div>
+                          <div className="text-gray-300"><GlassIcon volume={200} /></div>
                         )}
                       </div>
-                      {/* Info */}
-                      <div className="p-3">
+
+                      {/* Info + eventueel volume-invoer */}
+                      <div className="p-3 space-y-2">
                         <p className="text-gray-800 text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-gray-400 text-xs">{item.volume_ml} ml</p>
+
+                        {!alreadyAdded && item.volume_ml > 0 && (
+                          <p className="text-gray-400 text-xs">{item.volume_ml} ml</p>
+                        )}
+
+                        {needsVolume && (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              placeholder="ml"
+                              value={catalogVolumes[item.id] || ''}
+                              onChange={e => setCatalogVolumes(v => ({ ...v, [item.id]: e.target.value }))}
+                              onClick={e => e.stopPropagation()}
+                              className={`w-full ${inp} text-xs py-1`}
+                            />
+                          </div>
+                        )}
+
+                        {!alreadyAdded && (
+                          <button
+                            onClick={() => addFromCatalog(item)}
+                            className="w-full py-1.5 bg-[#111] text-white text-xs font-semibold rounded-lg hover:bg-[#333] transition-all"
+                          >
+                            + Toevoegen
+                          </button>
+                        )}
                       </div>
+
                       {alreadyAdded && (
                         <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                           Toegevoegd
                         </div>
                       )}
-                      {!alreadyAdded && (
-                        <div className="absolute top-2 right-2 bg-[#111] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          + Toevoegen
-                        </div>
-                      )}
-                    </button>
+                    </div>
                   )
                 })}
               </div>
