@@ -350,7 +350,8 @@ def delete_glass(glass_id: int, session: Session = Depends(get_session)):
 async def glass_catalog():
     """Haalt de glazencatalogus op uit de MIXMATE webshop (cloud) en geeft deze terug aan de frontend."""
     import httpx as _httpx
-    cloud_url = (os.environ.get("MIXMATE_CLOUD_URL") or "https://mixmate-cloud-production.up.railway.app").rstrip("/")
+    raw = (os.environ.get("MIXMATE_CLOUD_URL") or "https://mixmate-cloud-production.up.railway.app").rstrip("/")
+    cloud_url = raw.replace("wss://", "https://").replace("ws://", "http://")
     try:
         async with _httpx.AsyncClient(timeout=5) as client:
             r = await client.get(f"{cloud_url}/api/glass-catalog")
