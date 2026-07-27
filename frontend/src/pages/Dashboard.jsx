@@ -378,14 +378,16 @@ function ImageWithFallback({ recipe }) {
 
 /* ── Cocktail card ───────────────────────────────────────────────────── */
 function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite, isPopular }) {
-  const canMake = recipe.partially_available
+  const canMake   = recipe.partially_available
+  const blocked   = recipe.cooldown_blocked
+  const clickable = canMake && !blocked
 
   return (
     <div
-      onTouchEnd={e => { if (!window.__dragScrollDidScroll?.() && canMake) { e.preventDefault(); onMake(recipe) } }}
-      onClick={() => { if (!window.__dragScrollDidScroll?.() && canMake) onMake(recipe) }}
+      onTouchEnd={e => { if (!window.__dragScrollDidScroll?.() && clickable) { e.preventDefault(); onMake(recipe) } }}
+      onClick={() => { if (!window.__dragScrollDidScroll?.() && clickable) onMake(recipe) }}
       className={`card-pressable relative w-full text-left rounded-3xl overflow-hidden ${
-        canMake ? '' : 'opacity-30 cursor-not-allowed'
+        !canMake ? 'opacity-30 cursor-not-allowed' : blocked ? 'cursor-not-allowed' : ''
       }`}
       style={{
         background: 'var(--bg-card)',
@@ -436,8 +438,23 @@ function CocktailCard({ recipe, onMake, isFavorite, onToggleFavorite, isPopular 
           {recipe.name}
         </h3>
 
+        {/* Cooldown-blokkering banner */}
+        {blocked && (
+          <div style={{
+            marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6,
+            padding: '5px 10px', borderRadius: 20,
+            background: 'rgba(255,149,0,0.12)',
+            border: '1px solid rgba(255,149,0,0.25)',
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" strokeWidth="2.5" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#ff9f0a' }}>Leiding in spoelroutine</span>
+          </div>
+        )}
+
         {/* Status badge */}
-        {canMake && (
+        {canMake && !blocked && (
           <div style={{ marginBottom: 10 }}>
             {recipe.fully_automatic ? (
               <span style={{

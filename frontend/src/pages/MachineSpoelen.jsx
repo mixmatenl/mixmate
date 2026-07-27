@@ -331,36 +331,30 @@ export default function MachineSpoelen() {
   const cooldownRef = useRef(null)
   const pollRef     = useRef(null)
 
-  // Laad pompen (alleen peristaltisch)
+  // Laad pompen (alleen peristaltisch) — geen auto-selectie
   useEffect(() => {
     fetch('/api/pumps/simple').then(r => r.json())
       .then(ps => {
         const water = ps.filter(p => p.pump_type !== 'valve' && p.enabled !== false)
         setPumps(water)
-        setSelected(water.map(p => p.slot))
+        // Geen setSelected — gebruiker kiest zelf welke leidingen op water zijn
       })
       .catch(() => setPumps([]))
   }, [])
 
-  // Cooldown poller
+  // Cooldown poller — altijd actief (ook op selectiepagina voor blokkade-sectie)
   const pollCooldown = useCallback(async () => {
     try {
       const cd = await api.getCooldownStatus()
       setCooldowns(cd)
-      // Als alle cooldowns voorbij zijn én we in cooldown-fase zitten → toon klaar-state
-      if (cd.length === 0 && phase === PHASE.COOLDOWN) {
-        // Blijf in cooldown-fase zodat gebruiker nog steeds doorspoelen-knoppen ziet
-      }
     } catch {}
     cooldownRef.current = setTimeout(pollCooldown, 1000)
-  }, [phase])
+  }, [])
 
   useEffect(() => {
-    if (phase === PHASE.COOLDOWN) {
-      pollCooldown()
-      return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
-    }
-  }, [phase, pollCooldown])
+    pollCooldown()
+    return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
+  }, [])
 
   // Flush starten
   async function startFlush() {
@@ -471,28 +465,69 @@ export default function MachineSpoelen() {
   }
 
   // ── Fase 1: Selectie ─────────────────────────────────────────────────────────
-  const durations   = Object.fromEntries((pumps || []).map(p => [p.slot, calcFlushDuration(p.slot)]))
-  const totalSec    = selected.reduce((s, slot) => s + (durations[slot] || 6), 0)
   const allSelected = pumps && selected.length === pumps.length
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px', background: 'var(--bg)' }}>
+
+      {/* Geblokkeerde leidingen */}
+      {cooldowns.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
+            Geblokkeerde leidingen
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {cooldowns.map(cd => (
+              <div key={cd.slot} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--bg-card)', borderRadius: 14, padding: '12px 16px',
+                border: '1px solid rgba(255,149,0,0.2)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10,
+                    background: 'rgba(255,149,0,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff9500" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                      {cd.ingredient_name || `Leiding ${cd.slot}`}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Leiding {cd.slot}</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#ff9500', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(cd.remaining_seconds)}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>geblokkeerd</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, margin: 0 }}>
             Spoelen
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.5 }}>
-            Selecteer de leidingen op water.
+            Selecteer de leidingen die op water zitten.
           </p>
         </div>
-        {pumps && pumps.length > 0 && (
-          <button onClick={toggleAll} style={{
-            fontSize: 13, fontWeight: 600, color: 'var(--blue)',
+        {pumps && pumps.length > 0 && selected.length > 0 && (
+          <button onClick={() => setSelected([])} style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)',
             background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             padding: '6px 0', flexShrink: 0, marginTop: 4,
           }}>
-            {allSelected ? 'Geen' : 'Alle'}
+            Wis selectie
           </button>
         )}
       </div>

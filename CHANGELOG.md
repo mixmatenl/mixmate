@@ -1,3 +1,10 @@
+## [5.6.0] - 2026-07-28
+### Gewijzigd
+- MachineSpoelen: geen auto-selectie meer bij laden — gebruiker kiest zelf welke leidingen op water staan
+- MachineSpoelen: "Geblokkeerde leidingen" sectie bovenaan met afteltimer per geblokkeerde leiding
+- Dashboard: recepten met `cooldown_blocked=true` zijn niet aanklikbaar + tonen oranje "Leiding in spoelroutine" badge
+- Spoelduur portaal: vaste 6s (was variabele formule op basis van slot/dagen)
+
 ## [5.5.0] - 2026-07-28
 ### Nieuw
 - Machine lifecycle: drie staten — `factory` (alleen backoffice), `setup` (installatiewizard), `ready` (normaal)
