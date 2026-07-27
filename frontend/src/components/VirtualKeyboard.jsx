@@ -204,43 +204,59 @@ export function VirtualKeyboard({ target, onClose }) {
   )
 }
 
+function isVkInput(el) {
+  return (
+    !el.dataset.nativeKeyboard &&
+    (
+      (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox' && el.type !== 'radio' && el.type !== 'file') ||
+      el.tagName === 'TEXTAREA'
+    )
+  )
+}
+
 export function VirtualKeyboardProvider({ children }) {
   const [target, setTarget] = useState(null)
 
   useEffect(() => {
+    // touchstart: onderdrukt native keyboard vóórdat de browser het kan openen
+    function onTouchStart(e) {
+      const el = e.target
+      if (!isVkInput(el)) return
+      if (el._vkInputModeSaved) return          // al verwerkt
+      el._vkInputModeSaved = el.getAttribute('inputmode') || ''
+      el.setAttribute('inputmode', 'none')
+    }
+
     function onFocus(e) {
       const el = e.target
-      if (
-        (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox' && el.type !== 'radio' && el.type !== 'file') ||
-        el.tagName === 'TEXTAREA'
-      ) {
-        // Onderdruk het native toetsenbord zodat alleen de VirtualKeyboard zichtbaar is
-        if (!el.dataset.nativeKeyboard) {
-          el._prevInputMode = el.getAttribute('inputmode') || ''
-          el.setAttribute('inputmode', 'none')
-        }
-        setTarget(el)
+      if (!isVkInput(el)) return
+      // Sla inputmode op als touchstart dat nog niet deed
+      if (!el._vkInputModeSaved && el._vkInputModeSaved !== '') {
+        el._vkInputModeSaved = el.getAttribute('inputmode') || ''
+        el.setAttribute('inputmode', 'none')
       }
+      setTarget(el)
     }
 
     function onFocusOut(e) {
       const el = e.target
-      // Herstel inputmode zodat het veld weer normaal werkt buiten context
-      if (el._prevInputMode !== undefined) {
-        if (el._prevInputMode) {
-          el.setAttribute('inputmode', el._prevInputMode)
+      if (el._vkInputModeSaved !== undefined) {
+        if (el._vkInputModeSaved) {
+          el.setAttribute('inputmode', el._vkInputModeSaved)
         } else {
           el.removeAttribute('inputmode')
         }
-        delete el._prevInputMode
+        delete el._vkInputModeSaved
       }
     }
 
-    document.addEventListener('focusin', onFocus)
-    document.addEventListener('focusout', onFocusOut)
+    document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true })
+    document.addEventListener('focusin',    onFocus)
+    document.addEventListener('focusout',   onFocusOut)
     return () => {
-      document.removeEventListener('focusin', onFocus)
-      document.removeEventListener('focusout', onFocusOut)
+      document.removeEventListener('touchstart', onTouchStart, { capture: true })
+      document.removeEventListener('focusin',    onFocus)
+      document.removeEventListener('focusout',   onFocusOut)
     }
   }, [])
 

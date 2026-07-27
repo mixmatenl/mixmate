@@ -1,3 +1,11 @@
+## [5.3.0] - 2026-07-28
+### Fixes
+- VirtualKeyboard: touchstart-listener (capture) onderdrukt native keyboard vóórdat de browser het opent — dubbel toetsenbord definitief verholpen
+### Nieuw
+- MachineSpoelen: volledig herontworpen — checkboxlijst per leiding, directe tijdschatting, CO₂-leidingen automatisch overgeslagen
+- MachineSpoelen: resultaatkaart na afloop (voltooid / gewichtsbeveiliging / fout)
+- FlushOverlay: verbeterde cirkelvoortgang + per-leiding balk; gewichtsstop-melding 4s zichtbaar na stoppen
+
 ## [5.2.2] - 2026-07-27
 ### Gewijzigd
 - Spoelroutine sneller: inter-pomp pauze 1.0s → 0.2s, poll-interval 0.5s → 0.1s
