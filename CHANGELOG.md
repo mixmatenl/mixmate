@@ -1,3 +1,11 @@
+## [5.1.1] - 2026-07-27
+### Fixes
+- Glazencatalogus: SSL-verificatie uitgeschakeld (zelfde als cloud_client) zodat Pi de webshop-glazen kan ophalen
+- Glazencatalogus: foutmelding nu zichtbaar in backend-log voor debugging
+- AdminIngredients: foto-upload via label-trigger (werkt altijd op touchscreen)
+- AdminIngredients: naam bewerken door direct op naam te tikken
+- VirtualKeyboard: native tablet-toetsenbord onderdrukt via inputmode=none
+
 ## [5.1.0] - 2026-07-27
 ### Nieuw
 - Ingrediënten: foto toevoegen via upload (wordt opgeslagen op de Pi)

@@ -353,11 +353,12 @@ async def glass_catalog():
     raw = (os.environ.get("MIXMATE_CLOUD_URL") or "https://mixmate-cloud-production.up.railway.app").rstrip("/")
     cloud_url = raw.replace("wss://", "https://").replace("ws://", "http://")
     try:
-        async with _httpx.AsyncClient(timeout=5) as client:
+        async with _httpx.AsyncClient(timeout=8, verify=False) as client:
             r = await client.get(f"{cloud_url}/api/glass-catalog")
             r.raise_for_status()
             return r.json()
-    except Exception:
+    except Exception as e:
+        log.warning(f"glass-catalog fetch mislukt: {e}")
         return []
 
 
