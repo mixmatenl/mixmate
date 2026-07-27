@@ -534,6 +534,8 @@ def _start_new_session():
         _current_session_id = s.id
 
 
+FLUSH_WEIGHT_LIMIT_G = 2000  # Weegschaal-beveiliging: stop onmiddellijk boven 2 kg
+
 async def _run_flush_task(pumps: list):
     """Achtergrondtaak: bestuurt GPIO en houdt _flush_state bij."""
     global _flush_state
@@ -548,6 +550,7 @@ async def _run_flush_task(pumps: list):
                 "current_duration": duration, "elapsed": 0,
             })
 
+            weight_stop = False
             try:
                 gpio.setup_pin(gpio_pin)
                 gpio.activate(gpio_pin)
@@ -556,12 +559,26 @@ async def _run_flush_task(pumps: list):
                     elapsed = time.monotonic() - start
                     if elapsed >= duration:
                         break
+                    # Weegschaal-beveiliging: > 2 kg → direct stoppen
+                    weight_g = loadcell.get_weight_grams()
+                    if weight_g > FLUSH_WEIGHT_LIMIT_G:
+                        log.warning("Spoelbeveiliging: %.0fg > %dg — leiding %s gestopt", weight_g, FLUSH_WEIGHT_LIMIT_G, slot)
+                        weight_stop = True
+                        break
                     _flush_state["elapsed"] = round(elapsed, 1)
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.1)
             finally:
                 gpio.deactivate(gpio_pin)
 
-            await asyncio.sleep(1.0)
+            if weight_stop:
+                _flush_state = {
+                    "active": False, "total": len(pumps), "done": i,
+                    "weight_stop": True,
+                    "error": f"Gestopt: gewicht boven {FLUSH_WEIGHT_LIMIT_G // 1000} kg (weegschaalbeveiliging)",
+                }
+                return
+
+            await asyncio.sleep(0.2)
 
         _flush_state = {"active": False, "total": len(pumps), "done": len(pumps)}
     except Exception as e:

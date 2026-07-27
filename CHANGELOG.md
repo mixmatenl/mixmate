@@ -1,3 +1,9 @@
+## [5.2.2] - 2026-07-27
+### Gewijzigd
+- Spoelroutine sneller: inter-pomp pauze 1.0s → 0.2s, poll-interval 0.5s → 0.1s
+### Nieuw
+- Weegschaalbeveiliging tijdens spoelen: > 2 kg → huidige pomp direct stoppen en routine afbreken
+
 ## [5.2.1] - 2026-07-27
 ### Fixes
 - cloud_client: update_pump stuurt nu naar PATCH /api/pumps/{id} zodat pump_type correct wordt opgeslagen (was /ingredient-only endpoint)
