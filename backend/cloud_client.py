@@ -198,7 +198,7 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 return {"req_id": req_id, "items": r.json()}
 
             elif msg_type == "update_pump":
-                r = await c.patch(f"{LOCAL}/api/pumps/{message['id']}/ingredient", json=message.get("data", {}))
+                r = await c.patch(f"{LOCAL}/api/pumps/{message['id']}", json=message.get("data", {}))
                 return {"req_id": req_id, "ok": r.status_code < 300}
 
             # ── Instellingen ─────────────────────────────────────────────────

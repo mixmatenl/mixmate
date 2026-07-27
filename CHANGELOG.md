@@ -1,3 +1,7 @@
+## [5.2.1] - 2026-07-27
+### Fixes
+- cloud_client: update_pump stuurt nu naar PATCH /api/pumps/{id} zodat pump_type correct wordt opgeslagen (was /ingredient-only endpoint)
+
 ## [5.2.0] - 2026-07-27
 ### Nieuw
 - Pompen: valve/CO₂-leidingen zichtbaar gemaakt met blauw CO₂-badge op kaart
