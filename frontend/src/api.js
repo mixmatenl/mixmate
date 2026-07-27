@@ -91,6 +91,16 @@ export const api = {
   // Demo mode sync
   getDemoStatus: () => request('GET', '/demo/status'),
   exitDemoSlideshow: () => request('POST', '/demo/exit-slideshow'),
+
+  // Cooldown (na spoelen)
+  getCooldownStatus: () => request('GET', '/pumps/cooldown-status'),
+
+  // Doorspoelen (prime) — ingrediënt door leiding pompen na spoelen
+  primeStart:  (slot) => request('POST', `/pumps/${slot}/prime/start`),
+  primePause:  (slot) => request('POST', `/pumps/${slot}/prime/pause`),
+  primeResume: (slot) => request('POST', `/pumps/${slot}/prime/resume`),
+  primeStop:   (slot) => request('POST', `/pumps/${slot}/prime/stop`),
+  getPrimeStatus: () => request('GET', '/pumps/prime-status'),
 }
 
 export function createPourSocket(recipeId, scale, onMessage) {

@@ -1,137 +1,374 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { api } from '../api'
 
-function calcFlushDuration(slot, daysSince) {
-  const base         = 4
-  const lineFactor   = slot * 0.4
-  const contamFactor = Math.min(daysSince * 0.5, 6)
-  const variance     = (slot % 3) - 1
-  return Math.max(3, Math.round(base + lineFactor + contamFactor + variance))
+// ── helpers ────────────────────────────────────────────────────────────────────
+
+function gradientFor(name) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffff
+  const hue = h % 360
+  return `linear-gradient(160deg, hsl(${hue},55%,22%), hsl(${(hue+50)%360},65%,36%))`
 }
 
-// Checkbox-achtige toggle-knop per leiding
-function PumpRow({ pump, on, dur, onToggle }) {
-  const color = dur <= 6 ? 'var(--green)' : dur <= 9 ? 'var(--orange)' : 'var(--red)'
+function calcFlushDuration(_slot) {
+  return 6  // vaste 6s per leiding — genoeg om schoonmaakmiddel door te spoelen
+}
+
+function fmt(s) {
+  const m = Math.floor(s / 60), sec = s % 60
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`
+}
+
+// ── PompKaart — fase 1: selectie ───────────────────────────────────────────────
+
+function SelectCard({ pump, selected, onToggle }) {
+  const ing = pump.ingredient
+  const bg  = ing?.image_url
+    ? undefined
+    : ing ? gradientFor(ing.name) : 'linear-gradient(160deg,#1c1c1e,#2c2c2e)'
+
   return (
     <button
       onClick={onToggle}
       style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        width: '100%', padding: '14px 18px',
-        background: on ? 'rgba(0,122,255,0.05)' : 'transparent',
-        border: 'none', borderBottom: '1px solid var(--border)',
-        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-        transition: 'background .12s',
+        position: 'relative', borderRadius: 20, overflow: 'hidden',
+        aspectRatio: '3/4', border: 'none', padding: 0,
+        cursor: 'pointer', fontFamily: 'inherit',
+        outline: selected ? '3px solid var(--blue)' : '3px solid transparent',
+        outlineOffset: 2,
+        boxShadow: selected
+          ? '0 0 0 5px rgba(0,122,255,0.18), 0 4px 16px rgba(0,0,0,0.18)'
+          : '0 2px 8px rgba(0,0,0,0.10)',
+        transition: 'outline .12s, box-shadow .12s, transform .12s',
+        transform: selected ? 'scale(1.03)' : 'scale(1)',
+        background: bg,
       }}
     >
-      {/* Checkbox */}
+      {/* Afbeelding of gradiënt */}
+      {ing?.image_url && (
+        <img src={ing.image_url} alt={ing.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      )}
+
+      {/* Donker verloop */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)' }} />
+
+      {/* Slot badge */}
       <div style={{
-        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-        border: `2px solid ${on ? 'var(--blue)' : 'rgba(0,0,0,0.18)'}`,
-        background: on ? 'var(--blue)' : 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all .12s',
+        position: 'absolute', top: 10, left: 10,
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)',
+        borderRadius: 20, padding: '3px 9px',
+        fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: 1,
       }}>
-        {on && (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        )}
+        L{pump.slot}
       </div>
 
-      {/* Label */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: -0.1 }}>
-          Leiding {pump.slot}
-        </div>
-        {pump.ingredient?.name && (
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {pump.ingredient.name}
-          </div>
-        )}
-      </div>
-
-      {/* Duur badge */}
-      {on && (
+      {/* Check badge */}
+      {selected && (
         <div style={{
-          fontSize: 12, fontWeight: 700, color,
-          background: `${color}18`, borderRadius: 20, padding: '3px 10px', flexShrink: 0,
+          position: 'absolute', top: 10, right: 10,
+          width: 22, height: 22, borderRadius: 11,
+          background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {dur}s
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       )}
+
+      {/* Naam onderaan */}
+      <div style={{ position: 'absolute', bottom: 10, left: 10, right: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+          {ing?.name || <span style={{ color: 'rgba(255,255,255,0.35)' }}>Leeg</span>}
+        </div>
+      </div>
     </button>
   )
 }
 
+// ── CooldownKaart — fase 2 ─────────────────────────────────────────────────────
+
+function CooldownCard({ pump, remaining, onPrime }) {
+  const ing    = pump.ingredient
+  const done   = remaining <= 0
+  const bg     = ing?.image_url ? undefined : ing ? gradientFor(ing.name) : 'linear-gradient(160deg,#1c1c1e,#2c2c2e)'
+  const pct    = done ? 100 : 0  // we tonen done=klaar, anders wachten
+
+  return (
+    <div style={{
+      position: 'relative', borderRadius: 20, overflow: 'hidden',
+      aspectRatio: '3/4', boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+      background: bg,
+    }}>
+      {ing?.image_url && (
+        <img src={ing.image_url} alt={ing.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      )}
+
+      {/* Overlay: donker als in cooldown */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: done
+          ? 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 100%)'
+          : 'linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.55) 100%)',
+        transition: 'background .4s',
+      }} />
+
+      {/* Slot badge */}
+      <div style={{
+        position: 'absolute', top: 10, left: 10,
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)',
+        borderRadius: 20, padding: '3px 9px',
+        fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: 1,
+      }}>
+        L{pump.slot}
+      </div>
+
+      {/* Midden: timer of klaar-icoon */}
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4,
+      }}>
+        {done ? (
+          <div style={{ width: 40, height: 40, borderRadius: 20, background: 'rgba(52,199,89,0.2)', border: '1.5px solid rgba(52,199,89,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34c759" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: -0.5, lineHeight: 1 }}>
+              {fmt(remaining)}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              wachten
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Naam + knop onderaan */}
+      <div style={{ position: 'absolute', bottom: 10, left: 10, right: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: done ? '#fff' : 'rgba(255,255,255,0.55)', marginBottom: done ? 8 : 0, lineHeight: 1.2 }}>
+          {ing?.name || '—'}
+        </div>
+        {done && (
+          <button onClick={onPrime} style={{
+            width: '100%', padding: '8px 0',
+            background: 'rgba(52,199,89,0.85)', color: '#fff',
+            border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            Doorspoelen
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Doorspoelen-overlay ────────────────────────────────────────────────────────
+
+function PrimeOverlay({ pump, onDone }) {
+  const [status,  setStatus]  = useState({ active: false, paused: false, elapsed: 0 })
+  const [started, setStarted] = useState(false)
+  const [error,   setError]   = useState(null)
+  const pollRef = useRef(null)
+  const ing = pump.ingredient
+
+  const stopPolling = () => { if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null } }
+
+  const poll = useCallback(async () => {
+    try {
+      const s = await api.getPrimeStatus()
+      setStatus(s)
+      if (!s.active && s.done) {
+        stopPolling()
+      } else {
+        pollRef.current = setTimeout(poll, 200)
+      }
+    } catch { pollRef.current = setTimeout(poll, 500) }
+  }, [])
+
+  useEffect(() => () => stopPolling(), [])
+
+  async function start() {
+    try {
+      await api.primeStart(pump.slot)
+      setStarted(true)
+      setError(null)
+      poll()
+    } catch (e) { setError(e.message) }
+  }
+
+  async function pause()  { try { await api.primePause(pump.slot) } catch {} }
+  async function resume() { try { await api.primeResume(pump.slot) } catch {} }
+  async function stop()   {
+    try { await api.primeStop(pump.slot) } catch {}
+    stopPolling()
+    onDone()
+  }
+
+  const bg = ing?.image_url ? undefined : ing ? gradientFor(ing.name) : 'linear-gradient(160deg,#08080f,#0b1525)'
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9998,
+      background: 'linear-gradient(160deg, #08080f 0%, #0b1525 100%)',
+      display: 'flex', flexDirection: 'column',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    }}>
+      {/* Header met afbeelding */}
+      <div style={{ position: 'relative', height: 220, flexShrink: 0, background: bg }}>
+        {ing?.image_url && (
+          <img src={ing.image_url} alt={ing.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(8,8,15,0.2), rgba(8,8,15,0.9))' }} />
+        <div style={{ position: 'absolute', bottom: 20, left: 24, right: 24 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: 4 }}>
+            Leiding {pump.slot} · Doorspoelen
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: -0.5 }}>
+            {ing?.name || 'Leeg'}
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* Instructie */}
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: '16px 18px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
+            Instructie
+          </div>
+          <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {['Sluit de leiding aan op het ingrediënt.', 'Druk op Start — de pomp begint te pompen.', 'Lekbak vol? Druk op Pauze om te legen.', 'Druk op Stop zodra er puur ingrediënt uitkomt.'].map((t, i) => (
+              <li key={i} style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{t}</li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Lekbak-waarschuwing tijdens actief pompen */}
+        {status.active && !status.paused && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.25)', borderRadius: 12, padding: '12px 16px' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff9500" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>Dreigt de lekbak vol te raken? Druk op <strong>Pauze</strong>.</div>
+          </div>
+        )}
+
+        {/* Fout */}
+        {error && (
+          <div style={{ background: 'rgba(255,59,48,0.1)', border: '1px solid rgba(255,59,48,0.25)', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#ff6b6b' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Timer */}
+        {started && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 48, fontWeight: 800, color: '#fff', letterSpacing: -2, lineHeight: 1 }}>
+              {fmt(Math.floor(status.elapsed || 0))}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 6, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {status.paused ? 'Gepauzeerd' : status.active ? 'Actief' : 'Klaar'}
+            </div>
+          </div>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Knoppen */}
+        {!started ? (
+          <button onClick={start} style={{
+            width: '100%', padding: '17px', fontSize: 16, fontWeight: 700,
+            background: '#34c759', color: '#fff', border: 'none', borderRadius: 16,
+            cursor: 'pointer', fontFamily: 'inherit', letterSpacing: -0.2,
+            boxShadow: '0 4px 20px rgba(52,199,89,0.35)',
+          }}>
+            Start doorspoelen
+          </button>
+        ) : (
+          <div style={{ display: 'flex', gap: 10 }}>
+            {status.active && !status.paused && (
+              <button onClick={pause} style={{
+                flex: 1, padding: '15px', fontSize: 15, fontWeight: 700,
+                background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Pauze
+              </button>
+            )}
+            {status.paused && (
+              <button onClick={resume} style={{
+                flex: 1, padding: '15px', fontSize: 15, fontWeight: 700,
+                background: 'rgba(52,199,89,0.15)', color: '#34c759', border: '1px solid rgba(52,199,89,0.3)',
+                borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Hervatten
+              </button>
+            )}
+            <button onClick={stop} style={{
+              flex: 1, padding: '15px', fontSize: 15, fontWeight: 700,
+              background: '#1c1c1e', color: '#fff', border: 'none',
+              borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            }}>
+              Stop
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Hoofdpagina ────────────────────────────────────────────────────────────────
+
+const PHASE = { SELECT: 'select', COOLDOWN: 'cooldown', PRIME: 'prime' }
+
 export default function MachineSpoelen() {
-  const [pumps,    setPumps]    = useState(null)
-  const [selected, setSelected] = useState([])
-  const [flushing, setFlushing] = useState(false)
-  const [result,   setResult]   = useState(null) // { ok, weight, msg }
-  const pollRef    = useRef(null)
-  const sawActive  = useRef(false)
-  const pollStart  = useRef(0)
+  const [pumps,      setPumps]      = useState(null)
+  const [selected,   setSelected]   = useState([])
+  const [phase,      setPhase]      = useState(PHASE.SELECT)
+  const [flushing,   setFlushing]   = useState(false)
+  const [flushError, setFlushError] = useState(null)
+  const [cooldowns,  setCooldowns]  = useState([])  // [{slot, remaining_seconds, ingredient_name}]
+  const [primeSlot,  setPrimeSlot]  = useState(null)
+  const cooldownRef = useRef(null)
+  const pollRef     = useRef(null)
 
-  const daysSince = 30  // conservatieve schatting; portaal heeft nauwkeurigere data
-
+  // Laad pompen (alleen peristaltisch)
   useEffect(() => {
-    fetch('/api/pumps/simple')
-      .then(r => r.json())
+    fetch('/api/pumps/simple').then(r => r.json())
       .then(ps => {
-        const waterPumps = ps.filter(p => p.pump_type !== 'valve' && p.enabled !== false)
-        setPumps(waterPumps)
-        setSelected(waterPumps.map(p => p.slot))
+        const water = ps.filter(p => p.pump_type !== 'valve' && p.enabled !== false)
+        setPumps(water)
+        setSelected(water.map(p => p.slot))
       })
       .catch(() => setPumps([]))
   }, [])
 
-  function stopPolling() {
-    if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
-  }
-
-  function startPolling() {
-    sawActive.current  = false
-    pollStart.current  = Date.now()
-
-    async function tick() {
-      try {
-        const s = await fetch('/api/pumps/flush-status').then(r => r.json())
-        if (s.active) {
-          sawActive.current = true
-          pollRef.current = setTimeout(tick, 300)
-        } else if (sawActive.current) {
-          setFlushing(false)
-          if (s.weight_stop) {
-            setResult({ ok: false, weight: true, msg: 'Gestopt: gewicht boven 2 kg. De weegschaalbeveiliging heeft de spoelroutine onderbroken.' })
-          } else if (s.error) {
-            setResult({ ok: false, msg: s.error })
-          } else {
-            setResult({ ok: true })
-          }
-        } else if (Date.now() - pollStart.current > 30000) {
-          setFlushing(false)
-          setResult({ ok: false, msg: 'Machine reageert niet. Controleer of de Pi online is.' })
-        } else {
-          pollRef.current = setTimeout(tick, 500)
-        }
-      } catch {
-        setFlushing(false)
+  // Cooldown poller
+  const pollCooldown = useCallback(async () => {
+    try {
+      const cd = await api.getCooldownStatus()
+      setCooldowns(cd)
+      // Als alle cooldowns voorbij zijn én we in cooldown-fase zitten → toon klaar-state
+      if (cd.length === 0 && phase === PHASE.COOLDOWN) {
+        // Blijf in cooldown-fase zodat gebruiker nog steeds doorspoelen-knoppen ziet
       }
+    } catch {}
+    cooldownRef.current = setTimeout(pollCooldown, 1000)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === PHASE.COOLDOWN) {
+      pollCooldown()
+      return () => { if (cooldownRef.current) clearTimeout(cooldownRef.current) }
     }
-    pollRef.current = setTimeout(tick, 400)
-  }
+  }, [phase, pollCooldown])
 
-  useEffect(() => () => stopPolling(), [])
-
+  // Flush starten
   async function startFlush() {
     if (!selected.length) return
-    const durations = Object.fromEntries((pumps || []).map(p => [p.slot, calcFlushDuration(p.slot, daysSince)]))
+    const durations = Object.fromEntries((pumps || []).map(p => [p.slot, calcFlushDuration(p.slot)]))
     const payload   = selected.map(slot => ({ slot, duration: durations[slot] || 6 }))
-
     setFlushing(true)
-    setResult(null)
-    stopPolling()
-
+    setFlushError(null)
     try {
       const r = await fetch('/api/pumps/flush-all', {
         method: 'POST',
@@ -140,14 +377,29 @@ export default function MachineSpoelen() {
       })
       if (!r.ok) {
         const err = await r.json().catch(() => ({}))
+        setFlushError(err.detail || 'Onbekende fout')
         setFlushing(false)
-        setResult({ ok: false, msg: err.detail || 'Onbekende fout' })
         return
       }
-      startPolling()
-    } catch (e) {
+      // Wacht tot flush klaar is, dan naar cooldown-fase
+      await waitForFlushDone()
       setFlushing(false)
-      setResult({ ok: false, msg: e.message })
+      setPhase(PHASE.COOLDOWN)
+    } catch (e) {
+      setFlushError(e.message)
+      setFlushing(false)
+    }
+  }
+
+  async function waitForFlushDone() {
+    let sawActive = false
+    for (let i = 0; i < 600; i++) {
+      await new Promise(r => setTimeout(r, 500))
+      try {
+        const s = await fetch('/api/pumps/flush-status').then(r => r.json())
+        if (s.active) sawActive = true
+        if (!s.active && sawActive) return s
+      } catch {}
     }
   }
 
@@ -160,118 +412,131 @@ export default function MachineSpoelen() {
     setSelected(s => s.length === pumps.length ? [] : pumps.map(p => p.slot))
   }
 
-  const durations  = Object.fromEntries((pumps || []).map(p => [p.slot, calcFlushDuration(p.slot, daysSince)]))
-  const totalSec   = selected.reduce((s, slot) => s + (durations[slot] || 6), 0)
+  // ── Prime overlay ────────────────────────────────────────────────────────────
+  if (primeSlot !== null) {
+    const pump = pumps?.find(p => p.slot === primeSlot)
+    if (pump) {
+      return (
+        <PrimeOverlay
+          pump={pump}
+          onDone={() => { setPrimeSlot(null) }}
+        />
+      )
+    }
+  }
+
+  // ── Fase 2: Cooldown ─────────────────────────────────────────────────────────
+  if (phase === PHASE.COOLDOWN) {
+    const flushedPumps = pumps?.filter(p => selected.includes(p.slot)) || []
+    const cooldownMap  = Object.fromEntries(cooldowns.map(c => [c.slot, c.remaining_seconds]))
+    const allDone      = flushedPumps.every(p => !cooldownMap[p.slot] || cooldownMap[p.slot] <= 0)
+
+    return (
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px', background: 'var(--bg)' }}>
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, margin: 0 }}>
+            Klaarmaken
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.5 }}>
+            {allDone
+              ? 'Alle leidingen zijn vrij. Sluit ze aan op de ingrediënten en spoel door.'
+              : 'De gespoelde leidingen blokkeren tijdelijk. Sluit ze ondertussen aan op de ingrediënten.'}
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
+          {flushedPumps.map(pump => (
+            <CooldownCard
+              key={pump.slot}
+              pump={pump}
+              remaining={Math.max(0, cooldownMap[pump.slot] ?? 0)}
+              onPrime={() => setPrimeSlot(pump.slot)}
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={() => { setPhase(PHASE.SELECT); setSelected(pumps?.map(p => p.slot) || []) }}
+          style={{
+            width: '100%', padding: '13px', fontSize: 14, fontWeight: 600,
+            background: 'var(--bg-card)', color: 'var(--text-secondary)',
+            border: '1px solid var(--border)', borderRadius: 14,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          Terug naar spoel-selectie
+        </button>
+      </div>
+    )
+  }
+
+  // ── Fase 1: Selectie ─────────────────────────────────────────────────────────
+  const durations   = Object.fromEntries((pumps || []).map(p => [p.slot, calcFlushDuration(p.slot)]))
+  const totalSec    = selected.reduce((s, slot) => s + (durations[slot] || 6), 0)
   const allSelected = pumps && selected.length === pumps.length
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px', background: 'var(--bg)' }}>
-
-      {/* Koptekst */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, margin: 0 }}>
-          Spoelroutine
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.5 }}>
-          Selecteer de leidingen op water en start de spoelcyclus. CO₂-leidingen worden automatisch overgeslagen.
-        </p>
-      </div>
-
-      {/* Resultaat na spoelen */}
-      {result && (
-        <div style={{
-          borderRadius: 16, overflow: 'hidden', marginBottom: 16,
-          border: `1px solid ${result.ok ? 'rgba(52,199,89,0.2)' : result.weight ? 'rgba(255,149,0,0.2)' : 'rgba(255,59,48,0.2)'}`,
-          background: result.ok ? 'rgba(52,199,89,0.06)' : result.weight ? 'rgba(255,149,0,0.06)' : 'rgba(255,59,48,0.06)',
-        }}>
-          <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: result.ok ? 'rgba(52,199,89,0.12)' : result.weight ? 'rgba(255,149,0,0.12)' : 'rgba(255,59,48,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {result.ok
-                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                : result.weight
-                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              }
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
-                {result.ok ? 'Spoelroutine voltooid' : result.weight ? 'Gestopt door beveiliging' : 'Fout'}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                {result.ok ? `${selected.length} leiding${selected.length !== 1 ? 'en' : ''} succesvol doorgespoeld.` : result.msg}
-              </div>
-            </div>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: -0.5, margin: 0 }}>
+            Spoelen
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.5 }}>
+            Selecteer de leidingen op water.
+          </p>
         </div>
-      )}
-
-      {/* Leidingkaart */}
-      <div style={{
-        background: 'var(--bg-card)', borderRadius: 18,
-        border: '1px solid var(--border)', overflow: 'hidden',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.05)', marginBottom: 14,
-      }}>
-        {/* Header rij */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 18px', borderBottom: '1px solid var(--border)',
-          background: 'var(--bg)',
-        }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.2 }}>
-            {pumps === null ? 'Leidingen laden…' : `${pumps.length} leiding${pumps.length !== 1 ? 'en' : ''}`}
-          </div>
-          {pumps && pumps.length > 0 && (
-            <button onClick={toggleAll} style={{
-              fontSize: 13, fontWeight: 600, color: 'var(--blue)',
-              background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0,
-            }}>
-              {allSelected ? 'Geen' : 'Alle'}
-            </button>
-          )}
-        </div>
-
-        {/* Pomplijst */}
-        {pumps === null ? (
-          <div style={{ padding: '24px 18px', display: 'flex', gap: 10, flexDirection: 'column' }}>
-            {[1,2,3].map(i => (
-              <div key={i} className="skeleton" style={{ height: 52, borderRadius: 10, opacity: 0.5 }} />
-            ))}
-          </div>
-        ) : pumps.length === 0 ? (
-          <div style={{ padding: '24px 18px', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>
-            Geen pompen gevonden. Voeg pompen toe via de beheeromgeving.
-          </div>
-        ) : (
-          <>
-            {pumps.map((p, i) => (
-              <div key={p.slot} style={{ borderBottom: i < pumps.length - 1 ? 'none' : undefined }}>
-                <PumpRow
-                  pump={p}
-                  on={selected.includes(p.slot)}
-                  dur={durations[p.slot]}
-                  onToggle={() => toggle(p.slot)}
-                />
-              </div>
-            ))}
-            {/* Geen border na laatste rij */}
-            <style>{`.pump-last { border-bottom: none !important; }`}</style>
-          </>
+        {pumps && pumps.length > 0 && (
+          <button onClick={toggleAll} style={{
+            fontSize: 13, fontWeight: 600, color: 'var(--blue)',
+            background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            padding: '6px 0', flexShrink: 0, marginTop: 4,
+          }}>
+            {allSelected ? 'Geen' : 'Alle'}
+          </button>
         )}
       </div>
 
-      {/* Start-balk */}
+      {/* Pompenkaarten */}
+      {pumps === null ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
+          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ aspectRatio: '3/4', borderRadius: 20 }} />)}
+        </div>
+      ) : pumps.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 14 }}>
+          Geen pompen gevonden.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
+          {pumps.map(pump => (
+            <SelectCard
+              key={pump.slot}
+              pump={pump}
+              selected={selected.includes(pump.slot)}
+              onToggle={() => toggle(pump.slot)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Foutmelding */}
+      {flushError && (
+        <div style={{
+          background: 'rgba(255,59,48,0.06)', border: '1px solid rgba(255,59,48,0.2)',
+          borderRadius: 14, padding: '13px 16px', fontSize: 13, color: 'var(--red)', marginBottom: 14,
+        }}>
+          {flushError}
+        </div>
+      )}
+
+      {/* Start-knop */}
       <div style={{
-        background: 'var(--bg-card)', borderRadius: 18,
-        border: '1px solid var(--border)', padding: '14px 18px',
-        display: 'flex', alignItems: 'center', gap: 14,
+        background: 'var(--bg-card)', borderRadius: 18, border: '1px solid var(--border)',
+        padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12,
         boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
       }}>
         {selected.length > 0 && !flushing && (
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0, minWidth: 0 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
             ±{totalSec}s
           </div>
         )}
@@ -279,13 +544,11 @@ export default function MachineSpoelen() {
           onClick={flushing ? undefined : startFlush}
           disabled={flushing || selected.length === 0}
           style={{
-            flex: 1, padding: '15px 20px',
-            fontSize: 15, fontWeight: 700, letterSpacing: -0.2,
+            flex: 1, padding: '15px 20px', fontSize: 15, fontWeight: 700, letterSpacing: -0.2,
             background: flushing ? 'rgba(0,0,0,0.06)' : selected.length ? '#1c1c1e' : 'rgba(0,0,0,0.06)',
             color: flushing ? 'var(--text-muted)' : selected.length ? '#fff' : 'var(--text-muted)',
-            border: 'none', borderRadius: 14,
+            border: 'none', borderRadius: 14, fontFamily: 'inherit',
             cursor: flushing || !selected.length ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             transition: 'background .15s',
             boxShadow: !flushing && selected.length ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
@@ -293,24 +556,15 @@ export default function MachineSpoelen() {
         >
           {flushing ? (
             <>
-              <span style={{
-                width: 16, height: 16,
-                border: '2.5px solid rgba(0,0,0,0.15)', borderTopColor: 'var(--text-muted)',
-                borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite',
-              }} />
-              Spoelroutine actief…
+              <span style={{ width: 16, height: 16, border: '2.5px solid rgba(0,0,0,0.15)', borderTopColor: 'var(--text-muted)', borderRadius: '50%', display: 'inline-block', animation: 'spin .7s linear infinite' }} />
+              Spoelen…
             </>
-          ) : selected.length === 0 ? (
-            'Selecteer leidingen'
-          ) : (
-            `Spoel ${selected.length} leiding${selected.length !== 1 ? 'en' : ''}`
-          )}
+          ) : selected.length === 0 ? 'Selecteer leidingen' : `Spoel ${selected.length} leiding${selected.length !== 1 ? 'en' : ''}`}
         </button>
       </div>
 
-      {/* Opmerking */}
       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 14, lineHeight: 1.6, textAlign: 'center' }}>
-        Zorg dat water is aangesloten op de geselecteerde leidingen voor je start.
+        Zorg dat water is aangesloten op de geselecteerde leidingen.
       </p>
     </div>
   )

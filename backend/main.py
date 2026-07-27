@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import random
 import time
 
 log = logging.getLogger("mixmate")
@@ -250,6 +251,16 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
     pour_count = session.exec(
         select(func.count(Pour.id)).where(Pour.recipe_id == recipe.id)
     ).one()
+    # Cooldown-blokkering: is een benodigde pomp in cooldown?
+    now = time.monotonic()
+    cooled_slots = {slot for slot, exp in _cooldown_state.items() if exp > now}
+    cooldown_blocked = False
+    if cooled_slots:
+        pumps_in_cooldown = session.exec(
+            select(Pump).where(Pump.slot.in_(list(cooled_slots)))
+        ).all()
+        blocked_ing_ids = {p.ingredient_id for p in pumps_in_cooldown if p.ingredient_id}
+        cooldown_blocked = any(i.ingredient_id in blocked_ing_ids for i in ingredients_read)
     return RecipeRead(
         id=recipe.id, name=recipe.name, description=recipe.description,
         image_url=recipe.image_url, category_id=recipe.category_id,
@@ -263,6 +274,7 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
         fully_automatic=fully_automatic,
         partially_available=partially_available,
         pour_count=pour_count or 0,
+        cooldown_blocked=cooldown_blocked,
     )
 
 
@@ -501,6 +513,9 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 # Geen WebSocket nodig — zowel de machine-overlay als het portaal pollen HTTP.
 
 _flush_state: dict = {"active": False}
+_cooldown_state: dict = {}   # slot (int) → expiry monotonic time (float)
+_prime_state: dict   = {"active": False}
+_prime_control: dict = {"pause": False, "stop": False}
 _machine_blocked: bool = False
 _demo_mode_active: bool = False
 _demo_slideshow_active: bool = False
@@ -580,6 +595,12 @@ async def _run_flush_task(pumps: list):
 
             await asyncio.sleep(0.2)
 
+        # Cooldown per gespoelde leiding (1–8 min willekeurig)
+        now = time.monotonic()
+        for p in pumps:
+            secs = random.randint(60, 480)
+            _cooldown_state[p["slot"]] = now + secs
+            log.info("Leiding %s: cooldown %ds", p["slot"], secs)
         _flush_state = {"active": False, "total": len(pumps), "done": len(pumps)}
     except Exception as e:
         log.error("Flush taak fout bij leiding %s: %s", _flush_state.get("current_slot"), e)
@@ -589,6 +610,106 @@ async def _run_flush_task(pumps: list):
 @app.get("/api/pumps/flush-status")
 def get_flush_status():
     return _flush_state
+
+
+# ── Cooldown (na spoelen) ─────────────────────────────────────────────────────
+
+@app.get("/api/pumps/cooldown-status")
+def get_cooldown_status(session: Session = Depends(get_session)):
+    now    = time.monotonic()
+    result = []
+    # Verwijder verlopen entries
+    expired = [s for s, exp in _cooldown_state.items() if exp <= now]
+    for s in expired:
+        del _cooldown_state[s]
+    for slot, expiry in _cooldown_state.items():
+        pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
+        ing  = session.get(Ingredient, pump.ingredient_id) if pump and pump.ingredient_id else None
+        result.append({
+            "slot":            slot,
+            "remaining_seconds": round(expiry - now),
+            "ingredient_name": ing.name if ing else None,
+        })
+    return result
+
+
+# ── Doorspoelen (prime) ───────────────────────────────────────────────────────
+
+async def _run_prime_task(gpio_pin: int, slot: int):
+    global _prime_state, _prime_control
+    try:
+        gpio.setup_pin(gpio_pin)
+        gpio.activate(gpio_pin)
+        elapsed = 0.0
+        start   = time.monotonic()
+        while True:
+            if _prime_control["stop"]:
+                break
+            if _prime_control["pause"]:
+                gpio.deactivate(gpio_pin)
+                _prime_state["paused"] = True
+                while _prime_control["pause"] and not _prime_control["stop"]:
+                    await asyncio.sleep(0.1)
+                if _prime_control["stop"]:
+                    break
+                gpio.activate(gpio_pin)
+                _prime_state["paused"] = False
+                start = time.monotonic() - elapsed  # hervat zonder elapsed te resetten
+            elapsed = time.monotonic() - start
+            _prime_state["elapsed"] = round(elapsed, 1)
+            await asyncio.sleep(0.1)
+    finally:
+        gpio.deactivate(gpio_pin)
+        _prime_state = {"active": False, "slot": slot, "done": True}
+
+
+@app.get("/api/pumps/prime-status")
+def get_prime_status():
+    return _prime_state
+
+
+@app.post("/api/pumps/{slot}/prime/start")
+async def prime_start(slot: int, session: Session = Depends(get_session)):
+    global _prime_state, _prime_control
+    if _prime_state.get("active"):
+        raise HTTPException(409, "Doorspoelen al actief")
+    if _flush_state.get("active"):
+        raise HTTPException(409, "Spoelroutine actief")
+    if slot in _cooldown_state and _cooldown_state[slot] > time.monotonic():
+        rem = round(_cooldown_state[slot] - time.monotonic())
+        raise HTTPException(423, f"Leiding {slot} is geblokkeerd — nog {rem}s wachten")
+    pump = session.exec(select(Pump).where(Pump.slot == slot)).first()
+    if not pump or pump.gpio_pin is None:
+        raise HTTPException(404, "Pomp niet gevonden of geen GPIO")
+    _prime_control = {"pause": False, "stop": False}
+    _prime_state   = {"active": True, "slot": slot, "paused": False, "elapsed": 0.0}
+    asyncio.create_task(_run_prime_task(pump.gpio_pin, slot))
+    return {"ok": True}
+
+
+@app.post("/api/pumps/{slot}/prime/pause")
+def prime_pause(slot: int):
+    global _prime_control
+    if not _prime_state.get("active") or _prime_state.get("slot") != slot:
+        raise HTTPException(409, "Geen actief doorspoelen op dit slot")
+    _prime_control["pause"] = True
+    return {"ok": True}
+
+
+@app.post("/api/pumps/{slot}/prime/resume")
+def prime_resume(slot: int):
+    global _prime_control
+    if not _prime_state.get("active") or _prime_state.get("slot") != slot:
+        raise HTTPException(409, "Geen actief doorspoelen op dit slot")
+    _prime_control["pause"] = False
+    return {"ok": True}
+
+
+@app.post("/api/pumps/{slot}/prime/stop")
+def prime_stop(slot: int):
+    global _prime_control
+    _prime_control["stop"] = True
+    return {"ok": True}
 
 
 @app.post("/api/machine/block")

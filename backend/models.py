@@ -213,6 +213,7 @@ class RecipeRead(SQLModel):
     fully_automatic: bool = False
     partially_available: bool = False
     pour_count: int = 0
+    cooldown_blocked: bool = False  # True als een benodigde leiding in cooldown is
 
 
 class PourCreate(SQLModel):

@@ -1,3 +1,13 @@
+## [5.4.0] - 2026-07-28
+### Herontworpen
+- MachineSpoelen: dashboardstijl kaartgrid met ingrediëntafbeeldingen voor selectie, twee-fase flow (spoelen → cooldown → doorspoelen)
+- Fase 1: tik kaarten aan om leidingen te selecteren, "Alles/Geen" knop, vaste 6s spoelduur per leiding (schoonmaakmiddel is snel door)
+- Fase 2 (cooldown): kaarten tonen afteltimer; zodra vrij verschijnt "Doorspoelen"-knop per leiding
+- Doorspoelen-overlay: ingrediëntafbeelding als header, Start/Pauze/Hervatten/Stop knoppen, verstreken tijd
+- CO₂-valves automatisch uitgesloten van spoelroutine
+### Gewijzigd
+- Spoelduur per leiding: ingesteld op vaste 6s (was variabel 3-13s op basis van slot/dagen)
+
 ## [5.3.0] - 2026-07-28
 ### Fixes
 - VirtualKeyboard: touchstart-listener (capture) onderdrukt native keyboard vóórdat de browser het opent — dubbel toetsenbord definitief verholpen
