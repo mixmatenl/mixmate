@@ -1,3 +1,8 @@
+## [5.1.2] - 2026-07-27
+### Fixes
+- Pompen: dropdown verwijderd, vervangen door native `<select>` — clipping door overflow:hidden op kaart opgelost
+- Pompkaarten tonen nu correct de naam onderaan de afbeelding
+
 ## [5.1.1] - 2026-07-27
 ### Fixes
 - Glazencatalogus: SSL-verificatie uitgeschakeld (zelfde als cloud_client) zodat Pi de webshop-glazen kan ophalen
