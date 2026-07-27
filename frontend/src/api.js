@@ -95,6 +95,12 @@ export const api = {
   // Cooldown (na spoelen)
   getCooldownStatus: () => request('GET', '/pumps/cooldown-status'),
 
+  // Machine lifecycle
+  getMachineState:   () => request('GET', '/system/machine-state'),
+  readyToPack:       () => request('POST', '/system/ready-to-pack'),
+  setupComplete:     () => request('POST', '/system/setup-complete'),
+  fullFactoryReset:  () => request('POST', '/system/full-factory-reset'),
+
   // Doorspoelen (prime) — ingrediënt door leiding pompen na spoelen
   primeStart:  (slot) => request('POST', `/pumps/${slot}/prime/start`),
   primePause:  (slot) => request('POST', `/pumps/${slot}/prime/pause`),

@@ -249,10 +249,166 @@ function PumpsManager({ ingredients }) {
   )
 }
 
+/* ── Fabriek tab ──────────────────────────────────────────────────────────── */
+function FabriekPanel({ factoryMode, onReadyToPack }) {
+  const [readyState,  setReadyState]  = useState('idle')   // idle | confirm | done
+  const [resetState,  setResetState]  = useState('idle')   // idle | confirm | resetting
+  const [resetDots,   setResetDots]   = useState(0)
+
+  // Volledige fabrieksreset animatie
+  const RESET_STEPS = [
+    { label: 'Cloud koppeling verbreken',          ms: 4000 },
+    { label: 'Recepten en ingrediënten wissen',    ms: 4000 },
+    { label: 'Pompinstellingen wissen',            ms: 3000 },
+    { label: 'Configuratie en PIN wissen',         ms: 3500 },
+    { label: 'Machine herstarten',                 ms: 7000 },
+  ]
+  const [resetStep, setResetStep] = useState(0)
+
+  async function doFullReset() {
+    setResetState('resetting')
+    setResetStep(0)
+    await fetch('/api/system/full-factory-reset', { method: 'POST' }).catch(() => {})
+    // Animeer de stappen
+    let cumulative = 0
+    for (let i = 0; i < RESET_STEPS.length; i++) {
+      await new Promise(r => setTimeout(r, RESET_STEPS[i].ms))
+      setResetStep(i + 1)
+    }
+  }
+
+  async function doReadyToPack() {
+    await api.readyToPack()
+    setReadyState('done')
+    setTimeout(() => onReadyToPack(), 1800)
+  }
+
+  if (resetState === 'resetting') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-6">
+        <div className="w-16 h-16 rounded-full border border-red-500/40 bg-red-500/10 flex items-center justify-center"
+          style={{ animation: 'bo-pulse 1.4s ease-in-out infinite' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+        </div>
+        <div>
+          <div className="text-white font-bold text-lg text-center mb-1">Fabrieksreset uitvoeren</div>
+          <div className="text-white/40 text-sm text-center">Zet de machine niet uit.</div>
+        </div>
+        <div className="w-64 space-y-3">
+          {RESET_STEPS.map((s, i) => (
+            <div key={i} className="flex items-center gap-3" style={{ opacity: i > resetStep ? 0.25 : 1, transition: 'opacity .3s' }}>
+              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                {i < resetStep
+                  ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#30d158" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  : i === resetStep
+                    ? <div className="w-2 h-2 rounded-full bg-red-400" style={{ animation: 'bo-blink .8s infinite' }} />
+                    : <div className="w-1.5 h-1.5 rounded-full bg-white/15" />
+                }
+              </div>
+              <div className="text-sm" style={{ color: i < resetStep ? '#ebebf5' : i === resetStep ? '#fff' : '#636366', fontWeight: i === resetStep ? 600 : 400 }}>
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+        <style>{`
+          @keyframes bo-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.4)}50%{box-shadow:0 0 0 10px rgba(255,59,48,0)} }
+          @keyframes bo-blink { 0%,100%{opacity:1}50%{opacity:.3} }
+        `}</style>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 max-w-xl">
+      <div>
+        <h3 className="text-white font-bold text-lg mb-1">Fabrieksbeheer</h3>
+        <p className="text-white/50 text-sm leading-relaxed">
+          Beheer de levenscyclusstatus van de machine.
+        </p>
+      </div>
+
+      {/* Ready to Pack */}
+      <div className="bg-white/10 border border-white/20 rounded-2xl p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/25 flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#30d158" strokeWidth="2" strokeLinecap="round">
+              <path d="M5 12h14m-7-7 7 7-7 7"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-white text-base font-semibold">Klaar voor verzending</p>
+            <p className="text-white/50 text-sm mt-0.5 leading-relaxed">
+              Activeert de klantinstallatie-wizard bij de volgende start. Gebruik dit nadat de machine volledig is ingesteld in de fabriek.
+            </p>
+          </div>
+        </div>
+
+        {readyState === 'idle' && (
+          <button onClick={() => setReadyState('confirm')}
+            className="w-full py-3 rounded-xl text-sm font-semibold bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30 transition-all">
+            Klaar voor verzending instellen
+          </button>
+        )}
+        {readyState === 'confirm' && (
+          <div className="space-y-2">
+            <p className="text-white/60 text-sm text-center font-medium">Klantinstallatie-wizard activeren?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setReadyState('idle')} className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 text-sm font-medium hover:border-white/40 transition-all">Annuleer</button>
+              <button onClick={doReadyToPack} className="flex-1 py-3 rounded-xl text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition-all">Ja, instellen</button>
+            </div>
+          </div>
+        )}
+        {readyState === 'done' && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span className="text-green-400 text-sm font-semibold">Wizard wordt geactiveerd…</span>
+          </div>
+        )}
+      </div>
+
+      {/* Volledige fabrieksreset */}
+      <div className="bg-white/10 border border-white/20 rounded-2xl p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff3b30" strokeWidth="2" strokeLinecap="round">
+              <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-white text-base font-semibold">Volledige fabrieksreset</p>
+            <p className="text-white/50 text-sm mt-0.5 leading-relaxed">
+              Wist <strong className="text-white/70">alles</strong> — inclusief pompen, recepten, ingrediënten en PIN. Machine keert terug naar fabrieksstand. WiFi-instellingen blijven behouden.
+            </p>
+          </div>
+        </div>
+
+        {resetState === 'idle' && (
+          <button onClick={() => setResetState('confirm')}
+            className="w-full py-3 rounded-xl text-sm font-semibold bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-all">
+            Volledige fabrieksreset
+          </button>
+        )}
+        {resetState === 'confirm' && (
+          <div className="space-y-2">
+            <p className="text-white/60 text-sm text-center font-medium">Alles wissen en terugzetten naar fabrieksstand?</p>
+            <div className="flex gap-2">
+              <button onClick={() => setResetState('idle')} className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 text-sm font-medium hover:border-white/40 transition-all">Annuleer</button>
+              <button onClick={doFullReset} className="flex-1 py-3 rounded-xl text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-all">Alles wissen</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── Backoffice shell ─────────────────────────────────────────────────────── */
-export default function Backoffice({ onClose }) {
+export default function Backoffice({ onClose, factoryMode = false, onReadyToPack }) {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(BO_SESSION) === '1')
-  const [tab,         setTab]         = useState('pin')
+  const [tab,         setTab]         = useState(factoryMode ? 'fabriek' : 'pin')
   const [showWifi,    setShowWifi]    = useState(false)
   const [showPairing, setShowPairing] = useState(false)
   const [ingredients, setIngredients] = useState([])
@@ -264,6 +420,7 @@ export default function Backoffice({ onClose }) {
   if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} />
 
   const TABS = [
+    ...(factoryMode ? [{ id:'fabriek', label:'Fabriek' }] : []),
     { id:'machine', label:'Machine' },
     { id:'pin', label:'PIN beheer' },
     { id:'pumps', label:'GPIO Pompen' },
@@ -271,6 +428,7 @@ export default function Backoffice({ onClose }) {
     { id:'history', label:'Geschiedenis' },
     { id:'update', label:'Updates' },
     { id:'system', label:'Systeem' },
+    ...(!factoryMode ? [{ id:'fabriek', label:'Fabriek' }] : []),
   ]
 
   return (
@@ -278,6 +436,11 @@ export default function Backoffice({ onClose }) {
       <header className="border-b border-white/10 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <span className="text-white/80 text-sm tracking-widest uppercase font-bold">Backoffice</span>
+          {factoryMode && (
+            <span className="text-xs px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-500/30 font-semibold tracking-wide">
+              FABRIEKSMODUS
+            </span>
+          )}
           <nav className="flex gap-1">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
@@ -293,17 +456,20 @@ export default function Backoffice({ onClose }) {
         </div>
         <div className="flex gap-4">
           <button onClick={lock} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">Vergrendel</button>
-          <button onClick={onClose} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">← Terug</button>
+          {!factoryMode && (
+            <button onClick={onClose} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">← Terug</button>
+          )}
         </div>
       </header>
       <div className="flex-1 px-8 py-8 max-w-2xl">
-        {tab === 'machine' && <BackofficeMachine />}
-        {tab === 'pin' && <PinManager />}
-        {tab === 'pumps' && <PumpsManager ingredients={ingredients} />}
-        {tab === 'loadcell' && <BackofficeLoadcell />}
-        {tab === 'history' && <BackofficeHistory />}
-        {tab === 'update' && <BackofficeUpdate />}
-        {tab === 'system' && <BackofficeSystem onShowWifi={() => setShowWifi(true)} onShowPairing={() => setShowPairing(true)} />}
+        {tab === 'fabriek'   && <FabriekPanel factoryMode={factoryMode} onReadyToPack={onReadyToPack || (() => {})} />}
+        {tab === 'machine'   && <BackofficeMachine />}
+        {tab === 'pin'       && <PinManager />}
+        {tab === 'pumps'     && <PumpsManager ingredients={ingredients} />}
+        {tab === 'loadcell'  && <BackofficeLoadcell />}
+        {tab === 'history'   && <BackofficeHistory />}
+        {tab === 'update'    && <BackofficeUpdate />}
+        {tab === 'system'    && <BackofficeSystem onShowWifi={() => setShowWifi(true)} onShowPairing={() => setShowPairing(true)} />}
       </div>
 
       {showWifi    && <WifiSetup    onClose={() => setShowWifi(false)} />}

@@ -454,7 +454,7 @@ function SettingsHome() {
         <SettingsRow icon={<IconUpdate />}  label="Software update"   sublabel="Controleer op nieuwe versie"           onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    label="Over deze machine" sublabel="Serienummer, netwerk en hardware"       onClick={() => navigate('/instellingen/info')} />
         <SettingsRow icon={<IconRestart />} label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"           onClick={() => setConfirm('restart')} />
-        <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist alle data en ontkoppelt de machine" onClick={() => setConfirm('factory')} danger last />
+        <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist content, herstart installatiewizard" onClick={() => setConfirm('factory')} danger last />
       </Section>
 
       {confirm === 'restart' && (
@@ -470,9 +470,9 @@ function SettingsHome() {
 
       {confirm === 'factory' && (
         <ConfirmDialog
-          title="Fabrieksinstellingen herstellen?"
-          message="Alle glazen, ingrediënten, recepten en pompen worden gewist. De machine wordt losgekoppeld van het portaal en het model wordt gewist. Dit kan niet ongedaan worden gemaakt."
-          confirmLabel="Alles wissen"
+          title="Machine resetten?"
+          message="Recepten, ingrediënten, glazen en categorieën worden gewist. De machine herstart en toont de installatiewizard opnieuw. GPIO-pompinstellingen blijven behouden. WiFi wordt nooit gewist."
+          confirmLabel="Reset & herstart"
           loading={actionBusy}
           onConfirm={doFactoryReset}
           onCancel={() => setConfirm(null)}

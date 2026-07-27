@@ -1639,7 +1639,128 @@ async def factory_reset():
     os.environ.pop("ADMIN_PIN",    None)
     os.environ.pop("MIXMATE_PIN",  None)
 
-    # 4. Herstart service na korte vertraging
+    # 4. Zet machine terug naar setup-wizard state (niet factory)
+    try:
+        con2 = sqlite3.connect(str(_DB_PATH))
+        con2.execute(
+            "INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'setup')"
+        )
+        con2.commit()
+        con2.close()
+    except Exception:
+        pass
+
+    # 5. Herstart service na korte vertraging
+    async def _restart():
+        await asyncio.sleep(2)
+        import subprocess
+        subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+    asyncio.create_task(_restart())
+
+    return {"ok": True}
+
+
+# ── Machine lifecycle ─────────────────────────────────────────────────────────
+
+@app.get("/api/system/machine-state")
+def get_machine_state():
+    """
+    Geeft de huidige levenscyclusstatus van de machine:
+      factory → alleen backoffice zichtbaar (fabrieksinstelling)
+      setup   → klantinstallatie-wizard actief
+      ready   → volledig operationeel
+    Standaard: 'ready' (bestaande installaties)
+    """
+    val = _db_get("machine_state")
+    return {"state": val or "ready"}
+
+
+@app.post("/api/system/ready-to-pack")
+async def ready_to_pack():
+    """Markeert machine als klaar voor verzending → activeert setup-wizard voor klant."""
+    import sqlite3
+    con = sqlite3.connect(str(_DB_PATH))
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'setup')")
+    con.commit()
+    con.close()
+    return {"ok": True}
+
+
+@app.post("/api/system/setup-complete")
+async def setup_complete():
+    """Voltooit de klantinstallatie-wizard → machine is operationeel."""
+    import sqlite3
+    con = sqlite3.connect(str(_DB_PATH))
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'ready')")
+    con.commit()
+    con.close()
+    return {"ok": True}
+
+
+@app.post("/api/system/full-factory-reset")
+async def full_factory_reset():
+    """
+    Volledige fabrieksreset (backoffice):
+    Wist ALLES — inclusief pompen — zet machine terug naar 'factory' state.
+    Enige uitzondering: WiFi-configuratie (in /etc/wpa_supplicant, niet in DB).
+    """
+    import sqlite3
+
+    _KEEP_KEYS = {'machine_id', 'MIXMATE_CLOUD_URL', 'LOADCELL_DOUT', 'LOADCELL_SCK', 'LOADCELL_SCALE'}
+    _FACTORY_ENV_PREFIXES = (
+        'MACHINE_MODEL=', 'MIXMATE_CLOUD_URL=',
+        'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
+    )
+
+    # 1. Ontkoppel van cloud
+    _cloud_pair["code"]          = None
+    _cloud_pair["paired"]        = False
+    _cloud_pair["connected"]     = False
+    _cloud_pair["account_name"]  = None
+    _cloud_pair["account_email"] = None
+    cloud_url = os.environ.get("MIXMATE_CLOUD_URL", "")
+    if cloud_url:
+        try:
+            from .cloud_client import get_machine_id
+            machine_id = get_machine_id()
+            cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+            async with httpx.AsyncClient() as c:
+                await c.post(f"{cloud_http}/api/machines/{machine_id}/unpair", timeout=5)
+        except Exception:
+            pass
+
+    # 2. Wis ALLES inclusief pompen
+    try:
+        con = sqlite3.connect(str(_DB_PATH))
+        for table in ["recipeingredient", "recipe", "pour", "favorite",
+                      "ingredient", "glass", "category", "pump"]:
+            try:
+                con.execute(f'DELETE FROM "{table}"')
+            except Exception:
+                pass
+        placeholders = ",".join("?" * len(_KEEP_KEYS))
+        con.execute(
+            f"DELETE FROM config WHERE key NOT IN ({placeholders})",
+            list(_KEEP_KEYS),
+        )
+        con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'factory')")
+        con.commit()
+        con.close()
+    except Exception:
+        pass
+
+    # 3. Wis env (bewaar hardware-keys)
+    if _ENV_PATH.exists():
+        lines = [
+            line for line in _ENV_PATH.read_text().splitlines()
+            if not line or line.startswith("#")
+               or any(line.startswith(p) for p in _FACTORY_ENV_PREFIXES)
+        ]
+        _ENV_PATH.write_text("\n".join(lines) + "\n")
+    os.environ.pop("ADMIN_PIN",   None)
+    os.environ.pop("MIXMATE_PIN", None)
+
+    # 4. Herstart
     async def _restart():
         await asyncio.sleep(2)
         import subprocess

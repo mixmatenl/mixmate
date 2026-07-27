@@ -11,6 +11,7 @@ import StandbyScreen from './pages/StandbyScreen'
 import FlushOverlay from './components/FlushOverlay'
 import BlockedOverlay from './components/BlockedOverlay'
 import DemoMode from './pages/DemoMode'
+import SetupWizard from './pages/SetupWizard'
 import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 import { DragScrollProvider } from './components/DragScroll'
 import { api } from './api'
@@ -32,6 +33,7 @@ function AnimatedRoutes({ onStandby }) {
 }
 
 export default function App() {
+  const [machineState, setMachineState] = useState(null)  // null=laden, 'factory'|'setup'|'ready'
   const [showSplash, setShowSplash] = useState(() =>
     !sessionStorage.getItem('mixmate_splash_shown')
   )
@@ -40,6 +42,13 @@ export default function App() {
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
+
+  // Machine state ophalen bij start
+  useEffect(() => {
+    api.getMachineState()
+      .then(r => setMachineState(r.state))
+      .catch(() => setMachineState('ready'))
+  }, [])
   const demoTimerRef    = useRef(null)
   const demoFromBackend = useRef(false)
   const demoExitedAt    = useRef(0)
@@ -114,6 +123,36 @@ export default function App() {
     setDemo(false)
   }
 
+  // Wacht tot machine state bekend is
+  if (machineState === null) return null
+
+  // Factory mode: alleen backoffice tonen, geen splash, geen klantomgeving
+  if (machineState === 'factory') {
+    return (
+      <DragScrollProvider>
+        <VirtualKeyboardProvider>
+          <Backoffice
+            factoryMode
+            onClose={() => {}}
+            onReadyToPack={() => setMachineState('setup')}
+          />
+        </VirtualKeyboardProvider>
+      </DragScrollProvider>
+    )
+  }
+
+  // Setup mode: installatiewizard tonen
+  if (machineState === 'setup') {
+    return (
+      <DragScrollProvider>
+        <VirtualKeyboardProvider>
+          <SetupWizard onComplete={() => setMachineState('ready')} />
+        </VirtualKeyboardProvider>
+      </DragScrollProvider>
+    )
+  }
+
+  // Ready mode: normaal splash + login
   if (showSplash) return (
     <DragScrollProvider>
       <SplashScreen onDone={() => {

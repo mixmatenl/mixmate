@@ -1,3 +1,16 @@
+## [5.5.0] - 2026-07-28
+### Nieuw
+- Machine lifecycle: drie staten — `factory` (alleen backoffice), `setup` (installatiewizard), `ready` (normaal)
+- SetupWizard: Apple-achtige onboarding voor klant — Welkom / Features / Portaal koppelen / Klaar
+- Backoffice: "Fabriek"-tab met "Klaar voor verzending" knop → activeert installatiewizard
+- Backoffice: "Volledige fabrieksreset" wist alles inclusief pompen → terug naar fabrieksstand
+- App: in factory-mode geen splash/loginscherm, rechtstreeks naar backoffice met "FABRIEKSMODUS" badge
+- Backend: `/api/system/machine-state`, `/api/system/ready-to-pack`, `/api/system/setup-complete`, `/api/system/full-factory-reset`
+### Gewijzigd
+- Klant "Fabrieksinstellingen" → reset naar setup-wizard (stap 2), NIET naar volledige fabrieksstand
+- Bestaande factory-reset zet nu machine_state op "setup" zodat installatiewizard start na herstart
+- WiFi-instellingen worden nooit gewist bij enige reset
+
 ## [5.4.0] - 2026-07-28
 ### Herontworpen
 - MachineSpoelen: dashboardstijl kaartgrid met ingrediëntafbeeldingen voor selectie, twee-fase flow (spoelen → cooldown → doorspoelen)
