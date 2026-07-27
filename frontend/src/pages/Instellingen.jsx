@@ -265,19 +265,24 @@ const IconSpoelen = () => (
 
 // ── Hulpcomponenten ───────────────────────────────────────────────────────────
 
-function SettingsRow({ icon, iconBg = '#007aff', label, sublabel, onClick, last }) {
+function SettingsRow({ icon, label, sublabel, onClick, last, danger }) {
   return (
     <button onClick={onClick} style={{
       width: '100%', background: '#fff', border: 'none', textAlign: 'left',
-      padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+      padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 14,
       cursor: 'pointer', borderBottom: last ? 'none' : '1px solid #f2f2f7',
     }}>
-      <div style={{ width: 32, height: 32, borderRadius: 8, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+        background: danger ? '#fff0f0' : '#f2f2f7',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: danger ? '#ff3b30' : '#3a3a3c',
+      }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, color: '#111', fontWeight: 400 }}>{label}</div>
-        {sublabel && <div style={{ fontSize: 12, color: '#8e8e93', marginTop: 1 }}>{sublabel}</div>}
+        <div style={{ fontSize: 15, color: danger ? '#ff3b30' : '#1d1d1f', fontWeight: 400 }}>{label}</div>
+        {sublabel && <div style={{ fontSize: 12, color: '#aeaeb2', marginTop: 1 }}>{sublabel}</div>}
       </div>
       <IconChevron />
     </button>
@@ -430,26 +435,26 @@ function SettingsHome() {
       <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111', marginBottom: 24, paddingLeft: 4 }}>Instellingen</h1>
 
       <Section title="Verbinding">
-        <SettingsRow icon={<IconWifi />}  iconBg="#007aff" label="WiFi instellen"  sublabel="Verbind met een ander netwerk"      onClick={() => navigate('/instellingen/wifi')} />
-        <SettingsRow icon={<IconCloud />} iconBg="#5856d6" label="Cloud koppeling" sublabel="Beheer op afstand via het portaal"  onClick={() => navigate('/instellingen/koppeling')} last />
+        <SettingsRow icon={<IconWifi />}  label="WiFi instellen"  sublabel="Verbind met een ander netwerk"      onClick={() => navigate('/instellingen/wifi')} />
+        <SettingsRow icon={<IconCloud />} label="Cloud koppeling" sublabel="Beheer op afstand via het portaal"  onClick={() => navigate('/instellingen/koppeling')} last />
       </Section>
 
       <Section title="Beheer">
-        <SettingsRow icon={<IconPumps />}      iconBg="#34c759" label="Pompen"       onClick={() => navigate('/instellingen/pompen')} />
-        <SettingsRow icon={<IconSpoelen />}    iconBg="#007aff" label="Spoelroutine" sublabel="Leidingen doorspoelen met water" onClick={() => navigate('/instellingen/spoelen')} />
-        <SettingsRow icon={<IconCalibrate />}  iconBg="#ff9500" label="Kalibratie"   onClick={() => navigate('/instellingen/kalibratie')} />
-        <SettingsRow icon={<IconGlass />}      iconBg="#00c7be" label="Glazen"       onClick={() => navigate('/instellingen/glazen')} />
-        <SettingsRow icon={<IconIngredient />} iconBg="#ff2d55" label="Ingrediënten" onClick={() => navigate('/instellingen/ingredienten')} />
-        <SettingsRow icon={<IconCategory />}   iconBg="#af52de" label="Categorieën"  onClick={() => navigate('/instellingen/categorieen')} />
-        <SettingsRow icon={<IconRecipe />}     iconBg="#ff6b35" label="Recepten"     onClick={() => navigate('/instellingen/recepten')} last />
+        <SettingsRow icon={<IconPumps />}      label="Pompen"       onClick={() => navigate('/instellingen/pompen')} />
+        <SettingsRow icon={<IconSpoelen />}    label="Spoelroutine" sublabel="Leidingen doorspoelen met water" onClick={() => navigate('/instellingen/spoelen')} />
+        <SettingsRow icon={<IconCalibrate />}  label="Kalibratie"   onClick={() => navigate('/instellingen/kalibratie')} />
+        <SettingsRow icon={<IconGlass />}      label="Glazen"       onClick={() => navigate('/instellingen/glazen')} />
+        <SettingsRow icon={<IconIngredient />} label="Ingrediënten" onClick={() => navigate('/instellingen/ingredienten')} />
+        <SettingsRow icon={<IconCategory />}   label="Categorieën"  onClick={() => navigate('/instellingen/categorieen')} />
+        <SettingsRow icon={<IconRecipe />}     label="Recepten"     onClick={() => navigate('/instellingen/recepten')} last />
       </Section>
 
       <Section title="Systeem">
-        <SettingsRow icon={<IconDemo />}    iconBg="#ff6b35" label="Demo modus"     sublabel="Automatische showcase bij inactiviteit" onClick={() => navigate('/instellingen/demo')} />
-        <SettingsRow icon={<IconUpdate />}  iconBg="#636366" label="Software update"    sublabel="Controleer op nieuwe versie" onClick={() => navigate('/instellingen/update')} />
-        <SettingsRow icon={<IconInfo />}    iconBg="#8e8e93" label="Over deze machine"  sublabel="Serienummer, netwerk en hardware" onClick={() => navigate('/instellingen/info')} />
-        <SettingsRow icon={<IconRestart />} iconBg="#ff9500" label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"  onClick={() => setConfirm('restart')} />
-        <SettingsRow icon={<IconFactory />} iconBg="#ff3b30" label="Fabrieksinstellingen" sublabel="Wist alle data en ontkoppelt de machine" onClick={() => setConfirm('factory')} last />
+        <SettingsRow icon={<IconDemo />}    label="Demo modus"        sublabel="Automatische showcase bij inactiviteit" onClick={() => navigate('/instellingen/demo')} />
+        <SettingsRow icon={<IconUpdate />}  label="Software update"   sublabel="Controleer op nieuwe versie"           onClick={() => navigate('/instellingen/update')} />
+        <SettingsRow icon={<IconInfo />}    label="Over deze machine" sublabel="Serienummer, netwerk en hardware"       onClick={() => navigate('/instellingen/info')} />
+        <SettingsRow icon={<IconRestart />} label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"           onClick={() => setConfirm('restart')} />
+        <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist alle data en ontkoppelt de machine" onClick={() => setConfirm('factory')} danger last />
       </Section>
 
       {confirm === 'restart' && (

@@ -26,6 +26,7 @@ def _migrate():
         ("pump",       "pump_type",    "TEXT NOT NULL DEFAULT 'peristaltic'"),
         ("pump",       "enabled",      "INTEGER NOT NULL DEFAULT 1"),
         ("ingredient", "unit",         "TEXT NOT NULL DEFAULT 'ml'"),
+        ("ingredient", "image_url",    "TEXT NOT NULL DEFAULT ''"),
     ]
     with engine.connect() as conn:
         inspector = inspect(engine)

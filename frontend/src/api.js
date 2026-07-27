@@ -25,7 +25,15 @@ export const api = {
   // Ingredients
   getIngredients: () => request('GET', '/ingredients'),
   createIngredient: (data) => request('POST', '/ingredients', data),
+  updateIngredient: (id, data) => request('PATCH', `/ingredients/${id}`, data),
   deleteIngredient: (id) => request('DELETE', `/ingredients/${id}`),
+  uploadIngredientImage: async (id, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${BASE}/ingredients/${id}/image`, { method: 'POST', body: form })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  },
 
   // Pumps (full — backoffice)
   getPumps: () => request('GET', '/pumps'),

@@ -18,7 +18,7 @@ from .database import create_db, get_session, engine
 from .models import (
     Glass, GlassCreate, GlassRead, GlassUpdate,
     Category, CategoryCreate, CategoryRead, CategoryUpdate,
-    Ingredient, IngredientCreate, IngredientRead,
+    Ingredient, IngredientCreate, IngredientRead, IngredientUpdate,
     Pump, PumpCreate, PumpRead, PumpUpdate, PumpSimple,
     Recipe, RecipeCreate, RecipeRead, RecipeUpdate,
     RecipeIngredient, RecipeIngredientRead,
@@ -405,6 +405,26 @@ def create_ingredient(data: IngredientCreate, session: Session = Depends(get_ses
     session.add(ing); session.commit(); session.refresh(ing)
     return ing
 
+@app.patch("/api/ingredients/{ingredient_id}", response_model=IngredientRead)
+def update_ingredient(ingredient_id: int, data: IngredientUpdate, session: Session = Depends(get_session)):
+    ing = session.get(Ingredient, ingredient_id)
+    if not ing: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(ing, k, v)
+    session.add(ing); session.commit(); session.refresh(ing)
+    return ing
+
+@app.post("/api/ingredients/{ingredient_id}/image", response_model=IngredientRead)
+async def upload_ingredient_image(ingredient_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
+    ing = session.get(Ingredient, ingredient_id)
+    if not ing: raise HTTPException(404)
+    import base64, imghdr
+    data = await file.read()
+    ext = (imghdr.what(None, h=data) or "jpeg")
+    ing.image_url = f"data:image/{ext};base64," + base64.b64encode(data).decode()
+    session.add(ing); session.commit(); session.refresh(ing)
+    return ing
+
 @app.delete("/api/ingredients/{ingredient_id}")
 def delete_ingredient(ingredient_id: int, session: Session = Depends(get_session)):
     ing = session.get(Ingredient, ingredient_id)
@@ -421,7 +441,7 @@ def list_pumps(session: Session = Depends(get_session)):
     result = []
     for p in pumps:
         ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
-        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated, image_url=ing.image_url or "") if ing else None
         result.append(PumpRead(id=p.id, slot=p.slot, pump_type=p.pump_type, gpio_pin=p.gpio_pin,
             ml_per_second=p.ml_per_second, enabled=p.enabled,
             ingredient_id=p.ingredient_id, ingredient=ing_read))
@@ -434,7 +454,7 @@ def list_pumps_simple(session: Session = Depends(get_session)):
     result = []
     for p in pumps:
         ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
-        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated) if ing else None
+        ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated, image_url=ing.image_url or "") if ing else None
         result.append(PumpSimple(id=p.id, slot=p.slot, ingredient_id=p.ingredient_id,
             ingredient=ing_read, enabled=p.enabled))
     return result

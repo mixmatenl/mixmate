@@ -1,3 +1,15 @@
+## [5.1.0] - 2026-07-27
+### Nieuw
+- Ingrediënten: foto toevoegen via upload (wordt opgeslagen op de Pi)
+- Ingrediënten: naam bewerken en verwijderen met bevestiging
+- Pompen: nieuw dashboard-stijl overzicht met grote kaarten, afbeeldingen en inline picker
+- Pompkaarten tonen ingrediënt-foto of kleurgradiënt, naam en koppelingstatus
+### Gewijzigd
+- Instellingen: alle iconen hebben nu één kleur en één look (rustig grijs)
+- Fabrieksreset krijgt rood accent als enige uitzondering
+- Backend: PATCH + image-upload endpoints voor ingrediënten toegevoegd
+- Backend: migratie voor ingredient.image_url kolom
+
 ## [5.0.0] - 2026-07-27
 ### Gewijzigd
 - Glas bepaalt niet langer hoeveel er wordt geschonken — de machine volgt altijd de recepthoeveelheden

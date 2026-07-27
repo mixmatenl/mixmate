@@ -28,6 +28,7 @@ class Ingredient(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     is_carbonated: bool = False
+    image_url: str = ""
     pumps: List["Pump"] = Relationship(back_populates="ingredient")
 
 
@@ -118,10 +119,17 @@ class IngredientRead(SQLModel):
     id: int
     name: str
     is_carbonated: bool
+    image_url: str = ""
 
 class IngredientCreate(SQLModel):
     name: str
     is_carbonated: bool = False
+    image_url: str = ""
+
+class IngredientUpdate(SQLModel):
+    name: Optional[str] = None
+    is_carbonated: Optional[bool] = None
+    image_url: Optional[str] = None
 
 
 class PumpRead(SQLModel):
