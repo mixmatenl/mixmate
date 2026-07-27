@@ -1585,6 +1585,12 @@ async def factory_reset():
         'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
     )
 
+    # 0. Wis in-memory state
+    global _cooldown_state, _prime_state, _prime_control
+    _cooldown_state.clear()
+    _prime_state   = {"active": False}
+    _prime_control = {"pause": False, "stop": False}
+
     # 1. Ontkoppel van cloud
     _cloud_pair["code"]          = None
     _cloud_pair["paired"]        = False
@@ -1711,6 +1717,12 @@ async def full_factory_reset():
         'MACHINE_MODEL=', 'MIXMATE_CLOUD_URL=',
         'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
     )
+
+    # 0. Wis in-memory state
+    global _cooldown_state, _prime_state, _prime_control
+    _cooldown_state.clear()
+    _prime_state   = {"active": False}
+    _prime_control = {"pause": False, "stop": False}
 
     # 1. Ontkoppel van cloud
     _cloud_pair["code"]          = None
