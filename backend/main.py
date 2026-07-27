@@ -457,8 +457,8 @@ def list_pumps_simple(session: Session = Depends(get_session)):
     for p in pumps:
         ing = session.get(Ingredient, p.ingredient_id) if p.ingredient_id else None
         ing_read = IngredientRead(id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated, image_url=ing.image_url or "") if ing else None
-        result.append(PumpSimple(id=p.id, slot=p.slot, ingredient_id=p.ingredient_id,
-            ingredient=ing_read, enabled=p.enabled))
+        result.append(PumpSimple(id=p.id, slot=p.slot, pump_type=p.pump_type,
+            ingredient_id=p.ingredient_id, ingredient=ing_read, enabled=p.enabled))
     return result
 
 @app.post("/api/pumps", response_model=PumpRead)

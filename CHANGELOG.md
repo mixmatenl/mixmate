@@ -1,3 +1,9 @@
+## [5.2.0] - 2026-07-27
+### Nieuw
+- Pompen: valve/CO₂-leidingen zichtbaar gemaakt met blauw CO₂-badge op kaart
+- Pompen: ingrediënt-dropdown gefilterd op pomptype — valve toont alleen CO₂-ingrediënten, peristaltisch nooit CO₂
+- Backend: `pump_type` toegevoegd aan `/api/pumps/simple` response
+
 ## [5.1.2] - 2026-07-27
 ### Fixes
 - Pompen: dropdown verwijderd, vervangen door native `<select>` — clipping door overflow:hidden op kaart opgelost

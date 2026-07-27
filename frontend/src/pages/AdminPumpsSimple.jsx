@@ -9,7 +9,10 @@ function gradientFor(name) {
 }
 
 function PumpCard({ pump, ingredients, onAssign, saving }) {
+  const isValve = pump.pump_type === 'valve'
   const ing = ingredients.find(i => i.id === pump.ingredient_id)
+  // Valve-pompen accepteren alleen CO2-ingrediënten; peristaltisch alleen niet-CO2
+  const compatible = ingredients.filter(i => isValve ? i.is_carbonated : !i.is_carbonated)
 
   return (
     <div style={{
@@ -51,14 +54,25 @@ function PumpCard({ pump, ingredients, onAssign, saving }) {
         }} />
 
         {/* Slot badge linksboven */}
-        <div style={{
-          position: 'absolute', top: 9, left: 9,
-          background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)',
-          borderRadius: 20, padding: '3px 9px',
-          fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
-          letterSpacing: '1px', textTransform: 'uppercase',
-        }}>
-          Pomp {pump.slot}
+        <div style={{ position: 'absolute', top: 9, left: 9, display: 'flex', gap: 4, alignItems: 'center' }}>
+          <div style={{
+            background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(6px)',
+            borderRadius: 20, padding: '3px 9px',
+            fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
+            letterSpacing: '1px', textTransform: 'uppercase',
+          }}>
+            Pomp {pump.slot}
+          </div>
+          {isValve && (
+            <div style={{
+              background: 'rgba(0,122,255,0.75)', backdropFilter: 'blur(6px)',
+              borderRadius: 20, padding: '3px 8px',
+              fontSize: 10, fontWeight: 700, color: '#fff',
+              letterSpacing: '0.5px',
+            }}>
+              CO₂
+            </div>
+          )}
         </div>
 
         {/* Status dot rechtsboven */}
@@ -106,11 +120,16 @@ function PumpCard({ pump, ingredients, onAssign, saving }) {
           }}
         >
           <option value="">— Leeg —</option>
-          {ingredients.map(i => (
+          {compatible.map(i => (
             <option key={i.id} value={i.id}>
               {i.name}{i.is_carbonated ? ' (CO₂)' : ''}
             </option>
           ))}
+          {compatible.length === 0 && (
+            <option disabled value="">
+              {isValve ? 'Geen CO₂-ingrediënten beschikbaar' : 'Geen ingrediënten beschikbaar'}
+            </option>
+          )}
         </select>
       </div>
     </div>

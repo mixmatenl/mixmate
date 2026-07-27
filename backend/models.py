@@ -162,6 +162,7 @@ class PumpUpdate(SQLModel):
 class PumpSimple(SQLModel):
     id: int
     slot: int
+    pump_type: str
     ingredient_id: Optional[int]
     ingredient: Optional[IngredientRead]
     enabled: bool
