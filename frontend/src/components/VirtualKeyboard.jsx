@@ -214,19 +214,33 @@ export function VirtualKeyboardProvider({ children }) {
         (el.tagName === 'INPUT' && el.type !== 'range' && el.type !== 'checkbox' && el.type !== 'radio' && el.type !== 'file') ||
         el.tagName === 'TEXTAREA'
       ) {
-        // Only show on touch device OR always (for Pi touchscreen)
+        // Onderdruk het native toetsenbord zodat alleen de VirtualKeyboard zichtbaar is
+        if (!el.dataset.nativeKeyboard) {
+          el._prevInputMode = el.getAttribute('inputmode') || ''
+          el.setAttribute('inputmode', 'none')
+        }
         setTarget(el)
       }
     }
 
-    function onBlur(e) {
-      // Don't close immediately — the keyboard click causes blur before press handler runs
-      // Let the keyboard's onMouseDown(preventDefault) handle this
+    function onFocusOut(e) {
+      const el = e.target
+      // Herstel inputmode zodat het veld weer normaal werkt buiten context
+      if (el._prevInputMode !== undefined) {
+        if (el._prevInputMode) {
+          el.setAttribute('inputmode', el._prevInputMode)
+        } else {
+          el.removeAttribute('inputmode')
+        }
+        delete el._prevInputMode
+      }
     }
 
     document.addEventListener('focusin', onFocus)
+    document.addEventListener('focusout', onFocusOut)
     return () => {
       document.removeEventListener('focusin', onFocus)
+      document.removeEventListener('focusout', onFocusOut)
     }
   }, [])
 

@@ -40,7 +40,6 @@ function ImagePicker({ ing, onUpdated }) {
     const file = e.target.files?.[0]; if (!file) return
     setLoading(true)
     try {
-      // Resize client-side
       const url = await new Promise((res, rej) => {
         const reader = new FileReader()
         reader.onload = ev => {
@@ -63,7 +62,6 @@ function ImagePicker({ ing, onUpdated }) {
         reader.onerror = rej
         reader.readAsDataURL(file)
       })
-      // Convert base64 back to File for upload
       const blob = await fetch(url).then(r => r.blob())
       const updated = await api.uploadIngredientImage(ing.id, new File([blob], 'img.jpg', { type: 'image/jpeg' }))
       onUpdated(updated)
@@ -80,34 +78,56 @@ function ImagePicker({ ing, onUpdated }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div
-        style={{ position: 'relative', cursor: 'pointer' }}
-        onClick={() => !loading && fileRef.current?.click()}
-      >
-        <IngredientImage ing={ing} size={72} />
-        <div style={{
-          position: 'absolute', inset: 0, borderRadius: 72 * 0.28,
-          background: 'rgba(0,0,0,0.35)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: loading ? 1 : 0,
-          transition: 'opacity 0.15s',
-        }}
-          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-          onMouseLeave={e => !loading && (e.currentTarget.style.opacity = 0)}
-        >
-          {loading
-            ? <span style={{ color: '#fff', fontSize: 12 }}>…</span>
-            : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          }
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      {/* Afbeelding — altijd zichtbare upload-knop eronder */}
+      <div style={{ position: 'relative' }}>
+        <IngredientImage ing={ing} size={56} />
+        {loading && (
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 56 * 0.28,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ color: '#fff', fontSize: 11 }}>…</span>
+          </div>
+        )}
       </div>
-      {ing.image_url && (
-        <button onClick={removeImage} style={{ fontSize: 11, color: '#aeaeb2', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          Foto verwijderen
+
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button
+          type="button"
+          onClick={() => !loading && fileRef.current?.click()}
+          disabled={loading}
+          style={{
+            fontSize: 11, color: '#007aff', background: 'none', border: 'none',
+            cursor: loading ? 'wait' : 'pointer', padding: '2px 6px',
+            fontFamily: 'inherit', borderRadius: 6,
+          }}
+        >
+          {ing.image_url ? 'Wijzig' : 'Foto'}
         </button>
-      )}
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+        {ing.image_url && (
+          <button
+            type="button"
+            onClick={removeImage}
+            style={{
+              fontSize: 11, color: '#aeaeb2', background: 'none', border: 'none',
+              cursor: 'pointer', padding: '2px 6px', fontFamily: 'inherit', borderRadius: 6,
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        data-native-keyboard="true"
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
     </div>
   )
 }
