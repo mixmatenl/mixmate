@@ -300,7 +300,7 @@ function StepKoppelen({ onNext, onSkip }) {
       </div>
 
       <div style={{ paddingTop: 16, paddingBottom: 8 }}>
-        <PrimaryBtn onClick={onNext}>{paired ? 'Volgende' : 'Volgende'}</PrimaryBtn>
+        <PrimaryBtn onClick={onNext}>{paired ? 'Ga verder' : 'Volgende'}</PrimaryBtn>
         {!paired && <SecondaryBtn onClick={onSkip}>Overslaan</SecondaryBtn>}
       </div>
     </Animated>

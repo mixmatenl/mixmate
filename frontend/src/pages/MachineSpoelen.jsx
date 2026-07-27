@@ -329,7 +329,6 @@ export default function MachineSpoelen() {
   const [cooldowns,  setCooldowns]  = useState([])  // [{slot, remaining_seconds, ingredient_name}]
   const [primeSlot,  setPrimeSlot]  = useState(null)
   const cooldownRef = useRef(null)
-  const pollRef     = useRef(null)
 
   // Laad pompen (alleen peristaltisch) — geen auto-selectie
   useEffect(() => {
@@ -399,11 +398,6 @@ export default function MachineSpoelen() {
 
   function toggle(slot) {
     setSelected(s => s.includes(slot) ? s.filter(x => x !== slot) : [...s, slot])
-  }
-
-  function toggleAll() {
-    if (!pumps) return
-    setSelected(s => s.length === pumps.length ? [] : pumps.map(p => p.slot))
   }
 
   // ── Prime overlay ────────────────────────────────────────────────────────────
@@ -572,7 +566,7 @@ export default function MachineSpoelen() {
       }}>
         {selected.length > 0 && !flushing && (
           <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
-            ±{totalSec}s
+            ±{selected.length * 6}s
           </div>
         )}
         <button

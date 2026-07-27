@@ -1,3 +1,10 @@
+## [5.6.1] - 2026-07-28
+### Fixes
+- MachineSpoelen: `totalSec` ReferenceError opgelost — tijd-indicator toont nu correct `±{n*6}s`
+- MachineSpoelen: ongebruikte `pollRef` en dode `toggleAll`-functie verwijderd
+- Backend: `factory-reset` en `full-factory-reset` clearen nu ook in-memory `_cooldown_state`, `_prime_state` en `_prime_control` vóór de herstart
+- SetupWizard: dode ternary in koppelstap-knop gecorrigeerd (toont nu "Ga verder" als al gekoppeld)
+
 ## [5.6.0] - 2026-07-28
 ### Gewijzigd
 - MachineSpoelen: geen auto-selectie meer bij laden — gebruiker kiest zelf welke leidingen op water staan
