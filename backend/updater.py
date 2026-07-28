@@ -272,7 +272,7 @@ async def run_update():
         # Stuur "done" EERST zodat de browser het ontvangt,
         # dan herstart de service na een korte vertraging.
         yield {"type": "step", "label": "Service herstarten"}
-        yield {"type": "log", "line": "Update klaar — machine herstart over 3 seconden…"}
+        yield {"type": "log", "line": "Update klaar — machine herstart volledig over 3 seconden…"}
         yield {"type": "done"}
 
         # Wacht 3 seconden zodat de WebSocket verbinding netjes gesloten kan worden,
@@ -348,9 +348,7 @@ async def run_update():
             if reload_needed:
                 await asyncio.create_subprocess_exec("sudo", "systemctl", "daemon-reload")
 
-            await asyncio.create_subprocess_exec(
-                "sudo", "systemctl", "restart", "mixmate"
-            )
+            await asyncio.create_subprocess_exec("sudo", "reboot")
 
         asyncio.create_task(_delayed_restart())
 
