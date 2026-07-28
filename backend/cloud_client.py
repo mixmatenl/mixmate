@@ -306,6 +306,20 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 r = await c.post(f"{LOCAL}/api/auth/verify-pin", json={"pin": message.get("pin")}, timeout=5)
                 return {"req_id": req_id, "ok": r.status_code == 200}
 
+            elif msg_type == "set_bartender_pin":
+                r = await c.post(f"{LOCAL}/api/auth/set-pin", json={
+                    "admin_pin": message.get("admin_pin"),
+                    "new_pin":   message.get("new_pin"),
+                }, timeout=5)
+                if r.status_code >= 400:
+                    err = r.json().get("detail", "Fout")
+                    return {"req_id": req_id, "ok": False, "error": err}
+                return {"req_id": req_id, "ok": True}
+
+            elif msg_type == "get_bartender_pin":
+                r = await c.get(f"{LOCAL}/api/auth/bartender-pin", timeout=5)
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "cancel_pour":
                 r = await c.post(f"{LOCAL}/api/pour/cancel", timeout=5)
                 return {"req_id": req_id, "ok": r.status_code < 300}

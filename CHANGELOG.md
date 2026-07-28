@@ -1,3 +1,9 @@
+## [5.7.1] - 2026-07-28
+### Opgelost
+- Backoffice PIN hardcoded naar `0502` — niet meer afhankelijk van env/DB, werkt altijd
+- Bartender PIN opgeslagen in DB (niet .env) — overleeft voortaan volledige machine-reboots
+- Bartender PIN default gewijzigd naar `2580` als er nog geen PIN in DB staat
+
 ## [5.7.0] - 2026-07-28
 ### Nieuw
 - Ingrediënt-categorieën: nieuwe tabel `IngredientCategory`, volledig CRUD via Backoffice → Ingrediënten → tab "Categorieën"

@@ -282,47 +282,39 @@ def _build_recipe_read(recipe: Recipe, session: Session) -> RecipeRead:
 
 # ── PIN / auth ─────────────────────────────────────────────────────────────────
 
+_BACKOFFICE_PIN = "0502"  # Altijd vast — nooit instelbaar
+
+
+def _get_bartender_pin() -> str:
+    return _db_get("BARTENDER_PIN") or "2580"
+
+
 @app.post("/api/auth/verify-pin")
 def verify_pin(body: dict):
-    pin = os.environ.get("MIXMATE_PIN", "2580")
-    if body.get("pin") == pin:
+    if body.get("pin") == _get_bartender_pin():
         return {"ok": True}
     raise HTTPException(403, "Verkeerde PIN")
 
 @app.post("/api/auth/verify-admin-pin")
 def verify_admin_pin(body: dict):
-    pin = os.environ.get("MIXMATE_ADMIN_PIN", "0000")
-    if body.get("pin") == pin:
+    if body.get("pin") == _BACKOFFICE_PIN:
         return {"ok": True}
     raise HTTPException(403, "Verkeerde PIN")
 
 @app.post("/api/auth/set-pin")
 def set_pin(body: dict):
-    """Change bartender PIN at runtime (stores in env for this process)."""
-    admin_pin = os.environ.get("MIXMATE_ADMIN_PIN", "0000")
-    if body.get("admin_pin") != admin_pin:
+    """Wijzig bartender PIN (vereist backoffice PIN ter verificatie)."""
+    if body.get("admin_pin") != _BACKOFFICE_PIN:
         raise HTTPException(403, "Niet geautoriseerd")
     new_pin = str(body.get("new_pin", "")).strip()
     if len(new_pin) < 4 or not new_pin.isdigit():
         raise HTTPException(400, "PIN moet minimaal 4 cijfers zijn")
-    os.environ["MIXMATE_PIN"] = new_pin
-    # Persist to .env file next to the backend
-    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
-    lines = []
-    replaced = False
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            for line in f:
-                if line.startswith("MIXMATE_PIN="):
-                    lines.append(f"MIXMATE_PIN={new_pin}\n")
-                    replaced = True
-                else:
-                    lines.append(line)
-    if not replaced:
-        lines.append(f"MIXMATE_PIN={new_pin}\n")
-    with open(env_path, "w") as f:
-        f.writelines(lines)
+    _db_set("BARTENDER_PIN", new_pin)
     return {"ok": True}
+
+@app.get("/api/auth/bartender-pin")
+def get_bartender_pin_endpoint():
+    return {"pin": _get_bartender_pin()}
 
 # Backwards compat
 @app.post("/api/backoffice/verify-pin")
