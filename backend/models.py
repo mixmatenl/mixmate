@@ -24,11 +24,20 @@ class Category(SQLModel, table=True):
     recipes: List["Recipe"] = Relationship(back_populates="category_rel")
 
 
+class IngredientCategory(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    sort_order: int = 0
+    ingredients: List["Ingredient"] = Relationship(back_populates="category_rel")
+
+
 class Ingredient(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     is_carbonated: bool = False
     image_url: str = ""
+    ingredient_category_id: Optional[int] = Field(default=None, foreign_key="ingredientcategory.id")
+    category_rel: Optional["IngredientCategory"] = Relationship(back_populates="ingredients")
     pumps: List["Pump"] = Relationship(back_populates="ingredient")
 
 
@@ -115,21 +124,39 @@ class CategoryUpdate(SQLModel):
     sort_order: Optional[int] = None
 
 
+class IngredientCategoryRead(SQLModel):
+    id: int
+    name: str
+    sort_order: int
+
+class IngredientCategoryCreate(SQLModel):
+    name: str
+    sort_order: int = 0
+
+class IngredientCategoryUpdate(SQLModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+
+
 class IngredientRead(SQLModel):
     id: int
     name: str
     is_carbonated: bool
     image_url: str = ""
+    ingredient_category_id: Optional[int] = None
+    ingredient_category_name: Optional[str] = None
 
 class IngredientCreate(SQLModel):
     name: str
     is_carbonated: bool = False
     image_url: str = ""
+    ingredient_category_id: Optional[int] = None
 
 class IngredientUpdate(SQLModel):
     name: Optional[str] = None
     is_carbonated: Optional[bool] = None
     image_url: Optional[str] = None
+    ingredient_category_id: Optional[int] = None
 
 
 class PumpRead(SQLModel):

@@ -19,6 +19,7 @@ from .database import create_db, get_session, engine
 from .models import (
     Glass, GlassCreate, GlassRead, GlassUpdate,
     Category, CategoryCreate, CategoryRead, CategoryUpdate,
+    IngredientCategory, IngredientCategoryCreate, IngredientCategoryRead, IngredientCategoryUpdate,
     Ingredient, IngredientCreate, IngredientRead, IngredientUpdate,
     Pump, PumpCreate, PumpRead, PumpUpdate, PumpSimple,
     Recipe, RecipeCreate, RecipeRead, RecipeUpdate,
@@ -185,7 +186,8 @@ async def lifespan(app: FastAPI):
     _cloud_task = asyncio.create_task(cloud_loop())
     asyncio.create_task(_update_check_loop())
     _schedule_major_update_reboot()
-    # Herstel account-info uit DB (overleeft herstart)
+    # Herstel cooldowns en account-info uit DB (overleeft herstart)
+    _load_cooldown_state()
     _cloud_pair["account_name"]  = _db_get("account_name")  or None
     _cloud_pair["account_email"] = _db_get("account_email") or None
     paired_val = _db_get("paired")
@@ -409,15 +411,25 @@ def delete_category(cat_id: int, session: Session = Depends(get_session)):
 
 # ── Ingredients ───────────────────────────────────────────────────────────────
 
+def _ing_read(ing: Ingredient, session: Session) -> IngredientRead:
+    cat = session.get(IngredientCategory, ing.ingredient_category_id) if ing.ingredient_category_id else None
+    return IngredientRead(
+        id=ing.id, name=ing.name, is_carbonated=ing.is_carbonated,
+        image_url=ing.image_url or "",
+        ingredient_category_id=ing.ingredient_category_id,
+        ingredient_category_name=cat.name if cat else None,
+    )
+
+
 @app.get("/api/ingredients", response_model=List[IngredientRead])
 def list_ingredients(session: Session = Depends(get_session)):
-    return session.exec(select(Ingredient)).all()
+    return [_ing_read(i, session) for i in session.exec(select(Ingredient)).all()]
 
 @app.post("/api/ingredients", response_model=IngredientRead)
 def create_ingredient(data: IngredientCreate, session: Session = Depends(get_session)):
     ing = Ingredient(**data.model_dump())
     session.add(ing); session.commit(); session.refresh(ing)
-    return ing
+    return _ing_read(ing, session)
 
 @app.patch("/api/ingredients/{ingredient_id}", response_model=IngredientRead)
 def update_ingredient(ingredient_id: int, data: IngredientUpdate, session: Session = Depends(get_session)):
@@ -426,7 +438,7 @@ def update_ingredient(ingredient_id: int, data: IngredientUpdate, session: Sessi
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(ing, k, v)
     session.add(ing); session.commit(); session.refresh(ing)
-    return ing
+    return _ing_read(ing, session)
 
 @app.post("/api/ingredients/{ingredient_id}/image", response_model=IngredientRead)
 async def upload_ingredient_image(ingredient_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
@@ -437,13 +449,46 @@ async def upload_ingredient_image(ingredient_id: int, file: UploadFile = File(..
     ext = (imghdr.what(None, h=data) or "jpeg")
     ing.image_url = f"data:image/{ext};base64," + base64.b64encode(data).decode()
     session.add(ing); session.commit(); session.refresh(ing)
-    return ing
+    return _ing_read(ing, session)
 
 @app.delete("/api/ingredients/{ingredient_id}")
 def delete_ingredient(ingredient_id: int, session: Session = Depends(get_session)):
     ing = session.get(Ingredient, ingredient_id)
     if not ing: raise HTTPException(404)
     session.delete(ing); session.commit()
+    return {"ok": True}
+
+
+# ── Ingrediënt-categorieën ────────────────────────────────────────────────────
+
+@app.get("/api/ingredient-categories", response_model=List[IngredientCategoryRead])
+def list_ingredient_categories(session: Session = Depends(get_session)):
+    return session.exec(select(IngredientCategory).order_by(IngredientCategory.sort_order)).all()
+
+@app.post("/api/ingredient-categories", response_model=IngredientCategoryRead)
+def create_ingredient_category(data: IngredientCategoryCreate, session: Session = Depends(get_session)):
+    cat = IngredientCategory(**data.model_dump())
+    session.add(cat); session.commit(); session.refresh(cat)
+    return cat
+
+@app.patch("/api/ingredient-categories/{cat_id}", response_model=IngredientCategoryRead)
+def update_ingredient_category(cat_id: int, data: IngredientCategoryUpdate, session: Session = Depends(get_session)):
+    cat = session.get(IngredientCategory, cat_id)
+    if not cat: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items():
+        setattr(cat, k, v)
+    session.add(cat); session.commit(); session.refresh(cat)
+    return cat
+
+@app.delete("/api/ingredient-categories/{cat_id}")
+def delete_ingredient_category(cat_id: int, session: Session = Depends(get_session)):
+    cat = session.get(IngredientCategory, cat_id)
+    if not cat: raise HTTPException(404)
+    # Ontkoppel ingrediënten die deze categorie hadden
+    for ing in session.exec(select(Ingredient).where(Ingredient.ingredient_category_id == cat_id)).all():
+        ing.ingredient_category_id = None
+        session.add(ing)
+    session.delete(cat); session.commit()
     return {"ok": True}
 
 
@@ -514,6 +559,38 @@ def assign_ingredient(pump_id: int, body: dict, session: Session = Depends(get_s
 
 _flush_state: dict = {"active": False}
 _cooldown_state: dict = {}   # slot (int) → expiry monotonic time (float)
+
+
+def _persist_cooldown_state():
+    """Sla cooldowns op als wall-clock timestamps zodat ze een herstart overleven."""
+    import json
+    wall_now  = time.time()
+    mono_now  = time.monotonic()
+    persisted = {
+        str(slot): wall_now + (expiry - mono_now)
+        for slot, expiry in _cooldown_state.items()
+        if expiry > mono_now
+    }
+    _db_set("cooldown_state", json.dumps(persisted))
+
+
+def _load_cooldown_state():
+    """Herstel cooldowns uit DB na herstart; verlopen entries worden genegeerd."""
+    import json
+    raw = _db_get("cooldown_state")
+    if not raw:
+        return
+    try:
+        stored   = json.loads(raw)
+        wall_now = time.time()
+        mono_now = time.monotonic()
+        for slot_str, wall_expiry in stored.items():
+            remaining = wall_expiry - wall_now
+            if remaining > 0:
+                _cooldown_state[int(slot_str)] = mono_now + remaining
+                log.info("Cooldown hersteld — leiding %s: nog %.0fs", slot_str, remaining)
+    except Exception as e:
+        log.warning("Cooldown herstel mislukt: %s", e)
 _prime_state: dict   = {"active": False}
 _prime_control: dict = {"pause": False, "stop": False}
 _machine_blocked: bool = False
@@ -535,6 +612,11 @@ def _auto_migrate_sessions():
         # Zet alle pompen met een onrealistisch lage snelheid (< 5 ml/s) naar 35.0
         try:
             conn.execute(text("UPDATE pump SET ml_per_second = 35.0 WHERE ml_per_second < 5.0"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE ingredient ADD COLUMN ingredient_category_id INTEGER REFERENCES ingredientcategory(id)"))
             conn.commit()
         except Exception:
             pass
@@ -601,6 +683,7 @@ async def _run_flush_task(pumps: list):
             secs = random.randint(60, 480)
             _cooldown_state[p["slot"]] = now + secs
             log.info("Leiding %s: cooldown %ds", p["slot"], secs)
+        _persist_cooldown_state()
         _flush_state = {"active": False, "total": len(pumps), "done": len(pumps)}
     except Exception as e:
         log.error("Flush taak fout bij leiding %s: %s", _flush_state.get("current_slot"), e)
@@ -1588,6 +1671,7 @@ async def factory_reset():
     # 0. Wis in-memory state
     global _cooldown_state, _prime_state, _prime_control
     _cooldown_state.clear()
+    _db_set("cooldown_state", "{}")
     _prime_state   = {"active": False}
     _prime_control = {"pause": False, "stop": False}
 
@@ -1721,6 +1805,7 @@ async def full_factory_reset():
     # 0. Wis in-memory state
     global _cooldown_state, _prime_state, _prime_control
     _cooldown_state.clear()
+    _db_set("cooldown_state", "{}")
     _prime_state   = {"active": False}
     _prime_control = {"pause": False, "stop": False}
 

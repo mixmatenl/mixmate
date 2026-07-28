@@ -1,3 +1,13 @@
+## [5.7.0] - 2026-07-28
+### Nieuw
+- Ingrediënt-categorieën: nieuwe tabel `IngredientCategory`, volledig CRUD via Backoffice → Ingrediënten → tab "Categorieën"
+- Ingrediënten kunnen een categorie krijgen (bijv. Sterke drank, Sappen, Siropen) — instelbaar bij aanmaken en bewerken
+- Categorie wordt getoond in de ingrediëntrij naast de naam
+
+## [5.6.2] - 2026-07-28
+### Opgelost
+- Backend: cooldown-staat wordt nu persistent opgeslagen in de database en hersteld na een herstart/crash — voorheen verloor een herstart alle cooldown-timers waardoor een leiding direct hergebruikt kon worden terwijl er nog schoonmaakmiddel in zat
+
 ## [5.6.1] - 2026-07-28
 ### Fixes
 - MachineSpoelen: `totalSec` ReferenceError opgelost — tijd-indicator toont nu correct `±{n*6}s`

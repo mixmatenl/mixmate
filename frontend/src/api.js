@@ -35,6 +35,12 @@ export const api = {
     return res.json()
   },
 
+  // Ingredient categories
+  getIngredientCategories:  ()         => request('GET',    '/ingredient-categories'),
+  createIngredientCategory: (data)     => request('POST',   '/ingredient-categories', data),
+  updateIngredientCategory: (id, data) => request('PATCH',  `/ingredient-categories/${id}`, data),
+  deleteIngredientCategory: (id)       => request('DELETE', `/ingredient-categories/${id}`),
+
   // Pumps (full — backoffice)
   getPumps: () => request('GET', '/pumps'),
   createPump: (data) => request('POST', '/pumps', data),

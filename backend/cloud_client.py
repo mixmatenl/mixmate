@@ -154,8 +154,35 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 r = await c.post(f"{LOCAL}/api/ingredients", json=message.get("data", {}))
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "update_ingredient":
+                r = await c.patch(f"{LOCAL}/api/ingredients/{message['id']}", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "delete_ingredient":
                 r = await c.delete(f"{LOCAL}/api/ingredients/{message['id']}")
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
+            elif msg_type == "upload_ingredient_image":
+                import base64 as _b64
+                raw   = _b64.b64decode(message["image_b64"])
+                files = {"file": ("photo.jpg", raw, "image/jpeg")}
+                r     = await c.post(f"{LOCAL}/api/ingredients/{message['id']}/image", files=files)
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "get_ingredient_categories":
+                r = await c.get(f"{LOCAL}/api/ingredient-categories")
+                return {"req_id": req_id, "items": r.json()}
+
+            elif msg_type == "create_ingredient_category":
+                r = await c.post(f"{LOCAL}/api/ingredient-categories", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "update_ingredient_category":
+                r = await c.patch(f"{LOCAL}/api/ingredient-categories/{message['id']}", json=message.get("data", {}))
+                return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "delete_ingredient_category":
+                r = await c.delete(f"{LOCAL}/api/ingredient-categories/{message['id']}")
                 return {"req_id": req_id, "ok": r.status_code < 300}
 
             # ── Glazen ───────────────────────────────────────────────────────
