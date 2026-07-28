@@ -1,3 +1,9 @@
+## [5.7.2] - 2026-07-28
+### Beveiligd
+- Backoffice vereist altijd een PIN bij elke keer openen — sessionStorage-bypass verwijderd
+- Auto-lock na 3 minuten inactiviteit in de backoffice
+- "← Terug" vergrendelt de backoffice direct
+
 ## [5.7.1] - 2026-07-28
 ### Opgelost
 - Backoffice PIN hardcoded naar `0502` — niet meer afhankelijk van env/DB, werkt altijd

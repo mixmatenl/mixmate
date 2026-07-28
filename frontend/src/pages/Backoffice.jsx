@@ -406,16 +406,44 @@ function FabriekPanel({ factoryMode, onReadyToPack }) {
 }
 
 /* ── Backoffice shell ─────────────────────────────────────────────────────── */
+const BO_LOCK_TIMEOUT_MS = 3 * 60 * 1000  // 3 minuten inactiviteit → auto-lock
+
 export default function Backoffice({ onClose, factoryMode = false, onReadyToPack }) {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(BO_SESSION) === '1')
+  // Nooit automatisch ingelogd — altijd PIN vereist bij openen
+  const [authed, setAuthed] = useState(false)
   const [tab,         setTab]         = useState(factoryMode ? 'fabriek' : 'pin')
   const [showWifi,    setShowWifi]    = useState(false)
   const [showPairing, setShowPairing] = useState(false)
   const [ingredients, setIngredients] = useState([])
+  const lockTimer = useRef(null)
 
   useEffect(() => { if (authed) api.getIngredients().then(setIngredients) }, [authed])
 
-  function lock() { sessionStorage.removeItem(BO_SESSION); setAuthed(false) }
+  // Auto-lock na inactiviteit
+  useEffect(() => {
+    if (!authed) return
+    function resetTimer() {
+      clearTimeout(lockTimer.current)
+      lockTimer.current = setTimeout(lock, BO_LOCK_TIMEOUT_MS)
+    }
+    const events = ['pointerdown', 'pointermove', 'keydown']
+    events.forEach(e => window.addEventListener(e, resetTimer))
+    resetTimer()
+    return () => {
+      clearTimeout(lockTimer.current)
+      events.forEach(e => window.removeEventListener(e, resetTimer))
+    }
+  }, [authed])
+
+  function lock() {
+    sessionStorage.removeItem(BO_SESSION)
+    setAuthed(false)
+  }
+
+  function handleClose() {
+    lock()  // altijd vergrendelen bij terugkeren
+    onClose?.()
+  }
 
   if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} />
 
@@ -457,7 +485,7 @@ export default function Backoffice({ onClose, factoryMode = false, onReadyToPack
         <div className="flex gap-4">
           <button onClick={lock} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">Vergrendel</button>
           {!factoryMode && (
-            <button onClick={onClose} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">← Terug</button>
+            <button onClick={handleClose} className="text-sm text-white/75 hover:text-white/80 transition-colors font-medium">← Terug</button>
           )}
         </div>
       </header>
