@@ -7,7 +7,6 @@ import AdminCategories from './AdminCategories'
 import AdminGlasses from './AdminGlasses'
 import PumpCalibrationWizard from './PumpCalibrationWizard'
 import AppUpdate from './AppUpdate'
-import AdminDemo from './AdminDemo'
 import WifiSetup from './WifiSetup'
 import CloudPairing from './CloudPairing'
 import MachineSpoelen from './MachineSpoelen'
@@ -450,7 +449,6 @@ function SettingsHome() {
       </Section>
 
       <Section title="Systeem">
-        <SettingsRow icon={<IconDemo />}    label="Demo modus"        sublabel="Automatische showcase bij inactiviteit" onClick={() => navigate('/instellingen/demo')} />
         <SettingsRow icon={<IconUpdate />}  label="Software update"   sublabel="Controleer op nieuwe versie"           onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    label="Over deze machine" sublabel="Serienummer, netwerk en hardware"       onClick={() => navigate('/instellingen/info')} />
         <SettingsRow icon={<IconRestart />} label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"           onClick={() => setConfirm('restart')} />
@@ -585,7 +583,6 @@ export default function Instellingen() {
         <Route path="categorieen"  element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminCategories /></div></SubPage>} />
         <Route path="recepten"     element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminRecipes /></div></SubPage>} />
         <Route path="update"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AppUpdate /></div></SubPage>} />
-        <Route path="demo"         element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminDemo /></div></SubPage>} />
         <Route path="info"         element={<SubPage><MachineInfo /></SubPage>} />
       </Routes>
     </div>
