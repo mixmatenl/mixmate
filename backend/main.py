@@ -307,6 +307,9 @@ def set_pin(body: dict):
     if body.get("admin_pin") != _BACKOFFICE_PIN:
         raise HTTPException(403, "Niet geautoriseerd")
     new_pin = str(body.get("new_pin", "")).strip()
+    if new_pin == "":
+        _db_set("BARTENDER_PIN", "")
+        return {"ok": True}
     if len(new_pin) < 4 or not new_pin.isdigit():
         raise HTTPException(400, "PIN moet minimaal 4 cijfers zijn")
     _db_set("BARTENDER_PIN", new_pin)

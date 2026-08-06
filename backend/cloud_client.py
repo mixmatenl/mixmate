@@ -307,9 +307,21 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 return {"req_id": req_id, "ok": r.status_code == 200}
 
             elif msg_type == "set_bartender_pin":
+                # Accepteert zowel 'pin' als 'new_pin' voor achterwaartse compatibiliteit
+                new_pin = message.get("pin") or message.get("new_pin")
                 r = await c.post(f"{LOCAL}/api/auth/set-pin", json={
                     "admin_pin": message.get("admin_pin"),
-                    "new_pin":   message.get("new_pin"),
+                    "new_pin":   new_pin,
+                }, timeout=5)
+                if r.status_code >= 400:
+                    err = r.json().get("detail", "Fout")
+                    return {"req_id": req_id, "ok": False, "error": err}
+                return {"req_id": req_id, "ok": True}
+
+            elif msg_type == "remove_bartender_pin":
+                r = await c.post(f"{LOCAL}/api/auth/set-pin", json={
+                    "admin_pin": message.get("admin_pin"),
+                    "new_pin":   "",
                 }, timeout=5)
                 if r.status_code >= 400:
                     err = r.json().get("detail", "Fout")
@@ -319,6 +331,16 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
             elif msg_type == "get_bartender_pin":
                 r = await c.get(f"{LOCAL}/api/auth/bartender-pin", timeout=5)
                 return {"req_id": req_id, **r.json()}
+
+            elif msg_type == "restart":
+                import subprocess
+                subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+                return {"req_id": req_id, "ok": True}
+
+            elif msg_type == "unpaired":
+                # Portaal heeft machine ontkoppeld — wis lokale koppeling
+                r = await c.post(f"{LOCAL}/api/cloud/unpair", timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
 
             elif msg_type == "cancel_pour":
                 r = await c.post(f"{LOCAL}/api/pour/cancel", timeout=5)
