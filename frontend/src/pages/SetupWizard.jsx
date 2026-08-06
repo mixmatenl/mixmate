@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
+import WifiSetup from './WifiSetup'
 
 // ── Stap-definities ────────────────────────────────────────────────────────────
 
-const STEPS = ['welkom', 'features', 'koppelen', 'klaar']
+const STEPS = ['welkom', 'wifi', 'features', 'koppelen', 'klaar']
 
 // ── Animatie-helpers ───────────────────────────────────────────────────────────
 
@@ -185,6 +186,30 @@ function StepFeatures({ onNext }) {
 
       <div style={{ paddingTop: 24, paddingBottom: 8 }}>
         <PrimaryBtn onClick={onNext}>Volgende</PrimaryBtn>
+      </div>
+    </Animated>
+  )
+}
+
+// ── Stap 2: WiFi instellen ─────────────────────────────────────────────────────
+
+function StepWifi({ onNext, onSkip }) {
+  return (
+    <Animated style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ padding: '0 24px 12px', textAlign: 'center' }}>
+        <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: -0.5, marginBottom: 6 }}>
+          WiFi instellen
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+          Verbind de machine met internet voor cloudkoppelingen en updates.
+        </div>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden', borderRadius: 16, margin: '0 16px', background: '#fff' }}>
+        <WifiSetup />
+      </div>
+      <div style={{ padding: '16px 24px 8px' }}>
+        <PrimaryBtn onClick={onNext}>Volgende</PrimaryBtn>
+        <SecondaryBtn onClick={onSkip}>Overslaan</SecondaryBtn>
       </div>
     </Animated>
   )
@@ -374,9 +399,10 @@ export default function SetupWizard({ onComplete }) {
       {/* Stap content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: 32 }}>
         {step === 0 && <StepWelkom   onNext={next} />}
-        {step === 1 && <StepFeatures onNext={next} />}
-        {step === 2 && <StepKoppelen onNext={next} onSkip={next} />}
-        {step === 3 && <StepKlaar    onDone={onComplete} />}
+        {step === 1 && <StepWifi     onNext={next} onSkip={next} />}
+        {step === 2 && <StepFeatures onNext={next} />}
+        {step === 3 && <StepKoppelen onNext={next} onSkip={next} />}
+        {step === 4 && <StepKlaar    onDone={onComplete} />}
       </div>
     </div>
   )

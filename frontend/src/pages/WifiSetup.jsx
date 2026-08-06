@@ -63,6 +63,7 @@ export default function WifiSetup({ onClose }) {
   const [password,   setPassword]   = useState('')
   const [showPass,   setShowPass]   = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [forgetting, setForgetting] = useState(null)
   const [result,     setResult]     = useState(null)
   const [status,     setStatus]     = useState(null)
 
@@ -94,16 +95,33 @@ export default function WifiSetup({ onClose }) {
         body: JSON.stringify({ ssid: selected.ssid, password }),
       })
       const d = await r.json()
-      setResult(d)
       if (d.ok) {
         setStatus({ connected: true, ssid: selected.ssid })
         setSelected(null)
         setPassword('')
+        setResult(null)
+        await scan()
+      } else {
+        setResult({ ok: false, message: d.message || 'Verbinding mislukt' })
       }
     } catch {
-      setResult({ ok: false, message: 'Verbinding mislukt' })
+      setResult({ ok: false, message: 'Verbinding mislukt — controleer het wachtwoord' })
     }
     setConnecting(false)
+  }
+
+  async function forget(ssid) {
+    setForgetting(ssid)
+    try {
+      await fetch('/api/system/wifi/forget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssid }),
+      })
+      if (status?.ssid === ssid) setStatus(null)
+      await scan()
+    } catch {}
+    setForgetting(null)
   }
 
   return (
@@ -158,7 +176,7 @@ export default function WifiSetup({ onClose }) {
                   {isSelected && (
                     <div style={{ borderTop: '1px solid #f3f4f6', padding: '14px 16px', background: '#fafafa' }}>
                       <form onSubmit={connect}>
-                        {n.secured && (
+                        {n.secured && !n.active && (
                           <div style={{ position: 'relative', marginBottom: 10 }}>
                             <input
                               type={showPass ? 'text' : 'password'}
@@ -181,8 +199,18 @@ export default function WifiSetup({ onClose }) {
                           </div>
                         )}
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <button type="submit" disabled={connecting || (n.secured && !password)} style={{ flex: 1, background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: connecting || (n.secured && !password) ? 0.4 : 1 }}>
-                            {connecting ? 'Verbinden...' : 'Verbinden'}
+                          {!n.active && (
+                            <button type="submit" disabled={connecting || (n.secured && !password)} style={{ flex: 1, background: '#111', color: '#fff', border: 'none', borderRadius: 8, padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: connecting || (n.secured && !password) ? 0.4 : 1 }}>
+                              {connecting ? 'Verbinden...' : 'Verbinden'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => forget(n.ssid)}
+                            disabled={forgetting === n.ssid}
+                            style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 8, padding: '11px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 500, opacity: forgetting === n.ssid ? 0.5 : 1 }}
+                          >
+                            {forgetting === n.ssid ? 'Verwijderen...' : 'Vergeten'}
                           </button>
                           <button type="button" onClick={() => { setSelected(null); setResult(null) }} style={{ background: '#f3f4f6', border: 'none', color: '#374151', borderRadius: 8, padding: '11px 16px', cursor: 'pointer', fontSize: 14 }}>
                             Annuleren

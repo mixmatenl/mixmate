@@ -1,3 +1,21 @@
+## [5.8.0] - 2026-08-06
+### Nieuw
+- Installatiehulp (SetupWizard) bevat nu een WiFi-stap: netwerken scannen, verbinden en vergeten
+- Nieuwe machine-state standaard: verse installatie start in `factory` modus (niet in klantomgeving)
+- WiFi vergeten: knop in WiFi-instellingen om opgeslagen netwerken te verwijderen via nmcli
+- Backend: nieuw endpoint `POST /api/system/wifi/forget`
+
+### Opgelost
+- WiFi: foutmeldingen zijn nu altijd leesbaar Nederlands (geen technische output meer)
+- WiFi: na verbinden wordt de lijst ververst en is de verbonden status direct zichtbaar
+- Verbonden netwerk toont 'Verbinden'-knop niet meer — alleen 'Vergeten'
+
+## [5.7.3] - 2026-08-06
+### Gewijzigd
+- Demo modus kan niet langer lokaal worden in-/uitgeschakeld via het instellingenmenu
+- Demo activering werkt uitsluitend via het admin portaal (portaal.mixmate.nl)
+- Inactiviteitstimer voor automatische demo volledig verwijderd
+
 ## [5.7.2] - 2026-07-28
 ### Beveiligd
 - Backoffice vereist altijd een PIN bij elke keer openen — sessionStorage-bypass verwijderd

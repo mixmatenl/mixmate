@@ -1560,6 +1560,32 @@ async def wifi_connect(body: dict):
     except Exception as e2:
         return {"ok": False, "message": f"Verbinding mislukt: {e2}"}
 
+@app.post("/api/system/wifi/forget")
+async def wifi_forget(body: dict):
+    """Vergeet een opgeslagen WiFi netwerk (verwijdert nmcli-profiel)."""
+    ssid = str(body.get("ssid", "")).strip()
+    if not ssid:
+        raise HTTPException(400, "SSID ontbreekt")
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "sudo", "nmcli", "connection", "delete", ssid,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=10)
+        if proc.returncode == 0:
+            return {"ok": True, "message": f"Netwerk '{ssid}' vergeten"}
+        output = (out + err).decode()
+        if "Error" in output and "not found" in output.lower():
+            return {"ok": True, "message": f"Netwerk '{ssid}' was niet opgeslagen"}
+        return {"ok": False, "message": output.strip() or "Verwijderen mislukt"}
+    except FileNotFoundError:
+        return {"ok": False, "message": "nmcli niet beschikbaar"}
+    except asyncio.TimeoutError:
+        return {"ok": False, "message": "Time-out bij verwijderen"}
+    except Exception as e:
+        return {"ok": False, "message": str(e)}
+
+
 # ── Machine instellingen ──────────────────────────────────────────────────────
 
 @app.get("/api/system/machine")
@@ -1757,7 +1783,7 @@ def get_machine_state():
     Standaard: 'ready' (bestaande installaties)
     """
     val = _db_get("machine_state")
-    return {"state": val or "ready"}
+    return {"state": val or "factory"}
 
 
 @app.post("/api/system/ready-to-pack")
