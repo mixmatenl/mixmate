@@ -44,7 +44,7 @@ export default function App() {
   useEffect(() => {
     api.getMachineState()
       .then(r => setMachineState(r.state))
-      .catch(() => setMachineState('ready'))
+      .catch(() => setMachineState('factory'))
   }, [])
   const demoFromBackend = useRef(false)
   const demoExitedAt    = useRef(0)
