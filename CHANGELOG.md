@@ -1,3 +1,7 @@
+## [5.8.1] - 2026-08-07
+### Gewijzigd
+- Installatie-wizard volledig herschreven: direction-aware overgangen, terugknop, donkere WiFi-stap, auto-advance bij koppelen, geanimeerde checkmark op afsluiting
+
 ## [5.8.0] - 2026-08-06
 ### Nieuw
 - Installatiehulp (SetupWizard) bevat nu een WiFi-stap: netwerken scannen, verbinden en vergeten
