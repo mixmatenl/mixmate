@@ -66,7 +66,7 @@ function StepEthernet({ onNext }) {
 
   const check = useCallback(async () => {
     try {
-      const r = await fetch('/api/system/wifi/status')
+      const r = await fetch('/api/system/network-info')
       const d = await r.json()
       setStatus(d)
     } catch {
@@ -146,7 +146,8 @@ function StepCocktailmachine({ onNext }) {
 
   const viaLabel = via === 'bluetooth' ? 'via Bluetooth'
                  : via === 'hotspot'   ? 'via installatie-hotspot'
-                 : 'via WiFi'
+                 : via === 'wifi'      ? 'via WiFi'
+                 : ''
 
   return (
     <Step
@@ -386,6 +387,7 @@ export default function MonteurWizard({ onComplete }) {
   const [step, setStep] = useState(0)
 
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1))
+  const prev = () => setStep(s => Math.max(s - 1, 0))
 
   return (
     <>
@@ -394,7 +396,14 @@ export default function MonteurWizard({ onComplete }) {
           to { transform: rotate(360deg); }
         }
       `}</style>
-      <div style={{ position: 'fixed', top: 20, left: 0, right: 0, zIndex: 10, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ position: 'fixed', top: 20, left: 0, right: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '0 20px' }}>
+        {step > 0 ? (
+          <button onClick={prev} style={{
+            background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)',
+            border: 'none', borderRadius: 14, padding: '8px 16px',
+            color: 'rgba(255,255,255,0.7)', fontSize: 14, cursor: 'pointer',
+          }}>← Terug</button>
+        ) : <div style={{ width: 80 }} />}
         <div style={{
           background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)',
           borderRadius: 20, padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 12,
@@ -407,6 +416,7 @@ export default function MonteurWizard({ onComplete }) {
             {step + 1}/{STEPS.length}
           </span>
         </div>
+        <div style={{ width: 80 }} />
       </div>
 
       {step === 0 && <StepEthernet onNext={next} />}
