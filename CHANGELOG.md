@@ -1,3 +1,10 @@
+## [6.2.1] - 2026-08-08
+### Opgelost
+- Monitor wizard-loop opgelost (onComplete → ready)
+- WebSocket transport correct gedetecteerd via client IP
+- Factory reset schrijft service file nu correct via sudo
+- Dead code (WiFi/mDNS) verwijderd uit loadcell_sender
+
 ## [6.2.0] - 2026-08-08
 ### Toegevoegd
 - `/monitor` route voor HDMI-scherm: pompen (read-only status + ingredient wijzigen), verbindingsdashboard (Ethernet, hotspot, Cocktailmachine, Portaal), spoelstatus
