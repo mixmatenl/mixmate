@@ -277,11 +277,13 @@ function FabriekPanel({ factoryMode, onReadyToPack }) {
     setResetStep(0)
     await fetch('/api/system/full-factory-reset', { method: 'POST' }).catch(() => {})
     // Animeer de stappen
-    let cumulative = 0
     for (let i = 0; i < RESET_STEPS.length; i++) {
       await new Promise(r => setTimeout(r, RESET_STEPS[i].ms))
       setResetStep(i + 1)
     }
+    // Herlaad de pagina volledig zodat de MonteurWizard verschijnt
+    sessionStorage.clear()
+    window.location.reload()
   }
 
   async function doReadyToPack() {
