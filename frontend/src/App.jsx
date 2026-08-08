@@ -40,6 +40,23 @@ export default function App() {
   const [view, setView] = useState(() =>
     sessionStorage.getItem(SESSION_KEY) === '1' ? 'app' : 'login'
   )
+  const [offline, setOffline] = useState(false)
+
+  // Verbindingsbewaking — herlaad zodra backend weer reageert
+  useEffect(() => {
+    let timer
+    async function ping() {
+      try {
+        await fetch('/api/system/machine-state', { cache: 'no-store' })
+        if (offline) window.location.reload()
+      } catch {
+        setOffline(true)
+      }
+      timer = setTimeout(ping, 3000)
+    }
+    timer = setTimeout(ping, 5000)
+    return () => clearTimeout(timer)
+  }, [offline])
 
   // Machine state ophalen bij start
   useEffect(() => {
@@ -154,6 +171,18 @@ export default function App() {
       {demo && !standby && <DemoMode onExit={exitDemo} slideIndex={demoSlideIndex} />}
       <BlockedOverlay />
       <FlushOverlay />
+      {offline && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', color: '#fff',
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 24 }}>⏳</div>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px' }}>Verbinding verbroken</h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.5)', margin: 0 }}>Opnieuw verbinden…</p>
+        </div>
+      )}
     </DragScrollProvider>
   )
 }
