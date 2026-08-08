@@ -1,3 +1,8 @@
+## [6.2.0] - 2026-08-08
+### Toegevoegd
+- `/monitor` route voor HDMI-scherm: pompen (read-only status + ingredient wijzigen), verbindingsdashboard (Ethernet, hotspot, Cocktailmachine, Portaal), spoelstatus
+- HDMI Chromium/Sway kiosk wijst nu naar `localhost:8000/monitor`
+
 ## [5.9.2] - 2026-08-08
 ### Gewijzigd
 - Ethernet detectie en banner in WiFi-instellingen

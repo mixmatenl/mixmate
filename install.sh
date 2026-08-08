@@ -350,7 +350,7 @@ exec ${CHROMIUM_BIN} \\
   --enable-zero-copy \\
   --enable-features=VaapiVideoDecoder \\
   --disable-features=TranslateUI,UseChromeOSDirectVideoDecoder,UseSkiaRenderer \\
-  http://localhost:8000
+  http://localhost:8000/monitor
 XINITRC
   chown ${USER}:${USER} /home/${USER}/.xinitrc
   chmod +x /home/${USER}/.xinitrc

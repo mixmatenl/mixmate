@@ -16,4 +16,4 @@ exec chromium \
   --ozone-platform=wayland \
   --enable-features=UseOzonePlatform \
   --disable-features=TranslateUI \
-  http://localhost:8000
+  http://localhost:8000/monitor
