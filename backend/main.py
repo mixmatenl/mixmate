@@ -195,10 +195,72 @@ async def lifespan(app: FastAPI):
     if paired_val == "1":
         _cloud_pair["paired"] = True
     _start_mdns()
+    asyncio.create_task(_bluetooth_loadcell_server())
     yield
     if _cloud_task:
         _cloud_task.cancel()
     gpio.cleanup()
+
+
+async def _bluetooth_loadcell_server():
+    """
+    Bluetooth RFCOMM server — ontvangt gewichtsdata van Cocktailmachine-Pi
+    als WiFi WebSocket niet beschikbaar is. Dezelfde data-interface als /ws/loadcell.
+    """
+    BT_CHANNEL = int(os.getenv("BT_CHANNEL", "1"))
+    try:
+        import socket as _sock
+        server = _sock.socket(_sock.AF_BLUETOOTH, _sock.SOCK_STREAM, _sock.BTPROTO_RFCOMM)
+        server.setsockopt(_sock.SOL_SOCKET, _sock.SO_REUSEADDR, 1)
+        server.bind((_sock.BDADDR_ANY, BT_CHANNEL))
+        server.listen(1)
+        server.setblocking(False)
+        log.info("Bluetooth RFCOMM server luistert op kanaal %d", BT_CHANNEL)
+    except Exception as e:
+        log.debug("Bluetooth server niet gestart: %s", e)
+        return
+
+    loop = asyncio.get_event_loop()
+    while True:
+        try:
+            client, addr = await loop.run_in_executor(None, server.accept)
+            log.info("Bluetooth loadcell verbonden van %s", addr)
+            asyncio.create_task(_handle_bt_loadcell_client(client))
+        except Exception as e:
+            log.debug("Bluetooth accept fout: %s", e)
+            await asyncio.sleep(1)
+
+
+async def _handle_bt_loadcell_client(client_sock):
+    """Leest JSON-regels van Bluetooth RFCOMM client en update de loadcell state."""
+    loop = asyncio.get_event_loop()
+    buf  = b""
+    try:
+        while True:
+            chunk = await loop.run_in_executor(None, client_sock.recv, 256)
+            if not chunk:
+                break
+            buf += chunk
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                try:
+                    msg = json.loads(line.decode())
+                    if msg.get("tare"):
+                        loadcell.tare()
+                    elif "weight_g" in msg:
+                        loadcell.network_update(float(msg["weight_g"]))
+                except Exception:
+                    pass
+    except Exception as e:
+        log.debug("Bluetooth client verbroken: %s", e)
+    finally:
+        loadcell.network_disconnected()
+        gpio.deactivate_all()
+        log.warning("Bluetooth loadcell verbinding verbroken — pompen gestopt")
+        try:
+            client_sock.close()
+        except Exception:
+            pass
 
 
 def _start_mdns():
@@ -1125,6 +1187,28 @@ def get_session_pours(session_id: int, session: Session = Depends(get_session)):
     return session.exec(
         select(Pour).where(Pour.session_id == session_id).order_by(Pour.poured_at.desc())
     ).all()
+
+
+# ── Bluetooth adres endpoint ───────────────────────────────────────────────────
+
+@app.get("/api/system/bluetooth-address")
+async def bluetooth_address():
+    """Geeft het Bluetooth MAC-adres van de Pompmodule terug."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "hciconfig", "hci0",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        for line in out.decode().splitlines():
+            if "BD Address" in line or "Address" in line:
+                parts = line.split()
+                for p in parts:
+                    if len(p) == 17 and p.count(":") == 5:
+                        return {"address": p, "channel": int(os.getenv("BT_CHANNEL", "1"))}
+    except Exception:
+        pass
+    return {"address": None, "channel": 1}
 
 
 # ── Loadcell WebSocket (Cocktailmachine-Pi → Pompmodule) ──────────────────────
