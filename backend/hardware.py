@@ -75,26 +75,29 @@ class LoadCell:
         else:
             self._hx = None
 
-        # Netwerkmodus: gewichtsdata ontvangen van Cocktailmachine-Pi via WebSocket
-        self._network_weight: float = 0.0
-        self._network_last_update: float = 0.0   # epoch tijd van laatste ontvangen meting
-        self._network_connected: bool = False
+        # Netwerkmodus: gewichtsdata ontvangen van Cocktailmachine-Pi via WebSocket of Bluetooth
+        self._network_weight = 0.0
+        self._network_last_update = 0.0   # epoch tijd van laatste ontvangen meting
+        self._network_connected = False
+        self._connection_type = None  # "wifi" | "bluetooth" | None
 
     @property
     def is_network_mode(self) -> bool:
         """True als we gewichtsdata van de Cocktailmachine-Pi verwachten (geen lokale HX711)."""
         return self._hx is None
 
-    def network_update(self, weight_g: float):
-        """Aangeroepen door de /ws/loadcell WebSocket handler wanneer data binnenkomt."""
+    def network_update(self, weight_g: float, transport: str = "wifi"):
+        """Aangeroepen wanneer data binnenkomt via WiFi WebSocket of Bluetooth RFCOMM."""
         import time
         self._network_weight = max(0.0, weight_g)
         self._network_last_update = time.monotonic()
         self._network_connected = True
+        self._connection_type = transport
 
     def network_disconnected(self):
         """Aangeroepen wanneer de Cocktailmachine-Pi verbinding verbreekt."""
         self._network_connected = False
+        self._connection_type = None
 
     def is_network_stale(self) -> bool:
         """True als netwerkmeting te oud is (verbinding weg) — pompen moeten stoppen."""

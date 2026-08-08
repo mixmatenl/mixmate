@@ -124,7 +124,9 @@ function IpDisplay() {
 
 /* ── Stap 2: Cocktailmachine koppelen ────────────────────────────────────── */
 function StepCocktailmachine({ onNext }) {
-  const [status, setStatus] = useState(null)
+  const [status, setStatus]     = useState(null)
+  const [btMode, setBtMode]     = useState(false)   // koppelmodus actief?
+  const [btSecondsLeft, setBtSecondsLeft] = useState(0)
 
   useEffect(() => {
     const iv = setInterval(async () => {
@@ -136,31 +138,79 @@ function StepCocktailmachine({ onNext }) {
     return () => clearInterval(iv)
   }, [])
 
-  const connected = status?.connected === true
+  // Afteller voor Bluetooth koppelmodus
+  useEffect(() => {
+    if (!btMode) return
+    setBtSecondsLeft(60)
+    const iv = setInterval(() => setBtSecondsLeft(s => {
+      if (s <= 1) { clearInterval(iv); setBtMode(false); return 0 }
+      return s - 1
+    }), 1000)
+    return () => clearInterval(iv)
+  }, [btMode])
+
+  async function enableBluetooth() {
+    try {
+      await fetch('/api/system/bluetooth-discoverable', { method: 'POST' })
+      setBtMode(true)
+    } catch {
+      alert('Bluetooth kon niet worden ingeschakeld.')
+    }
+  }
+
+  const connected      = status?.connected === true
+  const viaWifi        = status?.connection_type === 'wifi'
+  const viaBluetooth   = status?.connection_type === 'bluetooth'
 
   return (
     <Step
       icon="🔗"
       title="Cocktailmachine koppelen"
-      subtitle="Zorg dat de Cocktailmachine (2e Pi) is ingeschakeld en op hetzelfde netwerk zit. De koppeling gaat automatisch."
+      subtitle="Schakel de Cocktailmachine (2e Pi) in. De koppeling gaat automatisch via WiFi of Bluetooth."
     >
-      <StatusRow label="Cocktailmachine" value={connected ? 'Verbonden' : 'Zoeken…'} ok={connected} loading={status === null} />
+      <StatusRow
+        label="Cocktailmachine"
+        value={connected ? (viaBluetooth ? 'Verbonden via Bluetooth' : 'Verbonden via WiFi') : 'Zoeken…'}
+        ok={connected}
+        loading={status === null}
+      />
       {connected && (
-        <StatusRow
-          label="Gewicht"
-          value={`${status?.weight_g ?? 0} g`}
-          ok={true}
-        />
+        <StatusRow label="Gewicht" value={`${status?.weight_g ?? 0} g`} ok={true} />
       )}
 
       {!connected && (
-        <div style={{ marginTop: 20, padding: '14px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: 14 }}>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.7 }}>
-            • Controleer of de Cocktailmachine is opgestart<br />
-            • Beide apparaten moeten op hetzelfde WiFi/netwerk zitten<br />
-            • De koppeling via mDNS gaat automatisch (geen handmatig IP nodig)
-          </p>
-        </div>
+        <>
+          <div style={{ marginTop: 16, padding: '14px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: 14 }}>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.7 }}>
+              • De Cocktailmachine zoekt automatisch via WiFi (mDNS)<br />
+              • Als WiFi niet werkt, schakelt hij na ~10s over op Bluetooth
+            </p>
+          </div>
+
+          {/* Bluetooth koppelmodus */}
+          {!btMode ? (
+            <button onClick={enableBluetooth} style={{
+              marginTop: 14, width: '100%', padding: '15px 0', borderRadius: 14,
+              border: '1px solid rgba(10,132,255,0.5)', background: 'rgba(10,132,255,0.1)',
+              color: '#0a84ff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            }}>
+              Bluetooth koppelmodus inschakelen
+            </button>
+          ) : (
+            <div style={{
+              marginTop: 14, padding: '14px 20px',
+              border: '1px solid rgba(10,132,255,0.4)', borderRadius: 14,
+              background: 'rgba(10,132,255,0.08)',
+            }}>
+              <p style={{ fontSize: 13, color: '#0a84ff', fontWeight: 600, margin: '0 0 6px' }}>
+                Bluetooth koppelmodus actief — {btSecondsLeft}s
+              </p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
+                De Pompmodule is nu zichtbaar. De Cocktailmachine koppelt automatisch zodra hij in de buurt is.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <PrimaryBtn onClick={onNext} disabled={!connected}>

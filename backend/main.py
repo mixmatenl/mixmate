@@ -248,7 +248,7 @@ async def _handle_bt_loadcell_client(client_sock):
                     if msg.get("tare"):
                         loadcell.tare()
                     elif "weight_g" in msg:
-                        loadcell.network_update(float(msg["weight_g"]))
+                        loadcell.network_update(float(msg["weight_g"]), transport="bluetooth")
                 except Exception:
                     pass
     except Exception as e:
@@ -1234,7 +1234,7 @@ async def loadcell_ws(websocket: WebSocket):
                 if msg.get("tare"):
                     loadcell.tare()
                 else:
-                    loadcell.network_update(float(msg.get("weight_g", 0)))
+                    loadcell.network_update(float(msg.get("weight_g", 0)), transport="wifi")
             except Exception:
                 pass
     except Exception:
@@ -1250,11 +1250,50 @@ async def loadcell_ws(websocket: WebSocket):
 def loadcell_status():
     """Status van de Cocktailmachine-Pi verbinding."""
     return {
-        "connected": loadcell._network_connected,
-        "stale":     loadcell.is_network_stale(),
-        "mode":      "network" if loadcell.is_network_mode else "local",
-        "weight_g":  round(loadcell.get_weight_grams(), 1),
+        "connected":       loadcell._network_connected,
+        "stale":           loadcell.is_network_stale(),
+        "mode":            "network" if loadcell.is_network_mode else "local",
+        "weight_g":        round(loadcell.get_weight_grams(), 1),
+        "connection_type": loadcell._connection_type,
     }
+
+
+@app.post("/api/system/bluetooth-discoverable")
+async def bluetooth_discoverable():
+    """Zet de Pompmodule 60 seconden in Bluetooth koppelmodus (just-works, geen PIN)."""
+    try:
+        cmds = [
+            "bluetoothctl power on",
+            "bluetoothctl discoverable on",
+            "bluetoothctl pairable on",
+            "bluetoothctl agent NoInputNoOutput",
+            "bluetoothctl default-agent",
+        ]
+        for cmd in cmds:
+            proc = await asyncio.create_subprocess_shell(
+                cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            await proc.wait()
+        log.info("Bluetooth koppelmodus ingeschakeld (60s)")
+        asyncio.create_task(_bt_discoverable_timeout())
+        return {"ok": True, "duration_s": 60}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+async def _bt_discoverable_timeout():
+    await asyncio.sleep(60)
+    try:
+        proc = await asyncio.create_subprocess_shell(
+            "bluetoothctl discoverable off",
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+        )
+        await proc.wait()
+        log.info("Bluetooth koppelmodus uitgeschakeld")
+    except Exception:
+        pass
 
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────
