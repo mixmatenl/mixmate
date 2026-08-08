@@ -1319,9 +1319,9 @@ async def _ensure_hotspot():
     """Start de installatie-hotspot als die nog niet actief is."""
     global _hotspot_active
     try:
-        # Check of hotspot al draait
-        rc, out = await _run_cmd(f'nmcli con show --active | grep "{HOTSPOT_SSID}"')
-        if rc == 0:
+        # Check of hotspot al draait (sudo zodat root-verbindingen ook zichtbaar zijn)
+        rc, out = await _run_cmd("sudo nmcli con show --active")
+        if HOTSPOT_SSID in out:
             _hotspot_active = True
             log.info("Installatie-hotspot %s al actief", HOTSPOT_SSID)
             return
@@ -2269,13 +2269,13 @@ async def full_factory_reset():
 
     # 5. WiFi-verbindingen wissen (synchroon, vóór reboot)
     try:
-        _rc, _out = await _run_cmd("nmcli -t -f NAME,TYPE con show")
+        _rc, _out = await _run_cmd("sudo nmcli -t -f NAME,TYPE con show")
         for _line in _out.splitlines():
             _parts = _line.split(":")
             if len(_parts) >= 2 and _parts[1] in ("802-11-wireless", "wifi"):
                 _name = _parts[0]
                 if _name != HOTSPOT_SSID:
-                    await _run_cmd(f'nmcli con delete "{_name}"')
+                    await _run_cmd(f'sudo nmcli con delete "{_name}"')
                     log.info("WiFi-verbinding verwijderd: %s", _name)
     except Exception as _e:
         log.warning("WiFi wissen mislukt: %s", _e)
@@ -2311,9 +2311,10 @@ async def shutdown_system():
 # ── OTA Updates ──────────────────────────────────────────────────────────────
 
 @app.get("/api/system/network-info")
-def system_network_info():
-    """Lokaal IP-adres en hostnaam van de Pompmodule — gebruikt door MonteurWizard."""
+async def system_network_info():
+    """Lokaal IP-adres, hostnaam en ethernet-status — gebruikt door MonteurWizard."""
     import socket as _socket
+    ethernet = await _ethernet_status()
     local_ip = None
     try:
         s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
@@ -2321,12 +2322,17 @@ def system_network_info():
         local_ip = s.getsockname()[0]
         s.close()
     except Exception:
-        local_ip = "127.0.0.1"
+        # Fallback: gebruik ethernet IP als er geen route naar internet is
+        try:
+            local_ip = _socket.gethostbyname(_socket.gethostname())
+        except Exception:
+            local_ip = "127.0.0.1"
     return {
-        "local_ip":  local_ip,
-        "hostname":  _socket.gethostname(),
-        "port":      int(os.getenv("MIXMATE_PORT", "8000")),
+        "local_ip":   local_ip,
+        "hostname":   _socket.gethostname(),
+        "port":       int(os.getenv("MIXMATE_PORT", "8000")),
         "tablet_url": f"http://{local_ip}:{os.getenv('MIXMATE_PORT', '8000')}",
+        "ethernet":   ethernet,
     }
 
 
