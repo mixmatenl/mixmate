@@ -376,8 +376,11 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 return {"req_id": req_id, **r.json()}
 
             elif msg_type == "restart":
-                import subprocess
-                subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+                import subprocess, asyncio as _asyncio
+                async def _reboot():
+                    await _asyncio.sleep(1)
+                    subprocess.Popen(["sudo", "reboot"])
+                _asyncio.create_task(_reboot())
                 return {"req_id": req_id, "ok": True}
 
             elif msg_type == "unpaired":

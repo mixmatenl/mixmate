@@ -1,3 +1,7 @@
+## [6.2.7] - 2026-08-08
+### Gewijzigd
+- Herstart vanuit admin portaal doet nu sudo reboot i.p.v. systemctl restart mixmate
+
 ## [6.2.6] - 2026-08-08
 ### Opgelost
 - MonitorDisplay: MonteurWizard flitst niet meer bij herstart (debounce 1.5s voor factory/setup state)
