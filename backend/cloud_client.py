@@ -23,6 +23,14 @@ _maintenance_session = None
 # Actieve WebSocket verbinding — beschikbaar voor andere modules om berichten te sturen
 _active_ws = None
 
+# Diagnostics — leesbaar via /api/cloud/status
+_cloud_status = {
+    "connected": False,
+    "last_error": None,
+    "retry_count": 0,
+    "cloud_url": None,
+}
+
 
 async def send_to_cloud(payload: dict) -> None:
     """Stuur een bericht naar de cloud via de actieve WebSocket verbinding."""
@@ -456,12 +464,16 @@ async def cloud_loop():
         except Exception:
             await asyncio.sleep(2)
 
+    _cloud_status["cloud_url"] = ws_url
     backoff = 5
     while True:
         try:
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
                 global _active_ws
                 _active_ws = ws
+                _cloud_status["connected"] = True
+                _cloud_status["last_error"] = None
+                _cloud_status["retry_count"] = 0
                 backoff = 5  # reset na succesvolle verbinding
                 log.info("Cloud verbonden")
                 try:
@@ -597,9 +609,13 @@ async def cloud_loop():
                     hb_task.cancel()
 
         except Exception as e:
-            log.warning("Cloud verbinding verbroken: %s — herverbinden in %ds", e, backoff)
+            err_msg = str(e)
+            log.warning("Cloud verbinding verbroken: %s — herverbinden in %ds", err_msg, backoff)
+            _cloud_status["last_error"] = err_msg
+            _cloud_status["retry_count"] += 1
         finally:
             _active_ws = None
+            _cloud_status["connected"] = False
 
         try:
             async with httpx.AsyncClient(verify=False) as c:

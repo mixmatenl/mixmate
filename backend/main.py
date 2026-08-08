@@ -1246,6 +1246,12 @@ def get_pair_code():
     """Frontend leest hieruit de koppelcode en cloud-status."""
     return _cloud_pair
 
+@app.get("/api/cloud/status")
+def get_cloud_status():
+    """Diagnostics: verbindingsstatus, laatste fout en cloud URL."""
+    from .cloud_client import _cloud_status
+    return _cloud_status
+
 @app.post("/api/cloud/unpair")
 async def unpair_cloud():
     import httpx

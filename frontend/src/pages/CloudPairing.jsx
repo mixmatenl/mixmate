@@ -6,6 +6,7 @@ export default function CloudPairing({ onClose }) {
   const [unpairConf, setUnpairConf] = useState(false)
   const [unpairing,  setUnpairing]  = useState(false)
   const [resetting,  setResetting]  = useState(false)
+  const [diagn,      setDiagn]      = useState(null)
 
   const pollRef = React.useRef(null)
 
@@ -29,6 +30,8 @@ export default function CloudPairing({ onClose }) {
 
   async function load() {
     try { setData(await (await fetch('/api/cloud/pair-code')).json()) }
+    catch {}
+    try { setDiagn(await (await fetch('/api/cloud/status')).json()) }
     catch {}
     setLoading(false)
   }
@@ -197,9 +200,22 @@ export default function CloudPairing({ onClose }) {
         </svg>
       </div>
       <div style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', marginBottom: 6 }}>Geen cloudverbinding</div>
-      <div style={{ fontSize: 13, color: '#6e6e73', textAlign: 'center', maxWidth: 260, lineHeight: 1.6, marginBottom: 28 }}>
+      <div style={{ fontSize: 13, color: '#6e6e73', textAlign: 'center', maxWidth: 260, lineHeight: 1.6, marginBottom: 20 }}>
         Controleer de internetverbinding en probeer opnieuw.
       </div>
+
+      {diagn?.last_error && (
+        <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 12, padding: '10px 16px', maxWidth: 320, marginBottom: 16, fontSize: 12, color: '#664d03', wordBreak: 'break-all' }}>
+          <strong>Fout:</strong> {diagn.last_error}
+          {diagn.retry_count > 0 && <span style={{ marginLeft: 8, color: '#856404' }}>({diagn.retry_count}× geprobeerd)</span>}
+        </div>
+      )}
+      {diagn?.cloud_url && (
+        <div style={{ fontSize: 11, color: '#aeaeb2', marginBottom: 20, wordBreak: 'break-all', maxWidth: 300, textAlign: 'center' }}>
+          {diagn.cloud_url}
+        </div>
+      )}
+
       <button onClick={reset} disabled={resetting} style={{
         background: '#1d1d1f', border: 'none', color: '#fff',
         borderRadius: 12, padding: '13px 28px', fontSize: 14, fontWeight: 600,
