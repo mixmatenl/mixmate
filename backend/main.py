@@ -2257,32 +2257,42 @@ async def full_factory_reset():
     os.environ.pop("ADMIN_PIN",   None)
     os.environ.pop("MIXMATE_PIN", None)
 
-    # 4. Wis alle WiFi-verbindingen en start installatie-hotspot
-    async def _reset_wifi_and_hotspot():
-        await asyncio.sleep(1)
-        try:
-            # Haal alle opgeslagen WiFi-verbindingen op
-            rc, out = await _run_cmd("nmcli -t -f NAME,TYPE con show")
-            for line in out.splitlines():
-                parts = line.split(":")
-                if len(parts) >= 2 and parts[1] in ("802-11-wireless", "wifi"):
-                    name = parts[0]
-                    if name != HOTSPOT_SSID:
-                        await _run_cmd(f'nmcli con delete "{name}"')
-                        log.info("WiFi-verbinding verwijderd: %s", name)
-        except Exception as e:
-            log.warning("WiFi wissen mislukt: %s", e)
-        # Start installatie-hotspot
-        await _ensure_hotspot()
+    # 4. Cloud factory-reset (verwijdert portaaldata + genereert nieuwe koppelcode)
+    try:
+        from .cloud_client import get_machine_id
+        _machine_id = get_machine_id()
+        _cloud_url  = os.environ.get("MIXMATE_CLOUD_URL", "")
+        _cloud_http = _cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+        async with httpx.AsyncClient() as _c:
+            await _c.post(f"{_cloud_http}/api/machines/{_machine_id}/factory-reset", timeout=8)
+        log.info("Cloud fabrieksreset geslaagd")
+    except Exception as _e:
+        log.warning("Cloud fabrieksreset mislukt (doorgaan): %s", _e)
 
-    # 5. WiFi wissen, hotspot starten en volledig herstarten
-    async def _reboot_after_reset():
-        await asyncio.sleep(0.5)
-        await _reset_wifi_and_hotspot()
+    # 5. WiFi-verbindingen wissen (synchroon, vóór reboot)
+    try:
+        _rc, _out = await _run_cmd("nmcli -t -f NAME,TYPE con show")
+        for _line in _out.splitlines():
+            _parts = _line.split(":")
+            if len(_parts) >= 2 and _parts[1] in ("802-11-wireless", "wifi"):
+                _name = _parts[0]
+                if _name != HOTSPOT_SSID:
+                    await _run_cmd(f'nmcli con delete "{_name}"')
+                    log.info("WiFi-verbinding verwijderd: %s", _name)
+    except Exception as _e:
+        log.warning("WiFi wissen mislukt: %s", _e)
+
+    # 6. Volledig herstarten via sudo reboot
+    async def _do_reboot():
         await asyncio.sleep(1)
         import subprocess
-        subprocess.Popen(["sudo", "reboot"])
-    asyncio.create_task(_reboot_after_reset())
+        for _cmd in [["sudo", "/sbin/reboot"], ["sudo", "/usr/sbin/reboot"], ["sudo", "reboot"]]:
+            try:
+                subprocess.Popen(_cmd)
+                return
+            except Exception:
+                continue
+    asyncio.create_task(_do_reboot())
 
     return {"ok": True}
 
