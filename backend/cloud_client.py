@@ -41,7 +41,9 @@ async def send_to_cloud(payload: dict) -> None:
 # Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
 _CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
-LOCAL     = "https://localhost:8000"
+_PORT     = os.getenv("MIXMATE_PORT", "8000")
+_USE_SSL  = os.path.exists("/home/pi/mixmate/certs/cert.pem")
+LOCAL     = f"{'https' if _USE_SSL else 'http'}://localhost:{_PORT}"
 
 _MACHINE_ID_FILE = Path("/etc/mixmate_id")
 
