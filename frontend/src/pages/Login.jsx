@@ -1,12 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { api } from '../api'
 
 const PIN_LENGTH = 4
 
 export default function Login({ onLogin, onBackoffice }) {
-  const [input, setInput] = useState('')
-  const [shake, setShake] = useState(false)
+  const [input, setInput]     = useState('')
+  const [shake, setShake]     = useState(false)
   const [loading, setLoading] = useState(false)
+  const [hasPin, setHasPin]   = useState(null) // null = laden
+
+  useEffect(() => {
+    fetch('/api/auth/has-pin')
+      .then(r => r.json())
+      .then(d => setHasPin(d.has_pin))
+      .catch(() => setHasPin(true)) // bij fout: toon PIN-pad als fallback
+  }, [])
 
   async function press(digit) {
     if (input.length >= PIN_LENGTH || loading) return
@@ -19,7 +27,7 @@ export default function Login({ onLogin, onBackoffice }) {
         onLogin()
       } catch {
         setShake(true)
-        setTimeout(() => { setInput(''); setShake(false); }, 600)
+        setTimeout(() => { setInput(''); setShake(false) }, 600)
       } finally {
         setTimeout(() => setLoading(false), 600)
       }
@@ -32,45 +40,66 @@ export default function Login({ onLogin, onBackoffice }) {
 
   const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
+  if (hasPin === null) return null
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative" style={{ background: 'var(--bg)' }}>
       <div className="mb-12 text-center">
         <span className="font-bold tracking-[0.3em] text-2xl" style={{ color: 'var(--accent)' }}>MIXMATE</span>
-        <p className="text-sm mt-2 tracking-wide" style={{ color: 'var(--text-secondary)' }}>Voer uw PIN in</p>
+        <p className="text-sm mt-2 tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+          {hasPin ? 'Voer uw PIN in' : 'Druk op inloggen om te beginnen'}
+        </p>
       </div>
 
-      <div className={`flex gap-5 mb-10 ${shake ? 'animate-shake' : ''}`}>
-        {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-          <div key={i} className="w-3.5 h-3.5 rounded-full transition-all duration-150"
-            style={{
-              background: i < input.length ? 'var(--accent)' : 'var(--border)',
-              transform: i < input.length ? 'scale(1.1)' : 'scale(1)',
-            }} />
-        ))}
-      </div>
+      {hasPin ? (
+        <>
+          <div className={`flex gap-5 mb-10 ${shake ? 'animate-shake' : ''}`}>
+            {Array.from({ length: PIN_LENGTH }).map((_, i) => (
+              <div key={i} className="w-3.5 h-3.5 rounded-full transition-all duration-150"
+                style={{
+                  background: i < input.length ? 'var(--accent)' : 'var(--border)',
+                  transform: i < input.length ? 'scale(1.1)' : 'scale(1)',
+                }} />
+            ))}
+          </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', width:'240px' }}>
-        {digits.map((d, i) => (
-          <button
-            key={i}
-            onClick={() => d === '⌫' ? backspace() : d !== '' ? press(d) : null}
-            disabled={d === '' || loading}
-            style={{
-              height: '68px', borderRadius: '14px', fontSize: '22px', fontWeight: '500',
-              transition: 'all 0.12s',
-              visibility: d === '' ? 'hidden' : 'visible',
-              background: d === '⌫' ? 'transparent' : 'var(--bg-card)',
-              color: d === '⌫' ? 'var(--text-secondary)' : 'var(--text)',
-              border: '1px solid var(--border)',
-              cursor: d === '' ? 'default' : 'pointer',
-            }}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', width: '240px' }}>
+            {digits.map((d, i) => (
+              <button
+                key={i}
+                onClick={() => d === '⌫' ? backspace() : d !== '' ? press(d) : null}
+                disabled={d === '' || loading}
+                style={{
+                  height: '68px', borderRadius: '14px', fontSize: '22px', fontWeight: '500',
+                  transition: 'all 0.12s',
+                  visibility: d === '' ? 'hidden' : 'visible',
+                  background: d === '⌫' ? 'transparent' : 'var(--bg-card)',
+                  color: d === '⌫' ? 'var(--text-secondary)' : 'var(--text)',
+                  border: '1px solid var(--border)',
+                  cursor: d === '' ? 'default' : 'pointer',
+                }}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <button
+          onClick={onLogin}
+          style={{
+            padding: '18px 48px', borderRadius: '16px', fontSize: '18px', fontWeight: '700',
+            background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+            letterSpacing: '0.05em', transition: 'opacity 0.15s',
+          }}
+          onMouseDown={e => e.currentTarget.style.opacity = '0.8'}
+          onMouseUp={e => e.currentTarget.style.opacity = '1'}
+        >
+          INLOGGEN
+        </button>
+      )}
 
-      {/* Hidden backoffice button — small dot bottom-left */}
+      {/* Hidden backoffice button */}
       <button
         onClick={onBackoffice}
         className="absolute bottom-6 left-6 w-6 h-6 rounded-full flex items-center justify-center opacity-20 hover:opacity-60 transition-opacity"

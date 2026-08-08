@@ -417,6 +417,10 @@ def set_pin(body: dict):
 def get_bartender_pin_endpoint():
     return {"pin": _get_bartender_pin()}
 
+@app.get("/api/auth/has-pin")
+def has_pin():
+    return {"has_pin": bool(_db_get("BARTENDER_PIN"))}
+
 # Backwards compat
 @app.post("/api/backoffice/verify-pin")
 def verify_pin_compat(body: dict):

@@ -1,3 +1,8 @@
+## [6.2.2] - 2026-08-08
+### Opgelost
+- Loginscherm toont INLOGGEN knop als bartender PIN verwijderd is (via portaal)
+- Nieuw endpoint /api/auth/has-pin voor frontend PIN-status check
+
 ## [6.2.1] - 2026-08-08
 ### Opgelost
 - Monitor wizard-loop opgelost (onComplete → ready)
