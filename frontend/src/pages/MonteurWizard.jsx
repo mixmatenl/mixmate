@@ -196,9 +196,8 @@ function StepCocktailmachine({ onNext }) {
         <div style={{ marginTop: 12, padding: '14px 20px', background: 'rgba(255,255,255,0.04)', borderRadius: 14 }}>
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.8 }}>
             De Cocktailmachine verbindt automatisch via:<br />
-            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>1.</strong> WiFi (zelfde netwerk) &nbsp;
-            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>2.</strong> Installatie-hotspot &nbsp;
-            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>3.</strong> Bluetooth
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>1.</strong> Installatie-hotspot &nbsp;
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>2.</strong> Bluetooth
           </p>
         </div>
       )}
