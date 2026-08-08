@@ -65,7 +65,6 @@ function StepEthernet({ onNext }) {
   const [status, setStatus] = useState(null)
 
   const check = useCallback(async () => {
-    setStatus(null)
     try {
       const r = await fetch('/api/system/wifi/status')
       const d = await r.json()
