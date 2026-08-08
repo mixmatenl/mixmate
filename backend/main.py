@@ -1329,9 +1329,9 @@ async def _ensure_hotspot():
             return
         log.info("Installatie-hotspot %s starten…", HOTSPOT_SSID)
         # Verwijder oude verbinding als die bestaat
-        await _run_cmd(f'nmcli con delete "{HOTSPOT_SSID}" 2>/dev/null || true')
+        await _run_cmd(f'sudo nmcli con delete "{HOTSPOT_SSID}" 2>/dev/null || true')
         rc, out = await _run_cmd(
-            f'nmcli device wifi hotspot ifname wlan0 '
+            f'sudo nmcli device wifi hotspot ifname wlan0 '
             f'con-name "{HOTSPOT_SSID}" ssid "{HOTSPOT_SSID}" '
             f'password "{HOTSPOT_PASSWORD}"'
         )
@@ -1347,7 +1347,7 @@ async def _ensure_hotspot():
 async def _stop_hotspot():
     global _hotspot_active
     try:
-        await _run_cmd(f'nmcli con delete "{HOTSPOT_SSID}"')
+        await _run_cmd(f'sudo nmcli con delete "{HOTSPOT_SSID}"')
         _hotspot_active = False
         log.info("Installatie-hotspot gestopt")
     except Exception as e:
