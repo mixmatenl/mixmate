@@ -1319,15 +1319,12 @@ async def _ensure_hotspot():
     """Start de installatie-hotspot als die nog niet actief is."""
     global _hotspot_active
     try:
-        # Check of wlan0 al in hotspot (shared) modus staat
-        rc2, out2 = await _run_cmd("sudo nmcli -t -f GENERAL.CONNECTION dev show wlan0")
-        con_name = out2.replace("GENERAL.CONNECTION:", "").strip()
-        if con_name:
-            rc3, out3 = await _run_cmd(f'sudo nmcli -t -f ipv4.method con show "{con_name}" 2>/dev/null || true')
-            if "shared" in out3:
-                _hotspot_active = True
-                log.info("Installatie-hotspot al actief (verbinding: %s)", con_name)
-                return
+        # Check of wlan0 al in AP-modus staat
+        rc, out = await _run_cmd("iw dev wlan0 info")
+        if "type AP" in out:
+            _hotspot_active = True
+            log.info("Installatie-hotspot al actief")
+            return
         log.info("Installatie-hotspot %s starten…", HOTSPOT_SSID)
         # Verwijder oude verbinding als die bestaat
         await _run_cmd(f'sudo nmcli con delete "{HOTSPOT_SSID}" 2>/dev/null || true')
@@ -1358,20 +1355,9 @@ async def _stop_hotspot():
 
 @app.get("/api/system/hotspot/status")
 async def hotspot_status():
-    # Check of wlan0 in AP-modus staat (hotspot actief)
-    rc, out = await _run_cmd("sudo nmcli -t -f TYPE,STATE,CONNECTION dev")
-    active = any(
-        "wifi" in line and "connected" in line
-        for line in out.splitlines()
-        if "AP" in (await _run_cmd(f"sudo nmcli dev show wlan0"))[1]
-        or True
-    )
-    # Eenvoudigere check: kijk of wlan0 een actieve wifi-verbinding heeft in shared mode
-    rc2, out2 = await _run_cmd("sudo nmcli -t -f GENERAL.CONNECTION dev show wlan0")
-    con_name = out2.replace("GENERAL.CONNECTION:", "").strip()
-    # Check of die verbinding een hotspot is via IP-method
-    rc3, out3 = await _run_cmd(f'sudo nmcli -t -f ipv4.method con show "{con_name}" 2>/dev/null || true')
-    active = "shared" in out3
+    # Check of wlan0 in Access Point modus staat
+    rc, out = await _run_cmd("iw dev wlan0 info")
+    active = "type AP" in out
     return {
         "active":   active,
         "ssid":     HOTSPOT_SSID,
