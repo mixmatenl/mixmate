@@ -2129,7 +2129,7 @@ async def factory_reset():
     os.environ.pop("ADMIN_PIN",    None)
     os.environ.pop("MIXMATE_PIN",  None)
 
-    # 4. Zet machine terug naar setup-wizard state (niet factory)
+    # 4. Zet machine terug naar setup-wizard state
     try:
         con2 = sqlite3.connect(str(_DB_PATH))
         con2.execute(
@@ -2257,9 +2257,29 @@ async def full_factory_reset():
     os.environ.pop("ADMIN_PIN",   None)
     os.environ.pop("MIXMATE_PIN", None)
 
-    # 4. Herstart
+    # 4. Wis alle WiFi-verbindingen en start installatie-hotspot
+    async def _reset_wifi_and_hotspot():
+        await asyncio.sleep(1)
+        try:
+            # Haal alle opgeslagen WiFi-verbindingen op
+            rc, out = await _run_cmd("nmcli -t -f NAME,TYPE con show")
+            for line in out.splitlines():
+                parts = line.split(":")
+                if len(parts) >= 2 and parts[1] in ("802-11-wireless", "wifi"):
+                    name = parts[0]
+                    if name != HOTSPOT_SSID:
+                        await _run_cmd(f'nmcli con delete "{name}"')
+                        log.info("WiFi-verbinding verwijderd: %s", name)
+        except Exception as e:
+            log.warning("WiFi wissen mislukt: %s", e)
+        # Start installatie-hotspot
+        await _ensure_hotspot()
+
+    # 5. Herstart
     async def _restart():
-        await asyncio.sleep(2)
+        await asyncio.sleep(0.5)
+        await _reset_wifi_and_hotspot()
+        await asyncio.sleep(1)
         import subprocess
         subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
     asyncio.create_task(_restart())
