@@ -14,7 +14,7 @@ const PIN_LENGTH = 4
 const BO_SESSION = 'mixmate_bo_auth'
 
 /* ── Admin PIN login ─────────────────────────────────────────────────────── */
-function AdminLogin({ onUnlock }) {
+function AdminLogin({ onUnlock, onClose }) {
   const [input, setInput] = useState('')
   const [shake, setShake] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -59,6 +59,12 @@ function AdminLogin({ onUnlock }) {
         ))}
       </div>
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}.animate-shake{animation:shake 0.5s ease-in-out}`}</style>
+      {onClose && (
+        <button onClick={onClose} style={{
+          marginTop: 32, background: 'none', border: 'none',
+          color: 'rgba(255,255,255,0.35)', fontSize: 13, cursor: 'pointer',
+        }}>← Terug</button>
+      )}
     </div>
   )
 }
@@ -426,8 +432,9 @@ function OnderhoudPanel() {
     }
   }, [])
 
-  // Poll /api/maintenance/session totdat token binnenkomt
+  // Poll /api/maintenance/session totdat token binnenkomt (max 15s)
   const startPolling = useCallback(() => {
+    let tries = 0
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch('/api/maintenance/session')
@@ -437,8 +444,14 @@ function OnderhoudPanel() {
           setSession(data)
           setStatus('ready')
           drawQR(data.url)
+          return
         }
       } catch {}
+      if (++tries >= 15) {
+        clearInterval(pollRef.current)
+        setStatus('error')
+        setErrMsg('Geen reactie van cloud — controleer de internetverbinding en probeer opnieuw.')
+      }
     }, 1000)
   }, [drawQR])
 
@@ -571,7 +584,7 @@ export default function Backoffice({ onClose, factoryMode = false, onReadyToPack
     onClose?.()
   }
 
-  if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} />
+  if (!authed) return <AdminLogin onUnlock={() => setAuthed(true)} onClose={!factoryMode ? handleClose : undefined} />
 
   const TABS = [
     ...(factoryMode ? [{ id:'fabriek', label:'Fabriek' }] : []),

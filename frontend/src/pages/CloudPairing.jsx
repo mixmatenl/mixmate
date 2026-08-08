@@ -7,10 +7,24 @@ export default function CloudPairing({ onClose }) {
   const [unpairing,  setUnpairing]  = useState(false)
   const [resetting,  setResetting]  = useState(false)
 
+  const pollRef = React.useRef(null)
+
+  function startFastPoll() {
+    clearInterval(pollRef.current)
+    let tries = 0
+    pollRef.current = setInterval(async () => {
+      await load()
+      if (++tries >= 10) {  // 10s snel pollen, dan terug naar 30s
+        clearInterval(pollRef.current)
+        pollRef.current = setInterval(load, 30000)
+      }
+    }, 1000)
+  }
+
   useEffect(() => {
     load()
-    const iv = setInterval(load, 30000)
-    return () => clearInterval(iv)
+    pollRef.current = setInterval(load, 30000)
+    return () => clearInterval(pollRef.current)
   }, [])
 
   async function load() {
@@ -30,8 +44,7 @@ export default function CloudPairing({ onClose }) {
     setResetting(true)
     try {
       await fetch('/api/cloud/reset', { method: 'POST' })
-      await new Promise(r => setTimeout(r, 1500))
-      await load()
+      startFastPoll()
     } catch {}
     setResetting(false)
   }
