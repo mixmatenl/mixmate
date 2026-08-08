@@ -35,22 +35,29 @@ echo ""
 [ "$EUID" -ne 0 ] && fail "Voer de installer uit als root:\n  curl -sSL https://raw.githubusercontent.com/mixmatenl/mixmate/main/install.sh | sudo bash"
 
 # ── Machine model selecteren ──────────────────
-echo ""
-echo "  Selecteer het machine model:"
-echo ""
-echo "  [1] MATE.1"
-echo "  [2] MATE.1 CO2"
-echo "  [3] MATE.1 PRO"
-echo ""
-while true; do
-  read -rp "  Keuze (1/2/3): " MODEL_CHOICE </dev/tty
-  case "$MODEL_CHOICE" in
-    1) MACHINE_MODEL="MATE.1"; break ;;
-    2) MACHINE_MODEL="MATE.1 CO2"; break ;;
-    3) MACHINE_MODEL="MATE.1 PRO"; break ;;
-    *) echo "  Ongeldige keuze — voer 1, 2 of 3 in." ;;
-  esac
-done
+# Als MACHINE_MODEL al ingesteld is (via omgevingsvariabele of herinstallatie na reset), sla de prompt over
+if [ -z "$MACHINE_MODEL" ] && [ -f "$INSTALL_DIR/.env" ]; then
+  MACHINE_MODEL=$(grep "^MACHINE_MODEL=" "$INSTALL_DIR/.env" 2>/dev/null | cut -d= -f2-)
+fi
+
+if [ -z "$MACHINE_MODEL" ]; then
+  echo ""
+  echo "  Selecteer het machine model:"
+  echo ""
+  echo "  [1] MATE.1"
+  echo "  [2] MATE.1 CO2"
+  echo "  [3] MATE.1 PRO"
+  echo ""
+  while true; do
+    read -rp "  Keuze (1/2/3): " MODEL_CHOICE </dev/tty
+    case "$MODEL_CHOICE" in
+      1) MACHINE_MODEL="MATE.1"; break ;;
+      2) MACHINE_MODEL="MATE.1 CO2"; break ;;
+      3) MACHINE_MODEL="MATE.1 PRO"; break ;;
+      *) echo "  Ongeldige keuze — voer 1, 2 of 3 in." ;;
+    esac
+  done
+fi
 log "Machine model: $MACHINE_MODEL"
 
 # ── Versie ophalen en compatibiliteit controleren ──

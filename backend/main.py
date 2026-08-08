@@ -2202,6 +2202,14 @@ async def full_factory_reset():
         'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
     )
 
+    # Machine model bewaren vóór reset (zodat install.sh de prompt kan overslaan)
+    _saved_model = _db_get("MACHINE_MODEL") or os.environ.get("MACHINE_MODEL", "")
+    if not _saved_model and _ENV_PATH.exists():
+        for _line in _ENV_PATH.read_text().splitlines():
+            if _line.startswith("MACHINE_MODEL="):
+                _saved_model = _line.split("=", 1)[1].strip()
+                break
+
     # 0. Wis in-memory state
     global _cooldown_state, _prime_state, _prime_control
     _cooldown_state.clear()
@@ -2293,6 +2301,36 @@ async def full_factory_reset():
                 log.info("Bluetooth koppeling verwijderd: %s", _mac)
     except Exception as _e:
         log.warning("Bluetooth wissen mislukt: %s", _e)
+
+    # 7. Herinstallatie-service aanmaken — draait install.sh bij volgende boot
+    try:
+        _install_script = str(Path(__file__).parent.parent / "install.sh")
+        _reinstall_service = f"""[Unit]
+Description=MIXMATE herinstallatie na fabrieksreset
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/tmp/mixmate_reinstall
+
+[Service]
+Type=oneshot
+Environment=MACHINE_MODEL={_saved_model}
+ExecStartPre=/bin/rm -f /tmp/mixmate_reinstall
+ExecStart=/bin/bash {_install_script}
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+"""
+        Path("/etc/systemd/system/mixmate-reinstall.service").write_text(_reinstall_service)
+        await _run_cmd("sudo systemctl daemon-reload")
+        await _run_cmd("sudo systemctl enable mixmate-reinstall.service")
+        # Vlag aanmaken zodat de service éénmalig activeert
+        Path("/tmp/mixmate_reinstall").touch()
+        log.info("Herinstallatie-service aangemaakt (model: %s)", _saved_model)
+    except Exception as _e:
+        log.warning("Herinstallatie-service aanmaken mislukt: %s", _e)
 
     # 8. Volledig herstarten via sudo reboot
     async def _do_reboot():
