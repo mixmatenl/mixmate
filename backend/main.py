@@ -1192,6 +1192,36 @@ _cloud_pair: dict = {
     "reset_code": None, "reset_code_email": None,
 }
 
+_maintenance_session: dict | None = None
+
+@app.post("/api/maintenance/session")
+def set_maintenance_session(body: dict):
+    """Intern endpoint — cloud_client.py schrijft de onderhoudssessie hierheen."""
+    global _maintenance_session
+    _maintenance_session = {
+        "token":         body.get("token"),
+        "url":           body.get("url"),
+        "expires_hours": body.get("expires_hours", 8),
+    }
+    return {"ok": True}
+
+@app.get("/api/maintenance/session")
+def get_maintenance_session():
+    """Frontend leest hieruit de actieve onderhoudssessie (voor QR weergave)."""
+    return _maintenance_session or {}
+
+@app.post("/api/maintenance/request")
+async def request_maintenance_session():
+    """Vraagt een onderhoudssessie-token aan bij de cloud via de WebSocket-verbinding."""
+    from .cloud_client import send_to_cloud, _active_ws
+    if _active_ws is None:
+        raise HTTPException(503, "Niet verbonden met cloud — controleer internetverbinding")
+    try:
+        await send_to_cloud({"type": "request_maintenance_token"})
+    except Exception as e:
+        raise HTTPException(503, f"Kon token niet aanvragen: {e}")
+    return {"ok": True, "message": "Token aangevraagd — QR verschijnt zo meteen"}
+
 @app.post("/api/cloud/pair-code")
 def set_pair_code(body: dict):
     """Intern endpoint — cloud_client.py schrijft de koppelcode en verbindingsstatus hierheen."""

@@ -17,6 +17,19 @@ import websockets
 
 log = logging.getLogger("cloud_client")
 
+# Actieve onderhoudssessie — ingesteld door cloud, uitgelezen door /api/maintenance/session
+_maintenance_session: dict | None = None
+
+# Actieve WebSocket verbinding — beschikbaar voor andere modules om berichten te sturen
+_active_ws = None
+
+
+async def send_to_cloud(payload: dict) -> None:
+    """Stuur een bericht naar de cloud via de actieve WebSocket verbinding."""
+    if _active_ws is None:
+        raise RuntimeError("Geen actieve cloud verbinding")
+    await _active_ws.send(json.dumps(payload))
+
 # Fallback ingebakken in de code — machine werkt ook zonder .env of database-entry
 _CLOUD_URL_DEFAULT = "wss://mixmate-cloud-production.up.railway.app"
 CLOUD_URL = os.getenv("MIXMATE_CLOUD_URL", "") or _CLOUD_URL_DEFAULT
@@ -447,6 +460,8 @@ async def cloud_loop():
     while True:
         try:
             async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
+                global _active_ws
+                _active_ws = ws
                 backoff = 5  # reset na succesvolle verbinding
                 log.info("Cloud verbonden")
                 try:
@@ -551,6 +566,24 @@ async def cloud_loop():
                         if msg_type == "heartbeat_ack":
                             continue
 
+                        if msg_type == "maintenance_token":
+                            global _maintenance_session
+                            _maintenance_session = {
+                                "token":         message.get("token"),
+                                "url":           message.get("url"),
+                                "expires_hours": message.get("expires_hours", 8),
+                            }
+                            try:
+                                async with httpx.AsyncClient(verify=False) as c:
+                                    await c.post(
+                                        f"{LOCAL}/api/maintenance/session",
+                                        json=_maintenance_session,
+                                        timeout=3,
+                                    )
+                            except Exception:
+                                pass
+                            continue
+
                         # Verwerk commando met timeout zodat één traag verzoek de loop niet blokkeert
                         try:
                             response = await asyncio.wait_for(handle_message(message, ws), timeout=20)
@@ -565,6 +598,8 @@ async def cloud_loop():
 
         except Exception as e:
             log.warning("Cloud verbinding verbroken: %s — herverbinden in %ds", e, backoff)
+        finally:
+            _active_ws = None
 
         try:
             async with httpx.AsyncClient(verify=False) as c:

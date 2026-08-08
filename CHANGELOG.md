@@ -1,3 +1,11 @@
+## [5.9.0] - 2026-08-08
+### Nieuw
+- Onderhoudsessie QR-code in Backoffice: monteur vraagt via de machine zelf een token aan, scant de QR op zijn tablet en bedient de machine op afstand via het portaal
+- Machine backend: nieuwe endpoints `POST /api/maintenance/request`, `POST /api/maintenance/session`, `GET /api/maintenance/session`
+- WebSocket bridge: machine stuurt `request_maintenance_token` naar cloud, cloud antwoordt met JWT-token en URL
+- Cloud backend: WebSocket handler verwerkt `request_maintenance_token` en stuurt `maintenance_token` terug
+- `cloud_client.py`: bijhoudt actieve WebSocket-referentie (`_active_ws`) voor gebruik buiten de loop
+
 ## [5.8.1] - 2026-08-07
 ### Gewijzigd
 - Installatie-wizard volledig herschreven: direction-aware overgangen, terugknop, donkere WiFi-stap, auto-advance bij koppelen, geanimeerde checkmark op afsluiting

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import QRCode from 'qrcode'
 import { api } from '../api'
 import AdminCalibrate from './AdminCalibrate'
 import BackofficeLoadcell from './BackofficeLoadcell'
@@ -405,6 +406,131 @@ function FabriekPanel({ factoryMode, onReadyToPack }) {
   )
 }
 
+/* ── Onderhoudsessie QR ───────────────────────────────────────────────────── */
+function OnderhoudPanel() {
+  const [status, setStatus]   = useState('idle')  // idle | loading | ready | error
+  const [session, setSession] = useState(null)
+  const [errMsg, setErrMsg]   = useState('')
+  const canvasRef = useRef(null)
+  const pollRef   = useRef(null)
+
+  const drawQR = useCallback(async (url) => {
+    if (!canvasRef.current || !url) return
+    try {
+      await QRCode.toCanvas(canvasRef.current, url, {
+        width: 220, margin: 2,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+    } catch (e) {
+      console.error('QR render fout:', e)
+    }
+  }, [])
+
+  // Poll /api/maintenance/session totdat token binnenkomt
+  const startPolling = useCallback(() => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/maintenance/session')
+        const data = await res.json()
+        if (data?.url) {
+          clearInterval(pollRef.current)
+          setSession(data)
+          setStatus('ready')
+          drawQR(data.url)
+        }
+      } catch {}
+    }, 1000)
+  }, [drawQR])
+
+  useEffect(() => () => clearInterval(pollRef.current), [])
+
+  // Render QR nadat canvas beschikbaar is
+  useEffect(() => {
+    if (status === 'ready' && session?.url) drawQR(session.url)
+  }, [status, session, drawQR])
+
+  async function requestSession() {
+    setStatus('loading')
+    setErrMsg('')
+    setSession(null)
+    try {
+      const res = await fetch('/api/maintenance/request', { method: 'POST' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.detail || 'Onbekende fout')
+      }
+      startPolling()
+    } catch (e) {
+      setStatus('error')
+      setErrMsg(e.message)
+    }
+  }
+
+  function reset() {
+    clearInterval(pollRef.current)
+    setStatus('idle')
+    setSession(null)
+    setErrMsg('')
+  }
+
+  return (
+    <div className="space-y-6 max-w-sm">
+      <div>
+        <h3 className="text-white font-bold text-lg mb-1">Onderhoudsessie</h3>
+        <p className="text-white/50 text-sm leading-relaxed">
+          Genereer een QR-code die de monteur scant op zijn tablet om de machine op afstand te bedienen.
+        </p>
+      </div>
+
+      {status === 'idle' && (
+        <button onClick={requestSession}
+          className="w-full py-4 rounded-2xl text-sm font-bold bg-white/15 text-white border border-white/25 hover:bg-white/20 transition-all flex items-center justify-center gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3m0 4h4v-4m-7 0h3"/>
+          </svg>
+          QR-code genereren
+        </button>
+      )}
+
+      {status === 'loading' && (
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+          <p className="text-white/60 text-sm">Token aanvragen bij cloud…</p>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="bg-red-500/15 border border-red-500/30 rounded-2xl p-5 space-y-3">
+          <p className="text-red-300 text-sm font-medium">{errMsg}</p>
+          <button onClick={reset} className="text-sm text-white/60 hover:text-white/80 transition-colors underline">
+            Opnieuw proberen
+          </button>
+        </div>
+      )}
+
+      {status === 'ready' && session && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl p-4 flex items-center justify-center">
+            <canvas ref={canvasRef} />
+          </div>
+          <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 space-y-1">
+            <p className="text-white/50 text-xs font-medium uppercase tracking-wider">Geldig voor</p>
+            <p className="text-white text-sm font-semibold">{session.expires_hours ?? 8} uur</p>
+          </div>
+          <p className="text-white/40 text-xs leading-relaxed text-center">
+            Scan de QR met de tablet. De sessie verloopt automatisch.
+          </p>
+          <button onClick={reset}
+            className="w-full py-3 rounded-xl text-sm font-medium text-white/50 hover:text-white/70 border border-white/15 hover:border-white/25 transition-all">
+            Nieuwe QR genereren
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Backoffice shell ─────────────────────────────────────────────────────── */
 const BO_LOCK_TIMEOUT_MS = 3 * 60 * 1000  // 3 minuten inactiviteit → auto-lock
 
@@ -456,6 +582,7 @@ export default function Backoffice({ onClose, factoryMode = false, onReadyToPack
     { id:'history', label:'Geschiedenis' },
     { id:'update', label:'Updates' },
     { id:'system', label:'Systeem' },
+    { id:'onderhoud', label:'Onderhoud' },
     ...(!factoryMode ? [{ id:'fabriek', label:'Fabriek' }] : []),
   ]
 
@@ -498,6 +625,7 @@ export default function Backoffice({ onClose, factoryMode = false, onReadyToPack
         {tab === 'history'   && <BackofficeHistory />}
         {tab === 'update'    && <BackofficeUpdate />}
         {tab === 'system'    && <BackofficeSystem onShowWifi={() => setShowWifi(true)} onShowPairing={() => setShowPairing(true)} />}
+        {tab === 'onderhoud' && <OnderhoudPanel />}
       </div>
 
       {showWifi    && <WifiSetup    onClose={() => setShowWifi(false)} />}
