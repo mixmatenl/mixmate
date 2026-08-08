@@ -46,6 +46,16 @@ function PrimaryBtn({ children, onClick, disabled }) {
   )
 }
 
+function SkipBtn({ onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      width: '100%', padding: '12px 0', borderRadius: 16, border: 'none',
+      background: 'transparent', color: 'rgba(255,255,255,0.3)',
+      fontSize: 14, fontWeight: 500, cursor: 'pointer', marginTop: 8,
+    }}>Stap overslaan →</button>
+  )
+}
+
 function ProgressDots({ total, current }) {
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 40, justifyContent: 'center' }}>
@@ -109,6 +119,7 @@ function StepEthernet({ onNext }) {
       <PrimaryBtn onClick={onNext} disabled={!ethOk}>
         {ethOk ? 'Volgende →' : 'Wachten op Ethernet…'}
       </PrimaryBtn>
+      <SkipBtn onClick={onNext} />
     </Step>
   )
 }
@@ -206,6 +217,7 @@ function StepCocktailmachine({ onNext }) {
       <PrimaryBtn onClick={onNext} disabled={!connected}>
         {connected ? 'Verbonden — Volgende →' : 'Wachten op Cocktailmachine…'}
       </PrimaryBtn>
+      <SkipBtn onClick={onNext} />
     </Step>
   )
 }
@@ -247,6 +259,7 @@ function StepTablet({ onNext }) {
       </div>
 
       <PrimaryBtn onClick={onNext}>Volgende →</PrimaryBtn>
+      <SkipBtn onClick={onNext} />
     </Step>
   )
 }
@@ -298,6 +311,7 @@ function StepDisplayTest({ onNext }) {
       <PrimaryBtn onClick={onNext} disabled={!confirmed}>
         {confirmed ? 'Volgende →' : 'Bevestig eerst het scherm'}
       </PrimaryBtn>
+      <SkipBtn onClick={onNext} />
     </Step>
   )
 }
