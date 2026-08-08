@@ -231,30 +231,38 @@ function AdminNotificationBanner() {
 
   if (!notif) return null
 
+  async function respond(response) {
+    await fetch('/api/system/admin-notification/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response }),
+    })
+    setNotif(null)
+  }
+
   return (
     <div style={{
-      background: 'rgba(0,122,255,0.12)', border: '1px solid rgba(0,122,255,0.35)',
-      borderRadius: 16, padding: '18px 24px', marginBottom: 28,
-      display: 'flex', alignItems: 'center', gap: 16,
+      background: 'rgba(0,122,255,0.12)', border: '1px solid rgba(0,122,255,0.4)',
+      borderRadius: 16, padding: '20px 24px', marginBottom: 28,
     }}>
-      <span style={{ fontSize: 26 }}>🛠️</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 15, marginBottom: 2 }}>MIXMATE ondersteuning</div>
-        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.5 }}>{notif.message}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <span style={{ fontSize: 26 }}>🛠️</span>
+        <div>
+          <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 15, marginBottom: 2 }}>MIXMATE ondersteuning</div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.5 }}>{notif.message}</div>
+        </div>
       </div>
-      <button
-        onClick={async () => {
-          await fetch('/api/system/admin-notification/dismiss', { method: 'POST' })
-          setNotif(null)
-        }}
-        style={{
-          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10,
-          color: 'rgba(255,255,255,0.5)', fontSize: 13, padding: '8px 14px', cursor: 'pointer',
-          fontFamily: 'inherit',
-        }}
-      >
-        Sluiten
-      </button>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={() => respond('ja')} style={{
+          background: '#30d158', border: 'none', borderRadius: 12, color: '#fff',
+          fontSize: 15, fontWeight: 700, padding: '12px 28px', cursor: 'pointer', fontFamily: 'inherit',
+        }}>✓ Ja, akkoord</button>
+        <button onClick={() => respond('nee')} style={{
+          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 12, color: 'rgba(255,255,255,0.6)',
+          fontSize: 15, fontWeight: 600, padding: '12px 28px', cursor: 'pointer', fontFamily: 'inherit',
+        }}>✗ Nee</button>
+      </div>
     </div>
   )
 }

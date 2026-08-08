@@ -2224,6 +2224,30 @@ async def dismiss_admin_notification():
     return {"ok": True}
 
 
+@app.post("/api/system/admin-notification/respond")
+async def respond_admin_notification(body: dict):
+    """Klant klikt JA of NEE op het machinescherm — stuur respons naar cloud."""
+    global _admin_notification
+    response   = body.get("response", "").lower()  # "ja" of "nee"
+    machine_id = _db_get("machine_id") or ""
+    cloud_url  = (os.environ.get("MIXMATE_CLOUD_URL") or "").rstrip("/")
+    cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+
+    if cloud_http and machine_id:
+        import httpx as _httpx
+        try:
+            async with _httpx.AsyncClient(timeout=8) as c:
+                await c.post(
+                    f"{cloud_http}/api/machines/{machine_id}/customer-verify-machine",
+                    json={"response": response},
+                )
+        except Exception:
+            pass
+
+    _admin_notification = None
+    return {"ok": True}
+
+
 @app.post("/api/system/full-factory-reset")
 async def full_factory_reset():
     """

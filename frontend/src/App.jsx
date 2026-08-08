@@ -38,34 +38,45 @@ function AdminNotificationToast() {
 
   if (!notif) return null
 
+  async function respond(response) {
+    await fetch('/api/system/admin-notification/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response }),
+    })
+    setNotif(null)
+  }
+
   return (
     <div style={{
       position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 9000, maxWidth: 480, width: 'calc(100% - 48px)',
+      zIndex: 9000, maxWidth: 500, width: 'calc(100% - 48px)',
       background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)',
       border: '1px solid rgba(0,122,255,0.4)', borderRadius: 20,
-      padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14,
+      padding: '18px 20px',
       boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     }}>
-      <span style={{ fontSize: 24, flexShrink: 0 }}>🛠️</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 13, marginBottom: 2 }}>MIXMATE ondersteuning</div>
-        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 1.4 }}>{notif.message}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        <span style={{ fontSize: 22, flexShrink: 0 }}>🛠️</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 13, marginBottom: 2 }}>MIXMATE ondersteuning</div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 1.4 }}>{notif.message}</div>
+        </div>
       </div>
-      <button
-        onClick={async () => {
-          await fetch('/api/system/admin-notification/dismiss', { method: 'POST' })
-          setNotif(null)
-        }}
-        style={{
-          background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10,
-          color: 'rgba(255,255,255,0.6)', fontSize: 13, padding: '7px 12px',
-          cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
-        }}
-      >
-        Sluiten
-      </button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => respond('ja')} style={{
+          flex: 1, background: '#30d158', border: 'none', borderRadius: 11,
+          color: '#fff', fontSize: 14, fontWeight: 700, padding: '11px 0',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>✓ Ja, akkoord</button>
+        <button onClick={() => respond('nee')} style={{
+          flex: 1, background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 11,
+          color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 600, padding: '11px 0',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}>✗ Nee</button>
+      </div>
     </div>
   )
 }

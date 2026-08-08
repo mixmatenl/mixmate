@@ -1,3 +1,9 @@
+## [6.2.5] - 2026-08-08
+### Toegevoegd
+- Machinebanner en tablet-toast hebben nu JA/NEE knoppen
+- Klantrespons wordt doorgestuurd naar cloud via /api/system/admin-notification/respond
+- Controls in portaal worden pas vrijgegeven na JA van de klant
+
 ## [6.2.4] - 2026-08-08
 ### Toegevoegd
 - Admin-notificatie toast ook zichtbaar op tablet (App.jsx)
