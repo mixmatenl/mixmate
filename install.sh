@@ -361,6 +361,18 @@ log "Sudoers instellen..."
 cp "$INSTALL_DIR/mixmate-sudoers" /etc/sudoers.d/mixmate
 chmod 440 /etc/sudoers.d/mixmate
 
+# ── SD-kaart beschermen (minder writes = minder corruptie) ───
+log "SD-kaart optimalisaties instellen..."
+if [ -f /etc/fstab ] && ! grep -q "noatime" /etc/fstab; then
+  sed -i 's/defaults/defaults,noatime/' /etc/fstab
+  log "noatime ingesteld op rootfs"
+fi
+# Tmp naar RAM
+if ! grep -q "tmpfs /tmp" /etc/fstab; then
+  echo "tmpfs /tmp tmpfs defaults,noatime,size=64m 0 0" >> /etc/fstab
+  log "tmpfs /tmp ingesteld"
+fi
+
 # ── Services starten ──────────────────────────
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME
