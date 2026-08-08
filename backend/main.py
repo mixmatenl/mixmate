@@ -2196,9 +2196,9 @@ async def full_factory_reset():
     """
     import sqlite3
 
-    _KEEP_KEYS = {'machine_id', 'MIXMATE_CLOUD_URL', 'LOADCELL_DOUT', 'LOADCELL_SCK', 'LOADCELL_SCALE'}
+    # Alleen hardware-pinnen bewaren — alles else wordt gewist zoals een verse SD-kaart
+    _KEEP_KEYS = {'LOADCELL_DOUT', 'LOADCELL_SCK', 'LOADCELL_SCALE'}
     _FACTORY_ENV_PREFIXES = (
-        'MACHINE_MODEL=', 'MIXMATE_CLOUD_URL=',
         'LOADCELL_DOUT=', 'LOADCELL_SCK=', 'LOADCELL_SCALE=',
     )
 
@@ -2282,7 +2282,19 @@ async def full_factory_reset():
     except Exception as _e:
         log.warning("WiFi wissen mislukt: %s", _e)
 
-    # 6. Volledig herstarten via sudo reboot
+    # 6. Bluetooth-koppelingen verwijderen
+    try:
+        _rc, _bt_out = await _run_cmd("bluetoothctl devices Paired")
+        for _line in _bt_out.splitlines():
+            _parts = _line.strip().split()
+            if len(_parts) >= 2:
+                _mac = _parts[1]
+                await _run_cmd(f"bluetoothctl remove {_mac}")
+                log.info("Bluetooth koppeling verwijderd: %s", _mac)
+    except Exception as _e:
+        log.warning("Bluetooth wissen mislukt: %s", _e)
+
+    # 8. Volledig herstarten via sudo reboot
     async def _do_reboot():
         await asyncio.sleep(1)
         import subprocess
