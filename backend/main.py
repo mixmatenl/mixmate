@@ -196,6 +196,10 @@ async def lifespan(app: FastAPI):
         _cloud_pair["paired"] = True
     _start_mdns()
     asyncio.create_task(_bluetooth_loadcell_server())
+    # Start installatie-hotspot automatisch als machine in factory state is
+    machine_state = _db_get("machine_state") or "factory"
+    if machine_state == "factory":
+        asyncio.create_task(_ensure_hotspot())
     yield
     if _cloud_task:
         _cloud_task.cancel()
@@ -1294,6 +1298,84 @@ async def _bt_discoverable_timeout():
         log.info("Bluetooth koppelmodus uitgeschakeld")
     except Exception:
         pass
+
+
+# ── Installatie-hotspot (WiFi AP voor koppeling zonder klantennetwerk) ────────
+
+HOTSPOT_SSID     = "MIXMATE-SETUP"
+HOTSPOT_PASSWORD = "mixmate123"
+_hotspot_active  = False
+
+
+async def _run_cmd(cmd: str) -> tuple[int, str]:
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    out, _ = await proc.communicate()
+    return proc.returncode, out.decode().strip()
+
+
+async def _ensure_hotspot():
+    """Start de installatie-hotspot als die nog niet actief is."""
+    global _hotspot_active
+    try:
+        # Check of hotspot al draait
+        rc, out = await _run_cmd(f'nmcli con show --active | grep "{HOTSPOT_SSID}"')
+        if rc == 0:
+            _hotspot_active = True
+            log.info("Installatie-hotspot %s al actief", HOTSPOT_SSID)
+            return
+        log.info("Installatie-hotspot %s starten…", HOTSPOT_SSID)
+        # Verwijder oude verbinding als die bestaat
+        await _run_cmd(f'nmcli con delete "{HOTSPOT_SSID}" 2>/dev/null || true')
+        rc, out = await _run_cmd(
+            f'nmcli device wifi hotspot ifname wlan0 '
+            f'con-name "{HOTSPOT_SSID}" ssid "{HOTSPOT_SSID}" '
+            f'password "{HOTSPOT_PASSWORD}"'
+        )
+        if rc == 0:
+            _hotspot_active = True
+            log.info("Installatie-hotspot %s actief — IP 10.42.0.1", HOTSPOT_SSID)
+        else:
+            log.warning("Hotspot starten mislukt: %s", out)
+    except Exception as e:
+        log.warning("Hotspot fout: %s", e)
+
+
+async def _stop_hotspot():
+    global _hotspot_active
+    try:
+        await _run_cmd(f'nmcli con delete "{HOTSPOT_SSID}"')
+        _hotspot_active = False
+        log.info("Installatie-hotspot gestopt")
+    except Exception as e:
+        log.warning("Hotspot stoppen mislukt: %s", e)
+
+
+@app.get("/api/system/hotspot/status")
+async def hotspot_status():
+    rc, out = await _run_cmd(f'nmcli con show --active | grep "{HOTSPOT_SSID}"')
+    active = rc == 0
+    return {
+        "active":   active,
+        "ssid":     HOTSPOT_SSID,
+        "password": HOTSPOT_PASSWORD,
+        "gateway":  "10.42.0.1",
+    }
+
+
+@app.post("/api/system/hotspot/start")
+async def hotspot_start():
+    await _ensure_hotspot()
+    return {"ok": True, "ssid": HOTSPOT_SSID, "password": HOTSPOT_PASSWORD}
+
+
+@app.post("/api/system/hotspot/stop")
+async def hotspot_stop():
+    await _stop_hotspot()
+    return {"ok": True}
 
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────

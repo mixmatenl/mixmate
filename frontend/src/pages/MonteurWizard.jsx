@@ -123,53 +123,41 @@ function IpDisplay() {
 
 /* ── Stap 2: Cocktailmachine koppelen ────────────────────────────────────── */
 function StepCocktailmachine({ onNext }) {
-  const [status, setStatus]     = useState(null)
-  const [btMode, setBtMode]     = useState(false)   // koppelmodus actief?
-  const [btSecondsLeft, setBtSecondsLeft] = useState(0)
+  const [status,   setStatus]   = useState(null)
+  const [hotspot,  setHotspot]  = useState(null)
 
   useEffect(() => {
     const iv = setInterval(async () => {
       try {
-        const r = await fetch('/api/loadcell/status')
-        setStatus(await r.json())
+        const [ls, hs] = await Promise.all([
+          fetch('/api/loadcell/status').then(r => r.json()),
+          fetch('/api/system/hotspot/status').then(r => r.json()),
+        ])
+        setStatus(ls)
+        setHotspot(hs)
       } catch {}
-    }, 1000)
+    }, 1500)
     return () => clearInterval(iv)
   }, [])
 
-  // Afteller voor Bluetooth koppelmodus
-  useEffect(() => {
-    if (!btMode) return
-    setBtSecondsLeft(60)
-    const iv = setInterval(() => setBtSecondsLeft(s => {
-      if (s <= 1) { clearInterval(iv); setBtMode(false); return 0 }
-      return s - 1
-    }), 1000)
-    return () => clearInterval(iv)
-  }, [btMode])
+  const connected    = status?.connected === true
+  const via          = status?.connection_type   // "wifi" | "bluetooth" | "hotspot" | null
+  const hotspotOn    = hotspot?.active === true
 
-  async function enableBluetooth() {
-    try {
-      await fetch('/api/system/bluetooth-discoverable', { method: 'POST' })
-      setBtMode(true)
-    } catch {
-      alert('Bluetooth kon niet worden ingeschakeld.')
-    }
-  }
-
-  const connected      = status?.connected === true
-  const viaWifi        = status?.connection_type === 'wifi'
-  const viaBluetooth   = status?.connection_type === 'bluetooth'
+  const viaLabel = via === 'bluetooth' ? 'via Bluetooth'
+                 : via === 'hotspot'   ? 'via installatie-hotspot'
+                 : 'via WiFi'
 
   return (
     <Step
       icon="🔗"
       title="Cocktailmachine koppelen"
-      subtitle="Schakel de Cocktailmachine (2e Pi) in. De koppeling gaat automatisch via WiFi of Bluetooth."
+      subtitle="Schakel de Cocktailmachine (2e Pi) in. De koppeling gaat automatisch."
     >
+      {/* Verbindingsstatus */}
       <StatusRow
         label="Cocktailmachine"
-        value={connected ? (viaBluetooth ? 'Verbonden via Bluetooth' : 'Verbonden via WiFi') : 'Zoeken…'}
+        value={connected ? `Verbonden ${viaLabel}` : 'Zoeken…'}
         ok={connected}
         loading={status === null}
       />
@@ -177,39 +165,42 @@ function StepCocktailmachine({ onNext }) {
         <StatusRow label="Gewicht" value={`${status?.weight_g ?? 0} g`} ok={true} />
       )}
 
-      {!connected && (
-        <>
-          <div style={{ marginTop: 16, padding: '14px 20px', background: 'rgba(255,255,255,0.05)', borderRadius: 14 }}>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.7 }}>
-              • De Cocktailmachine zoekt automatisch via WiFi (mDNS)<br />
-              • Als WiFi niet werkt, schakelt hij na ~10s over op Bluetooth
+      {/* Hotspot status */}
+      <div style={{
+        marginTop: 16, padding: '16px 20px', borderRadius: 14,
+        background: hotspotOn ? 'rgba(48,209,88,0.08)' : 'rgba(255,255,255,0.05)',
+        border: `1px solid ${hotspotOn ? 'rgba(48,209,88,0.3)' : 'rgba(255,255,255,0.1)'}`,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: hotspotOn ? 10 : 0 }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: hotspotOn ? '#30d158' : 'rgba(255,255,255,0.2)',
+          }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: hotspotOn ? '#30d158' : 'rgba(255,255,255,0.4)' }}>
+            Installatie-hotspot {hotspotOn ? 'actief' : 'niet actief'}
+          </span>
+        </div>
+        {hotspotOn && (
+          <div style={{ paddingLeft: 16 }}>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px' }}>
+              Netwerk: <strong style={{ color: '#fff', fontFamily: 'monospace' }}>{hotspot.ssid}</strong>
+            </p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+              Wachtwoord: <strong style={{ color: '#fff', fontFamily: 'monospace' }}>{hotspot.password}</strong>
             </p>
           </div>
+        )}
+      </div>
 
-          {/* Bluetooth koppelmodus */}
-          {!btMode ? (
-            <button onClick={enableBluetooth} style={{
-              marginTop: 14, width: '100%', padding: '15px 0', borderRadius: 14,
-              border: '1px solid rgba(10,132,255,0.5)', background: 'rgba(10,132,255,0.1)',
-              color: '#0a84ff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>
-              Bluetooth koppelmodus inschakelen
-            </button>
-          ) : (
-            <div style={{
-              marginTop: 14, padding: '14px 20px',
-              border: '1px solid rgba(10,132,255,0.4)', borderRadius: 14,
-              background: 'rgba(10,132,255,0.08)',
-            }}>
-              <p style={{ fontSize: 13, color: '#0a84ff', fontWeight: 600, margin: '0 0 6px' }}>
-                Bluetooth koppelmodus actief — {btSecondsLeft}s
-              </p>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
-                De Pompmodule is nu zichtbaar. De Cocktailmachine koppelt automatisch zodra hij in de buurt is.
-              </p>
-            </div>
-          )}
-        </>
+      {!connected && (
+        <div style={{ marginTop: 12, padding: '14px 20px', background: 'rgba(255,255,255,0.04)', borderRadius: 14 }}>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.8 }}>
+            De Cocktailmachine verbindt automatisch via:<br />
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>1.</strong> WiFi (zelfde netwerk) &nbsp;
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>2.</strong> Installatie-hotspot &nbsp;
+            <strong style={{ color: 'rgba(255,255,255,0.7)' }}>3.</strong> Bluetooth
+          </p>
+        </div>
       )}
 
       <PrimaryBtn onClick={onNext} disabled={!connected}>

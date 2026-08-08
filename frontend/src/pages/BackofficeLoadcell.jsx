@@ -2,14 +2,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 /* ── Verbindingsstatus ───────────────────────────────────────────────────── */
 function ConnectionStatus() {
-  const [status, setStatus] = useState(null)
+  const [status,  setStatus]  = useState(null)
+  const [hotspot, setHotspot] = useState(null)
   const [btActive, setBtActive]   = useState(false)
   const [btSeconds, setBtSeconds] = useState(0)
 
   const poll = useCallback(async () => {
     try {
-      const r = await fetch('/api/loadcell/status')
-      setStatus(await r.json())
+      const [ls, hs] = await Promise.all([
+        fetch('/api/loadcell/status').then(r => r.json()),
+        fetch('/api/system/hotspot/status').then(r => r.json()),
+      ])
+      setStatus(ls)
+      setHotspot(hs)
     } catch {}
   }, [])
 
@@ -37,14 +42,14 @@ function ConnectionStatus() {
   }
 
   const connected = status?.connected === true
-  const via       = status?.connection_type  // "wifi" | "bluetooth" | null
+  const via       = status?.connection_type  // "wifi" | "bluetooth" | "hotspot" | null
   const weight    = status?.weight_g ?? 0
 
   const badge = connected
-    ? via === 'bluetooth'
-      ? { label: 'Verbonden via Bluetooth', color: '#0a84ff', bg: 'rgba(10,132,255,0.12)', border: 'rgba(10,132,255,0.3)' }
-      : { label: 'Verbonden via WiFi',      color: '#30d158', bg: 'rgba(48,209,88,0.12)',  border: 'rgba(48,209,88,0.3)' }
-    : { label: 'Niet verbonden',            color: '#ff453a', bg: 'rgba(255,69,58,0.10)',  border: 'rgba(255,69,58,0.25)' }
+    ? via === 'bluetooth' ? { label: 'Verbonden via Bluetooth',          color: '#0a84ff', bg: 'rgba(10,132,255,0.12)', border: 'rgba(10,132,255,0.3)' }
+    : via === 'hotspot'   ? { label: 'Verbonden via installatie-hotspot', color: '#ff9f0a', bg: 'rgba(255,159,10,0.12)', border: 'rgba(255,159,10,0.3)' }
+                          : { label: 'Verbonden via WiFi',                color: '#30d158', bg: 'rgba(48,209,88,0.12)',  border: 'rgba(48,209,88,0.3)'  }
+    : { label: 'Niet verbonden', color: '#ff453a', bg: 'rgba(255,69,58,0.10)', border: 'rgba(255,69,58,0.25)' }
 
   return (
     <div className="space-y-3 pb-8 mb-8 border-b border-white/10">
@@ -64,26 +69,31 @@ function ConnectionStatus() {
       </div>
 
       {/* Transport details */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className={`rounded-xl p-4 border transition-all ${via === 'wifi' ? 'bg-green-500/10 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-base">📶</span>
-            <span className="text-white/80 text-sm font-semibold">WiFi</span>
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { key: 'wifi',      icon: '📶', label: 'WiFi',      activeColor: 'text-green-400', activeBg: 'bg-green-500/10 border-green-500/30' },
+          { key: 'hotspot',   icon: '📡', label: 'Hotspot',   activeColor: 'text-orange-400', activeBg: 'bg-orange-500/10 border-orange-500/30' },
+          { key: 'bluetooth', icon: '🔵', label: 'Bluetooth', activeColor: 'text-blue-400',  activeBg: 'bg-blue-500/10 border-blue-500/30' },
+        ].map(t => (
+          <div key={t.key} className={`rounded-xl p-3 border transition-all ${via === t.key ? t.activeBg : 'bg-white/5 border-white/10'}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-sm">{t.icon}</span>
+              <span className="text-white/80 text-xs font-semibold">{t.label}</span>
+            </div>
+            <p className={`text-xs font-medium ${via === t.key ? t.activeColor : 'text-white/25'}`}>
+              {via === t.key ? 'Actief' : 'Inactief'}
+            </p>
           </div>
-          <p className={`text-xs font-medium ${via === 'wifi' ? 'text-green-400' : 'text-white/30'}`}>
-            {via === 'wifi' ? 'Actief' : 'Inactief'}
-          </p>
-        </div>
-        <div className={`rounded-xl p-4 border transition-all ${via === 'bluetooth' ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10'}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-base">🔵</span>
-            <span className="text-white/80 text-sm font-semibold">Bluetooth</span>
-          </div>
-          <p className={`text-xs font-medium ${via === 'bluetooth' ? 'text-blue-400' : 'text-white/30'}`}>
-            {via === 'bluetooth' ? 'Actief' : 'Inactief'}
-          </p>
-        </div>
+        ))}
       </div>
+
+      {/* Hotspot info */}
+      {hotspot?.active && (
+        <div className="bg-orange-500/8 border border-orange-500/25 rounded-xl px-4 py-3 text-sm">
+          <p className="text-orange-300 font-semibold mb-1">Installatie-hotspot actief</p>
+          <p className="text-white/60">Netwerk: <span className="text-white font-mono">{hotspot.ssid}</span> &nbsp;·&nbsp; Wachtwoord: <span className="text-white font-mono">{hotspot.password}</span></p>
+        </div>
+      )}
 
       {/* Bluetooth koppelmodus */}
       {!btActive ? (
