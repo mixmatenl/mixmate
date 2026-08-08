@@ -12,3 +12,5 @@ pi ALL=(ALL) NOPASSWD: /sbin/shutdown
 pi ALL=(ALL) NOPASSWD: /usr/sbin/shutdown
 pi ALL=(ALL) NOPASSWD: /bin/systemctl restart mixmate
 pi ALL=(ALL) NOPASSWD: /bin/systemctl daemon-reload
+pi ALL=(ALL) NOPASSWD: /bin/systemctl enable mixmate-reinstall.service
+pi ALL=(ALL) NOPASSWD: /bin/cp /tmp/mixmate-reinstall.service /etc/systemd/system/mixmate-reinstall.service

@@ -29,7 +29,7 @@ function MonitorRoot() {
     return (
       <DragScrollProvider>
         <VirtualKeyboardProvider>
-          <MonteurWizard onComplete={() => setState('setup')} />
+          <MonteurWizard onComplete={() => setState('ready')} />
         </VirtualKeyboardProvider>
       </DragScrollProvider>
     )

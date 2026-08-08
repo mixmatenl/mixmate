@@ -1227,8 +1227,10 @@ async def loadcell_ws(websocket: WebSocket):
     global _loadcell_ws
     await websocket.accept()
     _loadcell_ws = websocket
-    loadcell.network_disconnected()  # reset tot eerste meting binnenkomt
-    log.info("Cocktailmachine-Pi verbonden via /ws/loadcell")
+    loadcell.network_disconnected()
+    _client_ip = websocket.client.host if websocket.client else ""
+    _ws_transport = "hotspot" if _client_ip.startswith("10.42.0.") else "wifi"
+    log.info("Cocktailmachine-Pi verbonden via /ws/loadcell (IP=%s transport=%s)", _client_ip, _ws_transport)
     try:
         async for raw in websocket.iter_text():
             try:
@@ -1236,7 +1238,7 @@ async def loadcell_ws(websocket: WebSocket):
                 if msg.get("tare"):
                     loadcell.tare()
                 else:
-                    loadcell.network_update(float(msg.get("weight_g", 0)), transport="wifi")
+                    loadcell.network_update(float(msg.get("weight_g", 0)), transport=_ws_transport)
             except Exception:
                 pass
     except Exception:
@@ -2323,7 +2325,9 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 """
-        Path("/etc/systemd/system/mixmate-reinstall.service").write_text(_reinstall_service)
+        _tmp = Path("/tmp/mixmate-reinstall.service")
+        _tmp.write_text(_reinstall_service)
+        await _run_cmd(f"sudo cp {_tmp} /etc/systemd/system/mixmate-reinstall.service")
         await _run_cmd("sudo systemctl daemon-reload")
         await _run_cmd("sudo systemctl enable mixmate-reinstall.service")
         # Vlag aanmaken zodat de service éénmalig activeert
