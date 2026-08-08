@@ -1356,8 +1356,8 @@ async def _stop_hotspot():
 
 @app.get("/api/system/hotspot/status")
 async def hotspot_status():
-    rc, out = await _run_cmd(f'nmcli con show --active | grep "{HOTSPOT_SSID}"')
-    active = rc == 0
+    rc, out = await _run_cmd(f'sudo nmcli con show --active')
+    active = HOTSPOT_SSID in out
     return {
         "active":   active,
         "ssid":     HOTSPOT_SSID,
