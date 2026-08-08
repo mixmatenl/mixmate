@@ -139,6 +139,20 @@ export default function WifiSetup({ onClose }) {
         </button>
       </div>
 
+      {/* Ethernet banner */}
+      {status?.ethernet?.connected && (
+        <div style={{ background: '#ecfdf5', borderBottom: '1px solid #bbf7d0', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round">
+            <rect x="2" y="8" width="20" height="8" rx="2"/><path d="M6 8V5"/><path d="M10 8V5"/><path d="M14 8V5"/><path d="M18 8V5"/>
+          </svg>
+          <div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Ethernetkabel actief</span>
+            <span style={{ fontSize: 12, color: '#16a34a', marginLeft: 8 }}>{status.ethernet.name}</span>
+          </div>
+          <div style={{ marginLeft: 'auto', fontSize: 11, color: '#4ade80' }}>Internet via kabel</div>
+        </div>
+      )}
+
       {/* Netwerken */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
         {scanning ? (

@@ -1352,10 +1352,39 @@ async def system_restart():
     asyncio.create_task(_reboot())
     return {"ok": True, "message": "Machine herstart over 2 seconden..."}
 
+async def _ethernet_status() -> dict:
+    """Detecteer actieve ethernet verbinding via nmcli."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nmcli", "-t", "-f", "TYPE,STATE,CONNECTION", "dev",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await proc.communicate()
+        for line in out.decode().splitlines():
+            parts = line.split(":")
+            if len(parts) >= 2 and parts[0] == "ethernet" and parts[1] == "connected":
+                iface_name = parts[2] if len(parts) > 2 else "Ethernet"
+                return {"connected": True, "name": iface_name}
+    except Exception:
+        pass
+    # Fallback via /sys
+    for iface in Path("/sys/class/net").iterdir():
+        if iface.name.startswith("eth") or iface.name.startswith("en"):
+            try:
+                carrier = (iface / "carrier").read_text().strip()
+                if carrier == "1":
+                    return {"connected": True, "name": iface.name}
+            except Exception:
+                pass
+    return {"connected": False, "name": ""}
+
+
 @app.get("/api/system/wifi/status")
 async def wifi_status():
-    """Huidige WiFi verbinding."""
-    # Probeer nmcli
+    """Huidige WiFi én ethernet verbindingsstatus."""
+    ethernet = await _ethernet_status()
+
+    # Probeer nmcli voor WiFi
     try:
         proc = await asyncio.create_subprocess_exec(
             "sudo", "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi",
@@ -1365,7 +1394,11 @@ async def wifi_status():
         for line in out.decode().splitlines():
             parts = line.split(":")
             if parts and parts[0] == "yes":
-                return {"connected": True, "ssid": parts[1] if len(parts) > 1 else "", "signal": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0}
+                return {
+                    "connected": True, "ssid": parts[1] if len(parts) > 1 else "",
+                    "signal": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
+                    "ethernet": ethernet,
+                }
     except Exception:
         pass
     # Fallback: lees /proc/net/wireless
@@ -1375,7 +1408,6 @@ async def wifi_status():
             parts = line.split()
             if parts:
                 iface = parts[0].rstrip(":")
-                # Lees SSID via wpa_cli
                 proc2 = await asyncio.create_subprocess_exec(
                     "wpa_cli", "-i", iface, "status",
                     stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
@@ -1386,10 +1418,10 @@ async def wifi_status():
                     if l.startswith("ssid="):
                         ssid = l.split("=", 1)[1]
                     if l.startswith("wpa_state=COMPLETED"):
-                        return {"connected": True, "ssid": ssid, "signal": 0}
+                        return {"connected": True, "ssid": ssid, "signal": 0, "ethernet": ethernet}
     except Exception:
         pass
-    return {"connected": False, "ssid": "", "signal": 0}
+    return {"connected": False, "ssid": "", "signal": 0, "ethernet": ethernet}
 
 def _parse_nmcli_networks(raw: str) -> list:
     """
