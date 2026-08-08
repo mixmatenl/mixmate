@@ -355,6 +355,18 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/auth/bartender-pin", timeout=5)
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "set_model":
+                model = message.get("model", "").strip()
+                r = await c.post(f"{LOCAL}/api/system/machine", json={"model": model}, timeout=5)
+                if r.status_code < 300:
+                    log.info("Machine model ingesteld via portaal: %s", model)
+                    return {"req_id": req_id, "ok": True, "model": model}
+                return {"req_id": req_id, "ok": False, "error": r.json().get("detail", "Onbekend model")}
+
+            elif msg_type == "get_model":
+                r = await c.get(f"{LOCAL}/api/system/machine", timeout=5)
+                return {"req_id": req_id, **r.json()}
+
             elif msg_type == "restart":
                 import subprocess
                 subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
