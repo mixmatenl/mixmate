@@ -1,3 +1,9 @@
+## [5.9.1] - 2026-08-08
+### Opgelost
+- AdminLogin: ← Terug knop toegevoegd voor gebruikers zonder backoffice PIN
+- CloudPairing: na reset direct 10x per seconde pollen zodat koppelcode snel zichtbaar is
+- OnderhoudPanel: timeout na 15s als cloud niet antwoordt op maintenance token aanvraag
+
 ## [5.9.0] - 2026-08-08
 ### Nieuw
 - Onderhoudsessie QR-code in Backoffice: monteur vraagt via de machine zelf een token aan, scant de QR op zijn tablet en bedient de machine op afstand via het portaal
