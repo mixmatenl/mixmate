@@ -1,3 +1,7 @@
+## [6.2.6] - 2026-08-08
+### Opgelost
+- MonitorDisplay: MonteurWizard flitst niet meer bij herstart (debounce 1.5s voor factory/setup state)
+
 ## [6.2.5] - 2026-08-08
 ### Toegevoegd
 - Machinebanner en tablet-toast hebben nu JA/NEE knoppen

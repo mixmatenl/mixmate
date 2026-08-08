@@ -15,15 +15,42 @@ const isMonitor = window.location.pathname === '/monitor'
 
 function MonitorRoot() {
   const [state, setState] = useState(null)
+  const [confirmed, setConfirmed] = useState(false)
 
   useEffect(() => {
-    fetch('/api/system/machine-state')
-      .then(r => r.json())
-      .then(d => setState(d.state))
-      .catch(() => setState('ready'))
+    let cancelled = false
+
+    async function load() {
+      try {
+        const r = await fetch('/api/system/machine-state')
+        const d = await r.json()
+        if (cancelled) return
+        const s = d.state || 'ready'
+        setState(s)
+
+        // Alleen wizard tonen als factory/setup na 1,5s nog steeds klopt
+        if (s === 'factory' || s === 'setup') {
+          setTimeout(async () => {
+            if (cancelled) return
+            try {
+              const r2 = await fetch('/api/system/machine-state')
+              const d2 = await r2.json()
+              if (!cancelled) setConfirmed(d2.state === s)
+            } catch { setConfirmed(false) }
+          }, 1500)
+        } else {
+          setConfirmed(true)
+        }
+      } catch {
+        if (!cancelled) { setState('ready'); setConfirmed(true) }
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
   }, [])
 
-  if (state === null) return null
+  if (state === null || !confirmed) return null
 
   if (state === 'factory' || state === 'setup') {
     return (
