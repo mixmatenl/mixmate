@@ -1,3 +1,7 @@
+## [6.2.4] - 2026-08-08
+### Toegevoegd
+- Admin-notificatie toast ook zichtbaar op tablet (App.jsx)
+
 ## [6.2.3] - 2026-08-08
 ### Toegevoegd
 - Admin-notificatiebanner op HDMI-scherm (MonitorDisplay)

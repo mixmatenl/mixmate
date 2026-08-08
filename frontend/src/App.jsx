@@ -19,6 +19,57 @@ import { api } from './api'
 
 const SESSION_KEY  = 'mixmate_auth'
 
+function AdminNotificationToast() {
+  const [notif, setNotif] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    async function poll() {
+      try {
+        const r = await fetch('/api/system/admin-notification')
+        const d = r.ok ? await r.json() : null
+        if (alive) setNotif(d)
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 10000)
+    return () => { alive = false; clearInterval(iv) }
+  }, [])
+
+  if (!notif) return null
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+      zIndex: 9000, maxWidth: 480, width: 'calc(100% - 48px)',
+      background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(0,122,255,0.4)', borderRadius: 20,
+      padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14,
+      boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    }}>
+      <span style={{ fontSize: 24, flexShrink: 0 }}>🛠️</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 13, marginBottom: 2 }}>MIXMATE ondersteuning</div>
+        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 1.4 }}>{notif.message}</div>
+      </div>
+      <button
+        onClick={async () => {
+          await fetch('/api/system/admin-notification/dismiss', { method: 'POST' })
+          setNotif(null)
+        }}
+        style={{
+          background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 10,
+          color: 'rgba(255,255,255,0.6)', fontSize: 13, padding: '7px 12px',
+          cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+        }}
+      >
+        Sluiten
+      </button>
+    </div>
+  )
+}
+
 function AnimatedRoutes({ onStandby }) {
   return (
     <Routes>
@@ -171,6 +222,7 @@ export default function App() {
       {demo && !standby && <DemoMode onExit={exitDemo} slideIndex={demoSlideIndex} />}
       <BlockedOverlay />
       <FlushOverlay />
+      <AdminNotificationToast />
       {offline && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
