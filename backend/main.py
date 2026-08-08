@@ -1192,7 +1192,7 @@ _cloud_pair: dict = {
     "reset_code": None, "reset_code_email": None,
 }
 
-_maintenance_session: dict | None = None
+_maintenance_session = None
 
 @app.post("/api/maintenance/session")
 def set_maintenance_session(body: dict):

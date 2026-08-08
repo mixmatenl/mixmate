@@ -18,7 +18,7 @@ import websockets
 log = logging.getLogger("cloud_client")
 
 # Actieve onderhoudssessie — ingesteld door cloud, uitgelezen door /api/maintenance/session
-_maintenance_session: dict | None = None
+_maintenance_session = None
 
 # Actieve WebSocket verbinding — beschikbaar voor andere modules om berichten te sturen
 _active_ws = None
