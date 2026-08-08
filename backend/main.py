@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import random
@@ -193,10 +194,43 @@ async def lifespan(app: FastAPI):
     paired_val = _db_get("paired")
     if paired_val == "1":
         _cloud_pair["paired"] = True
+    _start_mdns()
     yield
     if _cloud_task:
         _cloud_task.cancel()
     gpio.cleanup()
+
+
+def _start_mdns():
+    """Registreer de Pompmodule als _mixmate._tcp.local zodat de Cocktailmachine-Pi hem vindt."""
+    try:
+        import socket as _socket
+        import threading
+        from zeroconf import Zeroconf, ServiceInfo
+
+        port = int(os.getenv("MIXMATE_PORT", "8000"))
+        hostname = _socket.gethostname()
+        local_ip = None
+        try:
+            s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            local_ip = "127.0.0.1"
+
+        info = ServiceInfo(
+            "_mixmate._tcp.local.",
+            f"{hostname}._mixmate._tcp.local.",
+            addresses=[_socket.inet_aton(local_ip)],
+            port=port,
+            properties={"role": "pompmodule"},
+        )
+        zc = Zeroconf()
+        zc.register_service(info)
+        log.info("mDNS geregistreerd: %s op %s:%d", hostname, local_ip, port)
+    except Exception as e:
+        log.debug("mDNS registratie mislukt (zeroconf niet geïnstalleerd?): %s", e)
 
 
 def _schedule_major_update_reboot():
@@ -651,6 +685,11 @@ async def _run_flush_task(pumps: list):
                     elapsed = time.monotonic() - start
                     if elapsed >= duration:
                         break
+                    # Veiligheidsstop: Cocktailmachine-Pi verbinding weg
+                    if loadcell.is_network_stale():
+                        log.warning("Loadcell verbinding verbroken — pomp %s gestopt (veiligheidsstop)", slot)
+                        weight_stop = True
+                        break
                     # Weegschaal-beveiliging: > 2 kg → direct stoppen
                     weight_g = loadcell.get_weight_grams()
                     if weight_g > FLUSH_WEIGHT_LIMIT_G:
@@ -854,6 +893,27 @@ async def flush_all_pumps(body: dict, session: Session = Depends(get_session)):
     }
     asyncio.create_task(_run_flush_task(resolved))
     return {"ok": True, "pumps": len(resolved)}
+
+
+@app.post("/api/pumps/test")
+async def pump_test(body: dict):
+    """Korte GPIO-puls op één pomp — gebruikt door MonteurWizard voor testen."""
+    pump_id      = int(body.get("pump_id", 0))
+    duration_ms  = max(100, min(int(body.get("duration_ms", 1000)), 5000))
+
+    from sqlmodel import Session
+    with Session(engine) as db:
+        from .models import Pump
+        pump = db.get(Pump, pump_id)
+        if not pump:
+            raise HTTPException(404, "Pomp niet gevonden")
+        gpio_pin = pump.gpio_pin
+
+    gpio.setup_pin(gpio_pin)
+    gpio.activate(gpio_pin)
+    await asyncio.sleep(duration_ms / 1000)
+    gpio.deactivate(gpio_pin)
+    return {"ok": True, "gpio_pin": gpio_pin, "duration_ms": duration_ms}
 
 
 @app.post("/api/pumps/flush-test")
@@ -1065,6 +1125,52 @@ def get_session_pours(session_id: int, session: Session = Depends(get_session)):
     return session.exec(
         select(Pour).where(Pour.session_id == session_id).order_by(Pour.poured_at.desc())
     ).all()
+
+
+# ── Loadcell WebSocket (Cocktailmachine-Pi → Pompmodule) ──────────────────────
+
+_loadcell_ws: WebSocket | None = None
+
+@app.websocket("/ws/loadcell")
+async def loadcell_ws(websocket: WebSocket):
+    """
+    De Cocktailmachine-Pi (Secondary Pi) verbindt hier en stuurt continu
+    gewichtsmetingen: {"weight_g": 123.4, "tare": false}
+    Als de verbinding wegvalt stoppen de pompen automatisch (veiligheidsstop).
+    """
+    global _loadcell_ws
+    await websocket.accept()
+    _loadcell_ws = websocket
+    loadcell.network_disconnected()  # reset tot eerste meting binnenkomt
+    log.info("Cocktailmachine-Pi verbonden via /ws/loadcell")
+    try:
+        async for raw in websocket.iter_text():
+            try:
+                msg = json.loads(raw)
+                if msg.get("tare"):
+                    loadcell.tare()
+                else:
+                    loadcell.network_update(float(msg.get("weight_g", 0)))
+            except Exception:
+                pass
+    except Exception:
+        pass
+    finally:
+        _loadcell_ws = None
+        loadcell.network_disconnected()
+        log.warning("Cocktailmachine-Pi verbinding verbroken — pompen worden gestopt")
+        gpio.deactivate_all()
+
+
+@app.get("/api/loadcell/status")
+def loadcell_status():
+    """Status van de Cocktailmachine-Pi verbinding."""
+    return {
+        "connected": loadcell._network_connected,
+        "stale":     loadcell.is_network_stale(),
+        "mode":      "network" if loadcell.is_network_mode else "local",
+        "weight_g":  round(loadcell.get_weight_grams(), 1),
+    }
 
 
 # ── Weight & pour ─────────────────────────────────────────────────────────────
@@ -1970,6 +2076,26 @@ async def shutdown_system():
 
 
 # ── OTA Updates ──────────────────────────────────────────────────────────────
+
+@app.get("/api/system/network-info")
+def system_network_info():
+    """Lokaal IP-adres en hostnaam van de Pompmodule — gebruikt door MonteurWizard."""
+    import socket as _socket
+    local_ip = None
+    try:
+        s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = "127.0.0.1"
+    return {
+        "local_ip":  local_ip,
+        "hostname":  _socket.gethostname(),
+        "port":      int(os.getenv("MIXMATE_PORT", "8000")),
+        "tablet_url": f"http://{local_ip}:{os.getenv('MIXMATE_PORT', '8000')}",
+    }
+
 
 @app.get("/api/system/version")
 async def system_version():

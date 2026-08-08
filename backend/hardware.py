@@ -56,6 +56,9 @@ class GPIOController:
 
 
 class LoadCell:
+    # Maximale leeftijd (seconden) van een netwerkmeting — daarna valt pomp stil
+    NETWORK_TIMEOUT_S = 2.0
+
     def __init__(self):
         self._tare_offset = 0.0
         self._mock_weight = 0.0
@@ -71,6 +74,36 @@ class LoadCell:
             self._hx.tare()
         else:
             self._hx = None
+
+        # Netwerkmodus: gewichtsdata ontvangen van Cocktailmachine-Pi via WebSocket
+        self._network_weight: float = 0.0
+        self._network_last_update: float = 0.0   # epoch tijd van laatste ontvangen meting
+        self._network_connected: bool = False
+
+    @property
+    def is_network_mode(self) -> bool:
+        """True als we gewichtsdata van de Cocktailmachine-Pi verwachten (geen lokale HX711)."""
+        return self._hx is None
+
+    def network_update(self, weight_g: float):
+        """Aangeroepen door de /ws/loadcell WebSocket handler wanneer data binnenkomt."""
+        import time
+        self._network_weight = max(0.0, weight_g)
+        self._network_last_update = time.monotonic()
+        self._network_connected = True
+
+    def network_disconnected(self):
+        """Aangeroepen wanneer de Cocktailmachine-Pi verbinding verbreekt."""
+        self._network_connected = False
+
+    def is_network_stale(self) -> bool:
+        """True als netwerkmeting te oud is (verbinding weg) — pompen moeten stoppen."""
+        import time
+        if not self.is_network_mode:
+            return False
+        if not self._network_connected:
+            return True
+        return (time.monotonic() - self._network_last_update) > self.NETWORK_TIMEOUT_S
 
     def get_pins(self) -> dict:
         return {"dout_pin": self._dout_pin, "sck_pin": self._sck_pin}
@@ -92,6 +125,8 @@ class LoadCell:
         if self._hx:
             val = self._hx.get_weight(5)
             return max(0.0, float(val))
+        if self.is_network_mode:
+            return self._network_weight
         return max(0.0, self._mock_weight)
 
     def get_raw_value(self) -> float:

@@ -12,6 +12,7 @@ import FlushOverlay from './components/FlushOverlay'
 import BlockedOverlay from './components/BlockedOverlay'
 import DemoMode from './pages/DemoMode'
 import SetupWizard from './pages/SetupWizard'
+import MonteurWizard from './pages/MonteurWizard'
 import { VirtualKeyboardProvider } from './components/VirtualKeyboard'
 import { DragScrollProvider } from './components/DragScroll'
 import { api } from './api'
@@ -92,16 +93,12 @@ export default function App() {
   // Wacht tot machine state bekend is
   if (machineState === null) return null
 
-  // Factory mode: alleen backoffice tonen, geen splash, geen klantomgeving
+  // Factory mode: Monteurswizard voor installatie op locatie
   if (machineState === 'factory') {
     return (
       <DragScrollProvider>
         <VirtualKeyboardProvider>
-          <Backoffice
-            factoryMode
-            onClose={() => {}}
-            onReadyToPack={() => setMachineState('setup')}
-          />
+          <MonteurWizard onComplete={() => setMachineState('setup')} />
         </VirtualKeyboardProvider>
       </DragScrollProvider>
     )
