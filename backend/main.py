@@ -196,10 +196,8 @@ async def lifespan(app: FastAPI):
         _cloud_pair["paired"] = True
     _start_mdns()
     asyncio.create_task(_bluetooth_loadcell_server())
-    # Start installatie-hotspot automatisch als machine in factory state is
-    machine_state = _db_get("machine_state") or "factory"
-    if machine_state == "factory":
-        asyncio.create_task(_ensure_hotspot())
+    # Start installatie-hotspot altijd bij opstarten
+    asyncio.create_task(_ensure_hotspot())
     yield
     if _cloud_task:
         _cloud_task.cancel()
