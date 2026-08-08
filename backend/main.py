@@ -2275,14 +2275,14 @@ async def full_factory_reset():
         # Start installatie-hotspot
         await _ensure_hotspot()
 
-    # 5. Herstart
-    async def _restart():
+    # 5. WiFi wissen, hotspot starten en volledig herstarten
+    async def _reboot_after_reset():
         await asyncio.sleep(0.5)
         await _reset_wifi_and_hotspot()
         await asyncio.sleep(1)
         import subprocess
-        subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
-    asyncio.create_task(_restart())
+        subprocess.Popen(["sudo", "reboot"])
+    asyncio.create_task(_reboot_after_reset())
 
     return {"ok": True}
 

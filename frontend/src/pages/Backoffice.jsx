@@ -281,9 +281,19 @@ function FabriekPanel({ factoryMode, onReadyToPack }) {
       await new Promise(r => setTimeout(r, RESET_STEPS[i].ms))
       setResetStep(i + 1)
     }
-    // Herlaad de pagina volledig zodat de MonteurWizard verschijnt
+    // Wacht tot de Pi terug online is na reboot, dan herladen
     sessionStorage.clear()
-    window.location.reload()
+    const waitForReboot = async () => {
+      await new Promise(r => setTimeout(r, 8000)) // wacht op reboot
+      const poll = setInterval(async () => {
+        try {
+          await fetch('/api/system/machine-state')
+          clearInterval(poll)
+          window.location.reload()
+        } catch {}
+      }, 2000)
+    }
+    waitForReboot()
   }
 
   async function doReadyToPack() {
