@@ -1346,7 +1346,7 @@ async def _ensure_hotspot():
 async def _stop_hotspot():
     global _hotspot_active
     try:
-        await _run_cmd(f'sudo nmcli con delete "{HOTSPOT_SSID}"')
+        await _run_cmd("sudo nmcli device disconnect wlan0")
         _hotspot_active = False
         log.info("Installatie-hotspot gestopt")
     except Exception as e:
