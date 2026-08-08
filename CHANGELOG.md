@@ -1,3 +1,7 @@
+## [5.9.2] - 2026-08-08
+### Gewijzigd
+- Ethernet detectie en banner in WiFi-instellingen
+
 ## [5.9.1] - 2026-08-08
 ### Opgelost
 - AdminLogin: ← Terug knop toegevoegd voor gebruikers zonder backoffice PIN
