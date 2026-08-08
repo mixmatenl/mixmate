@@ -429,16 +429,14 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
     return None
 
 async def _run_ota_update():
-    import subprocess, sys
+    from .updater import run_update
     log.info("OTA update gestart via portaal")
     try:
-        await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: subprocess.run(
-                [sys.executable, "-m", "backend.updater", "--run"],
-                cwd="/home/pi/mixmate",
-            )
-        )
+        async for event in run_update():
+            log.info("OTA [%s] %s", event.get("type"), event.get("label") or event.get("line") or event.get("message", ""))
+            if event.get("type") == "error":
+                log.error("OTA update mislukt: %s", event.get("message"))
+                return
     except Exception as e:
         log.error("OTA update mislukt: %s", e)
 
