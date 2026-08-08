@@ -2193,6 +2193,37 @@ async def setup_complete():
     return {"ok": True}
 
 
+_admin_notification: dict | None = None
+
+
+@app.post("/api/system/admin-notification")
+async def set_admin_notification(body: dict):
+    """Ontvangt een notificatie van het cloud-portaal en toont die op het scherm."""
+    global _admin_notification
+    _admin_notification = {
+        "message": body.get("message", "Een MIXMATE-medewerker neemt contact met u op."),
+        "admin":   body.get("admin", "MIXMATE"),
+        "ts":      __import__("time").time(),
+    }
+    return {"ok": True}
+
+
+@app.get("/api/system/admin-notification")
+def get_admin_notification():
+    """Frontend pollt dit endpoint om te weten of er een actieve melding is."""
+    import time
+    if _admin_notification and (time.time() - _admin_notification["ts"]) < 3600:
+        return _admin_notification
+    return None
+
+
+@app.post("/api/system/admin-notification/dismiss")
+async def dismiss_admin_notification():
+    global _admin_notification
+    _admin_notification = None
+    return {"ok": True}
+
+
 @app.post("/api/system/full-factory-reset")
 async def full_factory_reset():
     """

@@ -1,3 +1,9 @@
+## [6.2.3] - 2026-08-08
+### Toegevoegd
+- Admin-notificatiebanner op HDMI-scherm (MonitorDisplay)
+- Endpoint /api/system/admin-notification voor ontvangen en verwijderen van portalmelding
+- cloud_client.py verwerkt admin_contact_notification bericht van portaal
+
 ## [6.2.2] - 2026-08-08
 ### Opgelost
 - Loginscherm toont INLOGGEN knop als bartender PIN verwijderd is (via portaal)

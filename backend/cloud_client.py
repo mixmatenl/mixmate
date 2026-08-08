@@ -355,6 +355,14 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/auth/bartender-pin", timeout=5)
                 return {"req_id": req_id, **r.json()}
 
+            elif msg_type == "admin_contact_notification":
+                # Sla melding op zodat de frontend hem kan ophalen
+                r = await c.post(f"{LOCAL}/api/system/admin-notification", json={
+                    "message": message.get("message", "Een MIXMATE-medewerker neemt contact op."),
+                    "admin":   message.get("admin", "MIXMATE"),
+                }, timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
             elif msg_type == "set_model":
                 model = message.get("model", "").strip()
                 r = await c.post(f"{LOCAL}/api/system/machine", json={"model": model}, timeout=5)

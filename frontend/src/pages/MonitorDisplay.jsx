@@ -211,6 +211,54 @@ function PumpenStatus() {
   )
 }
 
+/* ── Admin notificatiebanner ─────────────────────────────────────────────── */
+function AdminNotificationBanner() {
+  const [notif, setNotif] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    async function poll() {
+      try {
+        const r = await fetch('/api/system/admin-notification')
+        const d = r.ok ? await r.json() : null
+        if (alive) setNotif(d)
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 10000)
+    return () => { alive = false; clearInterval(iv) }
+  }, [])
+
+  if (!notif) return null
+
+  return (
+    <div style={{
+      background: 'rgba(0,122,255,0.12)', border: '1px solid rgba(0,122,255,0.35)',
+      borderRadius: 16, padding: '18px 24px', marginBottom: 28,
+      display: 'flex', alignItems: 'center', gap: 16,
+    }}>
+      <span style={{ fontSize: 26 }}>🛠️</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ color: '#4da6ff', fontWeight: 700, fontSize: 15, marginBottom: 2 }}>MIXMATE ondersteuning</div>
+        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.5 }}>{notif.message}</div>
+      </div>
+      <button
+        onClick={async () => {
+          await fetch('/api/system/admin-notification/dismiss', { method: 'POST' })
+          setNotif(null)
+        }}
+        style={{
+          background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 10,
+          color: 'rgba(255,255,255,0.5)', fontSize: 13, padding: '8px 14px', cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        Sluiten
+      </button>
+    </div>
+  )
+}
+
 /* ── Hoofdscherm ─────────────────────────────────────────────────────────── */
 export default function MonitorDisplay() {
   const [time, setTime] = useState(new Date())
@@ -250,6 +298,9 @@ export default function MonitorDisplay() {
           <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 4 }}>{dateStr}</div>
         </div>
       </div>
+
+      {/* Admin notificatie */}
+      <AdminNotificationBanner />
 
       {/* Content grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, flex: 1 }}>
