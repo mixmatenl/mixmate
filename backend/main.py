@@ -2057,6 +2057,78 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
 
 # ── Systeem beheer ───────────────────────────────────────────────────────────
 
+@app.get("/api/system/warranty-info")
+async def warranty_info():
+    """Geeft de garantiestatus terug op basis van lokaal opgeslagen data (proxy naar cloud)."""
+    from datetime import date as _date
+    machine_id = _db_get("machine_id") or ""
+    cloud_url = (os.environ.get("MIXMATE_CLOUD_URL") or "").rstrip("/")
+    cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+    if cloud_http and machine_id:
+        import httpx as _httpx
+        try:
+            async with _httpx.AsyncClient(timeout=8) as c:
+                r = await c.get(f"{cloud_http}/api/machines/{machine_id}/warranty-public")
+                if r.status_code < 300:
+                    return r.json()
+        except Exception:
+            pass
+    # Fallback: lokale data
+    install = _db_get("installation_date") or ""
+    w_start = _db_get("warranty_start") or install
+    w_years = int(_db_get("warranty_years") or "2")
+    w_type  = _db_get("warranty_type") or "factory"
+    today = _date.today()
+    end = active = days_left = None
+    if w_start:
+        try:
+            d = _date.fromisoformat(w_start)
+            end = _date(d.year + w_years, d.month, d.day)
+            days_left = (end - today).days
+            active = days_left >= 0
+        except Exception:
+            pass
+    return {
+        "installation_date": install or None,
+        "warranty_start": w_start or None,
+        "warranty_end": end.isoformat() if end else None,
+        "warranty_years": w_years,
+        "warranty_type": w_type,
+        "days_left": days_left,
+        "active": active,
+        "mixcare_eligible": False,
+        "mixcare_days_remaining": None,
+    }
+
+
+@app.post("/api/system/request-mixcare")
+async def request_mixcare_local(body: dict):
+    """Klant vraagt MIXCARE aan via de machine — stuurt door naar cloud."""
+    years = int(body.get("years", 3))
+    machine_id = _db_get("machine_id") or ""
+    cloud_url = (os.environ.get("MIXMATE_CLOUD_URL") or "").rstrip("/")
+    cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+    if not cloud_http or not machine_id:
+        raise HTTPException(status_code=503, detail="Geen cloud verbinding")
+    import httpx as _httpx
+    try:
+        async with _httpx.AsyncClient(timeout=8) as c:
+            r = await c.post(f"{cloud_http}/api/machines/{machine_id}/request-mixcare",
+                             json={"years": years})
+            if r.status_code >= 400:
+                detail = r.json().get("detail", "Aanvraag mislukt")
+                raise HTTPException(status_code=r.status_code, detail=detail)
+            # Update lokale opslag
+            _db_set("warranty_years", str(years))
+            _db_set("warranty_type", "mixcare")
+            warranty = r.json()
+            return {"ok": True, "warranty": warranty}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Cloud niet bereikbaar: {e}")
+
+
 @app.get("/api/system/cocktail-machine")
 def get_cocktail_machine():
     """Geeft de gekoppelde Cocktailmachine (Pi 5) terug."""
@@ -2099,10 +2171,12 @@ async def factory_reset():
     """
     import sqlite3
 
-    # Fabriekssleutels die NOOIT gewist worden
+    # Fabriekssleutels die NOOIT gewist worden (incl. garantie — doorloopt fabrieksreset)
     _FACTORY_KEYS = {
         'machine_id', 'MIXMATE_CLOUD_URL', 'MACHINE_MODEL',
         'LOADCELL_DOUT', 'LOADCELL_SCK', 'LOADCELL_SCALE',
+        'warranty_start', 'warranty_years', 'warranty_type', 'installation_date',
+        'cocktail_machine_id', 'cocktail_machine_version',
     }
     _FACTORY_ENV_PREFIXES = (
         'MACHINE_MODEL=', 'MIXMATE_CLOUD_URL=',
@@ -2170,11 +2244,11 @@ async def factory_reset():
     os.environ.pop("ADMIN_PIN",    None)
     os.environ.pop("MIXMATE_PIN",  None)
 
-    # 4. Zet machine terug naar setup-wizard state
+    # 4. Zet machine terug naar operationeel (wizard was al doorlopen — garantie blijft staan)
     try:
         con2 = sqlite3.connect(str(_DB_PATH))
         con2.execute(
-            "INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'setup')"
+            "INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'ready')"
         )
         con2.commit()
         con2.close()
@@ -2218,13 +2292,38 @@ async def ready_to_pack():
 
 
 @app.post("/api/system/setup-complete")
-async def setup_complete():
-    """Voltooit de klantinstallatie-wizard → machine is operationeel."""
+async def setup_complete(body: dict = {}):
+    """Voltooit de klantinstallatie-wizard → machine is operationeel. Stuurt garantiedata naar cloud."""
     import sqlite3
+    from datetime import date as _date
     con = sqlite3.connect(str(_DB_PATH))
     con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('machine_state', 'ready')")
+
+    # Sla garantiedata lokaal op zodat ze fabrieksreset overleven
+    install_date = body.get("installation_date") or str(_date.today())
+    warranty_start = body.get("warranty_start") or install_date
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('installation_date', ?)", (install_date,))
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('warranty_start', ?)", (warranty_start,))
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('warranty_years', '2')")
+    con.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('warranty_type', 'factory')")
     con.commit()
     con.close()
+
+    # Stuur installatiedatum naar cloud
+    cloud_url = (os.environ.get("MIXMATE_CLOUD_URL") or "").rstrip("/")
+    cloud_http = cloud_url.replace("wss://", "https://").replace("ws://", "http://")
+    machine_id = _db_get("machine_id") or ""
+    if cloud_http and machine_id:
+        import httpx as _httpx
+        try:
+            async with _httpx.AsyncClient(timeout=8) as c:
+                await c.post(
+                    f"{cloud_http}/api/machines/{machine_id}/warranty/set-installation-date",
+                    json={"installation_date": install_date, "warranty_start": warranty_start},
+                )
+        except Exception as e:
+            log.warning("Garantie naar cloud sturen mislukt: %s", e)
+
     return {"ok": True}
 
 

@@ -255,6 +255,11 @@ const IconFactory = () => (
     <polyline points="9 22 9 12 15 12 15 22"/>
   </svg>
 )
+const IconShield = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+  </svg>
+)
 const IconSpoelen = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M12 22V12M12 12C12 12 8 9 8 6a4 4 0 0 1 8 0c0 3-4 6-4 6z"/>
@@ -451,8 +456,9 @@ function SettingsHome() {
       <Section title="Systeem">
         <SettingsRow icon={<IconUpdate />}  label="Software update"   sublabel="Controleer op nieuwe versie"           onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    label="Over deze machine" sublabel="Serienummer, netwerk en hardware"       onClick={() => navigate('/instellingen/info')} />
+        <SettingsRow icon={<IconShield />}  label="Garantie"          sublabel="Garantiestatus en MIXCARE"              onClick={() => navigate('/instellingen/garantie')} />
         <SettingsRow icon={<IconRestart />} label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"           onClick={() => setConfirm('restart')} />
-        <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist content, herstart installatiewizard" onClick={() => setConfirm('factory')} danger last />
+        <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist content, behoudt garantie"    onClick={() => setConfirm('factory')} danger last />
       </Section>
 
       {confirm === 'restart' && (
@@ -584,7 +590,137 @@ export default function Instellingen() {
         <Route path="recepten"     element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AdminRecipes /></div></SubPage>} />
         <Route path="update"       element={<SubPage><div className="max-w-3xl mx-auto px-8 py-8"><AppUpdate /></div></SubPage>} />
         <Route path="info"         element={<SubPage><MachineInfo /></SubPage>} />
+        <Route path="garantie"     element={<SubPage><GarantieInfo onClose={() => navigate('/instellingen')} /></SubPage>} />
       </Routes>
+    </div>
+  )
+}
+
+// ── Garantie subpagina ────────────────────────────────────────────────────────
+function GarantieInfo({ onClose }) {
+  const [info, setInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [requesting, setRequesting] = useState(false)
+  const [mixcareYears, setMixcareYears] = useState(3)
+  const [msg, setMsg] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/system/warranty-info')
+      .then(r => r.json())
+      .then(d => { setInfo(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  async function requestMixcare() {
+    setRequesting(true)
+    setMsg(null)
+    try {
+      const r = await fetch('/api/system/request-mixcare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ years: mixcareYears }),
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.detail || 'Mislukt')
+      setMsg({ ok: true, text: `MIXCARE ${mixcareYears} jaar aangevraagd!` })
+      setInfo(d.warranty)
+    } catch (e) {
+      setMsg({ ok: false, text: e.message })
+    }
+    setRequesting(false)
+  }
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+      <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #e5e5ea', borderTopColor: '#1d1d1f', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  )
+
+  if (!info) return (
+    <div style={{ maxWidth: 480, margin: '0 auto', padding: '40px 24px', textAlign: 'center', color: '#6e6e73', fontSize: 15 }}>
+      Garantie-informatie niet beschikbaar. Neem contact op met MIXMATE.
+    </div>
+  )
+
+  const typeLabel = info.warranty_type === 'mixcare' ? `MIXCARE (${info.warranty_years} jaar)` : `Fabrieksgarantie (${info.warranty_years} jaar)`
+  const daysLeft = info.days_left
+
+  return (
+    <div style={{ maxWidth: 520, margin: '0 auto', padding: '32px 24px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#007aff', fontSize: 16, padding: 0 }}>← Terug</button>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1d1d1f' }}>Garantie</h2>
+      </div>
+
+      {/* Status kaart */}
+      <div style={{
+        background: info.active ? '#f0faf3' : '#fff5f5',
+        border: `1px solid ${info.active ? '#a3e6b4' : '#ffb8b8'}`,
+        borderRadius: 16, padding: '20px 22px', marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 24 }}>{info.active ? '🛡️' : '⚠️'}</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#1d1d1f' }}>{typeLabel}</div>
+            <div style={{ fontSize: 13, color: info.active ? '#1a7a3a' : '#cc2200', fontWeight: 600 }}>
+              {info.active ? `Actief — nog ${daysLeft} dagen` : 'Garantie verlopen'}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '6px 12px', fontSize: 14, color: '#3a3a3c' }}>
+          {info.installation_date && <>
+            <span style={{ color: '#6e6e73' }}>Installatiedatum</span>
+            <span>{info.installation_date}</span>
+          </>}
+          {info.warranty_start && <>
+            <span style={{ color: '#6e6e73' }}>Ingangsdatum</span>
+            <span>{info.warranty_start}</span>
+          </>}
+          {info.warranty_end && <>
+            <span style={{ color: '#6e6e73' }}>Einddatum</span>
+            <span style={{ fontWeight: 600 }}>{info.warranty_end}</span>
+          </>}
+        </div>
+      </div>
+
+      {/* MIXCARE aanvragen */}
+      {info.mixcare_eligible && (
+        <div style={{ background: '#f0f4ff', border: '1px solid #c0ccff', borderRadius: 16, padding: '20px 22px', marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', marginBottom: 6 }}>MIXCARE uitbreiden</div>
+          <div style={{ fontSize: 13, color: '#3a3a3c', marginBottom: 14, lineHeight: 1.6 }}>
+            Verleng uw garantie met MIXCARE. Nog <strong>{info.mixcare_days_remaining} dagen</strong> beschikbaar na installatie.
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+            {[3, 4, 5].map(y => (
+              <button key={y} onClick={() => setMixcareYears(y)} style={{
+                padding: '10px 20px', borderRadius: 10, border: `2px solid ${mixcareYears === y ? '#007aff' : '#e5e5ea'}`,
+                background: mixcareYears === y ? '#007aff' : '#fff', color: mixcareYears === y ? '#fff' : '#1d1d1f',
+                fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}>{y} jaar</button>
+            ))}
+          </div>
+          <button onClick={requestMixcare} disabled={requesting} style={{
+            width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
+            background: requesting ? '#e5e5ea' : '#007aff', color: requesting ? '#6e6e73' : '#fff',
+            fontSize: 15, fontWeight: 700, cursor: requesting ? 'default' : 'pointer',
+          }}>
+            {requesting ? 'Aanvragen…' : `MIXCARE ${mixcareYears} jaar aanvragen`}
+          </button>
+          {msg && (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, fontSize: 13,
+              background: msg.ok ? '#f0faf3' : '#fff5f5', color: msg.ok ? '#1a7a3a' : '#cc2200',
+              border: `1px solid ${msg.ok ? '#a3e6b4' : '#ffb8b8'}` }}>
+              {msg.text}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!info.mixcare_eligible && info.warranty_type === 'factory' && info.installation_date && (
+        <div style={{ background: '#f9f9fb', border: '1px solid #e5e5ea', borderRadius: 14, padding: '16px 20px', fontSize: 13, color: '#6e6e73' }}>
+          MIXCARE kon alleen worden aangevraagd binnen 30 dagen na installatie. Neem contact op met MIXMATE voor meer informatie.
+        </div>
+      )}
     </div>
   )
 }

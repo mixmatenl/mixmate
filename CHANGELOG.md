@@ -1,3 +1,13 @@
+## [6.2.10] - 2026-08-10
+### Toegevoegd
+- MonteurWizard: stap 5 "Garantie" — monteur stelt installatiedatum en garantie-ingangsdatum in
+- setup-complete endpoint stuurt garantiedata naar cloud (installation_date, warranty_start)
+- Instellingen: "Garantie" subpagina met status + MIXCARE aanvragen
+- GET /api/system/warranty-info + POST /api/system/request-mixcare (proxy naar cloud)
+### Gewijzigd
+- Factory reset: gaat naar 'ready' state (niet 'setup') — wizard hoeft niet opnieuw
+- Factory reset bewaart garantiedata (installation_date, warranty_start, warranty_years, warranty_type)
+
 ## [6.2.9] - 2026-08-10
 ### Gewijzigd
 - /ws/loadcell: verwerkt nu hello-bericht van Cocktailmachine (slaat serienummer + versie op in lokale DB)

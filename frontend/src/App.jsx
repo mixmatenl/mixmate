@@ -177,7 +177,16 @@ export default function App() {
     return (
       <DragScrollProvider>
         <VirtualKeyboardProvider>
-          <MonteurWizard onComplete={() => setMachineState('setup')} />
+          <MonteurWizard onComplete={async (warrantyData) => {
+            try {
+              await fetch('/api/system/setup-complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(warrantyData || {}),
+              })
+            } catch {}
+            setMachineState('setup')
+          }} />
         </VirtualKeyboardProvider>
       </DragScrollProvider>
     )

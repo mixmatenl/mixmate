@@ -316,8 +316,118 @@ function StepDisplayTest({ onNext }) {
   )
 }
 
-/* ── Stap 5: Pomp test ───────────────────────────────────────────────────── */
-function StepPompTest({ onComplete }) {
+/* ── Stap 5: Garantie ────────────────────────────────────────────────────── */
+function StepGarantie({ onNext, onWarrantyData }) {
+  const today = new Date().toISOString().split('T')[0]
+  const [installDate, setInstallDate] = useState(today)
+  const [warrantyStart, setWarrantyStart] = useState('today') // 'today' | 'custom'
+  const [customDate, setCustomDate] = useState(today)
+
+  const effectiveStart = warrantyStart === 'today' ? installDate : customDate
+
+  return (
+    <Step
+      icon="🛡️"
+      title="Garantie instellen"
+      subtitle="Stel de installatiedatum en garantie-ingangsdatum in. De fabrieksgarantie is 2 jaar."
+    >
+      {/* Installatiedatum */}
+      <div style={{ textAlign: 'left', marginBottom: 16 }}>
+        <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 8 }}>
+          Datum van installatie
+        </label>
+        <input
+          type="date"
+          value={installDate}
+          max={today}
+          onChange={e => {
+            setInstallDate(e.target.value)
+            if (warrantyStart === 'today') setCustomDate(e.target.value)
+          }}
+          style={{
+            width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 15, boxSizing: 'border-box',
+            fontFamily: '-apple-system, sans-serif',
+          }}
+        />
+      </div>
+
+      {/* Ingangsdatum garantie */}
+      <div style={{ textAlign: 'left', marginBottom: 20 }}>
+        <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 8 }}>
+          Ingangsdatum garantie
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[
+            { val: 'today', label: 'Zelfde als installatiedatum', sub: installDate },
+            { val: 'custom', label: 'Eerdere datum (bijv. aankoopdatum)', sub: null },
+          ].map(opt => (
+            <button key={opt.val} onClick={() => setWarrantyStart(opt.val)} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
+              borderRadius: 14, border: `2px solid ${warrantyStart === opt.val ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+              background: warrantyStart === opt.val ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+              color: '#fff', cursor: 'pointer', textAlign: 'left',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                border: `2px solid ${warrantyStart === opt.val ? '#fff' : 'rgba(255,255,255,0.3)'}`,
+                background: warrantyStart === opt.val ? '#fff' : 'transparent',
+              }} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{opt.label}</div>
+                {opt.sub && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{opt.sub}</div>}
+              </div>
+            </button>
+          ))}
+        </div>
+        {warrantyStart === 'custom' && (
+          <input
+            type="date"
+            value={customDate}
+            max={installDate}
+            onChange={e => setCustomDate(e.target.value)}
+            style={{
+              width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 15, marginTop: 10, boxSizing: 'border-box',
+              fontFamily: '-apple-system, sans-serif',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Overzicht */}
+      <div style={{ background: 'rgba(48,209,88,0.08)', border: '1px solid rgba(48,209,88,0.25)', borderRadius: 14, padding: '14px 18px', textAlign: 'left', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: '#30d158', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Garantieoverzicht</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 2 }}>
+          Type: <strong style={{ color: '#fff' }}>Fabrieksgarantie (2 jaar)</strong><br />
+          Ingangsdatum: <strong style={{ color: '#fff' }}>{effectiveStart}</strong><br />
+          Einddatum: <strong style={{ color: '#fff' }}>
+            {(() => {
+              try {
+                const d = new Date(effectiveStart)
+                d.setFullYear(d.getFullYear() + 2)
+                return d.toISOString().split('T')[0]
+              } catch { return '—' }
+            })()}
+          </strong>
+        </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
+          Na installatie kan de klant binnen 30 dagen MIXCARE aanvragen via het portaal (3, 4 of 5 jaar).
+        </div>
+      </div>
+
+      <PrimaryBtn onClick={() => {
+        onWarrantyData({ installation_date: installDate, warranty_start: effectiveStart })
+        onNext()
+      }}>
+        Garantie opslaan — Volgende →
+      </PrimaryBtn>
+    </Step>
+  )
+}
+
+/* ── Stap 6: Pomp test ───────────────────────────────────────────────────── */
+function StepPompTest({ onComplete, warrantyData }) {
   const [pumps, setPumps] = useState([])
   const [testing, setTesting] = useState(null)
   const [results, setResults] = useState({})
@@ -387,7 +497,7 @@ function StepPompTest({ onComplete }) {
         </div>
       )}
 
-      <PrimaryBtn onClick={onComplete}>
+      <PrimaryBtn onClick={() => onComplete(warrantyData)}>
         {allTested ? 'Voltooien — Machine klaar! →' : 'Sla pomptest over →'}
       </PrimaryBtn>
     </Step>
@@ -395,10 +505,11 @@ function StepPompTest({ onComplete }) {
 }
 
 /* ── Hoofdcomponent ──────────────────────────────────────────────────────── */
-const STEPS = ['ethernet', 'cocktailmachine', 'tablet', 'display', 'pompen']
+const STEPS = ['ethernet', 'cocktailmachine', 'tablet', 'display', 'garantie', 'pompen']
 
 export default function MonteurWizard({ onComplete }) {
   const [step, setStep] = useState(0)
+  const [warrantyData, setWarrantyData] = useState(null)
 
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1))
   const prev = () => setStep(s => Math.max(s - 1, 0))
@@ -437,7 +548,8 @@ export default function MonteurWizard({ onComplete }) {
       {step === 1 && <StepCocktailmachine onNext={next} />}
       {step === 2 && <StepTablet onNext={next} />}
       {step === 3 && <StepDisplayTest onNext={next} />}
-      {step === 4 && <StepPompTest onComplete={onComplete} />}
+      {step === 4 && <StepGarantie onNext={next} onWarrantyData={setWarrantyData} />}
+      {step === 5 && <StepPompTest onComplete={onComplete} warrantyData={warrantyData} />}
     </>
   )
 }
