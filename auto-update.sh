@@ -55,6 +55,15 @@ chmod +x "$APP_DIR/network-setup.sh" "$APP_DIR/auto-update.sh" "$APP_DIR/start.s
 
 log "Code bijgewerkt naar $(git rev-parse --short HEAD)"
 
+# Sway config bijwerken als die gewijzigd is
+SWAY_CONF="/home/pi/.config/sway/config"
+if [ -f "$APP_DIR/sway-config-default" ] && [ -f "$SWAY_CONF" ]; then
+    CHROMIUM_BIN=$(which chromium-browser 2>/dev/null || which chromium 2>/dev/null || echo "chromium")
+    cp "$APP_DIR/sway-config-default" "$SWAY_CONF"
+    sed -i "s|exec chromium |exec ${CHROMIUM_BIN} |g" "$SWAY_CONF"
+    log "Sway config bijgewerkt"
+fi
+
 # Python dependencies
 if [ -f "$PIP" ]; then
     "$PIP" install -q -r backend/requirements.txt || log "pip install mislukt (non-fatal)"

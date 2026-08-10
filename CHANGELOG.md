@@ -1,3 +1,8 @@
+## [6.2.18] - 2026-08-10
+### Gefixt
+- Chromium op HDMI laadde oude gecachede JS — disk cache uitgeschakeld (--disk-cache-size=0)
+- auto-update kopieert sway-config bij elke update zodat Chromium-flags direct actief zijn
+
 ## [6.2.17] - 2026-08-10
 ### Gewijzigd
 - HDMI monitor toont exact hetzelfde standby-scherm als de tablet (StandbyScreen met animaties, koppelcode, power-knop)
