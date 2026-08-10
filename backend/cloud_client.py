@@ -363,6 +363,12 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 }, timeout=5)
                 return {"req_id": req_id, "ok": r.status_code < 300}
 
+            elif msg_type == "set_cocktail_machine":
+                cocktail_id = str(message.get("cocktail_machine_id", "")).strip()
+                r = await c.post(f"{LOCAL}/api/system/cocktail-machine",
+                                 json={"cocktail_machine_id": cocktail_id}, timeout=5)
+                return {"req_id": req_id, "ok": r.status_code < 300}
+
             elif msg_type == "set_model":
                 model = message.get("model", "").strip()
                 r = await c.post(f"{LOCAL}/api/system/machine", json={"model": model}, timeout=5)
@@ -524,6 +530,10 @@ async def cloud_loop():
                 except Exception:
                     local_ip = None
 
+                from .main import _db_get as _cfg_get
+                cocktail_id  = _cfg_get("cocktail_machine_id")  or ""
+                cocktail_ver = _cfg_get("cocktail_machine_version") or ""
+
                 await ws.send(json.dumps({
                     "type": "heartbeat",
                     "version": version,
@@ -533,6 +543,8 @@ async def cloud_loop():
                     "local_port": int(os.getenv("MIXMATE_PORT", "8000")),
                     "ssl": os.path.exists("/home/pi/mixmate/certs/cert.pem"),
                     "pairing_mode": True,
+                    **({"cocktail_machine_id": cocktail_id} if cocktail_id else {}),
+                    **({"cocktail_machine_version": cocktail_ver} if cocktail_ver else {}),
                 }))
 
                 async def heartbeat():

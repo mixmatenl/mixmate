@@ -1,3 +1,9 @@
+## [6.2.8] - 2026-08-10
+### Toegevoegd
+- GET/POST/DELETE /api/system/cocktail-machine: lokale opslag van gekoppelde Cocktailmachine (Pi 5)
+- Heartbeat naar cloud stuurt cocktail_machine_id + cocktail_machine_version mee
+- WS-handler set_cocktail_machine: admin kan koppeling vanuit portaal pushen naar Pompmodule
+
 ## [6.2.7] - 2026-08-08
 ### Gewijzigd
 - Herstart vanuit admin portaal doet nu sudo reboot i.p.v. systemctl restart mixmate

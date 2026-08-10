@@ -2048,6 +2048,32 @@ async def websocket_calibrate(websocket: WebSocket, pump_id: int):
 
 # ── Systeem beheer ───────────────────────────────────────────────────────────
 
+@app.get("/api/system/cocktail-machine")
+def get_cocktail_machine():
+    """Geeft de gekoppelde Cocktailmachine (Pi 5) terug."""
+    return {
+        "cocktail_machine_id": _db_get("cocktail_machine_id") or "",
+        "cocktail_machine_version": _db_get("cocktail_machine_version") or "",
+    }
+
+@app.post("/api/system/cocktail-machine")
+def set_cocktail_machine(body: dict):
+    """Sla de gekoppelde Cocktailmachine op (wordt meegestuurd in heartbeat naar cloud)."""
+    mid = str(body.get("cocktail_machine_id", "")).strip()
+    ver = str(body.get("cocktail_machine_version", "")).strip()
+    if mid:
+        _db_set("cocktail_machine_id", mid)
+    if ver:
+        _db_set("cocktail_machine_version", ver)
+    return {"ok": True}
+
+@app.delete("/api/system/cocktail-machine")
+def unlink_cocktail_machine():
+    """Verwijder de koppeling met de Cocktailmachine."""
+    _db_set("cocktail_machine_id", "")
+    _db_set("cocktail_machine_version", "")
+    return {"ok": True}
+
 @app.post("/api/system/factory-reset")
 async def factory_reset():
     """
