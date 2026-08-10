@@ -1665,17 +1665,16 @@ exec {chromium_bin} \\
   http://localhost:8000
 """)
 
-@app.get("/api/system/display")
-def get_display():
+@app.get("/api/system/display-scale")
+def get_display_scale():
     return {"scale": _read_scale()}
 
-@app.post("/api/system/display")
-async def set_display(body: dict):
+@app.post("/api/system/display-scale")
+async def set_display_scale(body: dict):
     scale = float(body.get("scale", 1.5))
     scale = max(0.5, min(3.0, round(scale * 4) / 4))  # stap van 0.25
     SCALE_FILE.write_text(str(scale))
     _write_sway_config(scale)
-    # Sway herladen — past scale toe zonder reboot
     try:
         proc = await asyncio.create_subprocess_exec(
             "swaymsg", "reload",

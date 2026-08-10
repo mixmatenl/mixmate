@@ -15,7 +15,7 @@ export default function DisplaySettings() {
   const [msg,     setMsg]     = useState(null)
 
   useEffect(() => {
-    fetch('/api/system/display')
+    fetch('/api/system/display-scale')
       .then(r => r.json())
       .then(d => setScale(d.scale))
       .catch(() => {})
@@ -26,7 +26,7 @@ export default function DisplaySettings() {
     setSaving(true)
     setMsg(null)
     try {
-      const r = await fetch('/api/system/display', {
+      const r = await fetch('/api/system/display-scale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scale: val }),

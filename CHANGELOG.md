@@ -1,3 +1,8 @@
+## [6.2.15] - 2026-08-10
+### Gefixt
+- POST /api/system/display was dubbel gedefinieerd — de oude schaal-versie overschreef de xset aan/uit versie waardoor standby-scherm en HDMI-uit nooit werkten
+- Schaal-endpoint hernoemd naar /api/system/display-scale
+
 ## [6.2.14] - 2026-08-10
 ### Gewijzigd
 - Monitor: pompen en ingrediënten worden elke 5s opnieuw opgehaald — nieuwe ingrediënten verschijnen direct in de lijsten
