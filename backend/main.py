@@ -1266,12 +1266,13 @@ async def loadcell_ws(websocket: WebSocket):
 @app.get("/api/loadcell/status")
 def loadcell_status():
     """Status van de Cocktailmachine-Pi verbinding."""
+    stale = loadcell.is_network_stale()
     return {
-        "connected":       loadcell._network_connected,
-        "stale":           loadcell.is_network_stale(),
+        "connected":       loadcell._network_connected and not stale,
+        "stale":           stale,
         "mode":            "network" if loadcell.is_network_mode else "local",
         "weight_g":        round(loadcell.get_weight_grams(), 1),
-        "connection_type": loadcell._connection_type,
+        "connection_type": loadcell._connection_type if (loadcell._network_connected and not stale) else None,
     }
 
 

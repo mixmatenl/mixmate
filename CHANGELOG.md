@@ -1,3 +1,8 @@
+## [6.2.11] - 2026-08-10
+### Gewijzigd
+- loadcell status: connected = False als data stale is (>2s geen meting) — Pi 5 uitval direct zichtbaar
+- cloud WebSocket ping interval 30s → 8s, timeout 10s → 5s — Pompmodule disconnect sneller gedetecteerd
+
 ## [6.2.10] - 2026-08-10
 ### Toegevoegd
 - MonteurWizard: stap 5 "Garantie" — monteur stelt installatiedatum en garantie-ingangsdatum in

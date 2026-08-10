@@ -497,7 +497,7 @@ async def cloud_loop():
     backoff = 5
     while True:
         try:
-            async with websockets.connect(ws_url, ping_interval=30, ping_timeout=10) as ws:
+            async with websockets.connect(ws_url, ping_interval=8, ping_timeout=5) as ws:
                 global _active_ws
                 _active_ws = ws
                 _cloud_status["connected"] = True
