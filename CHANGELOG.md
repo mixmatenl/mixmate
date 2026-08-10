@@ -1,3 +1,8 @@
+## [6.2.9] - 2026-08-10
+### Gewijzigd
+- /ws/loadcell: verwerkt nu hello-bericht van Cocktailmachine (slaat serienummer + versie op in lokale DB)
+- Heartbeat stuurt cocktail_machine_id/version automatisch mee zodra Cocktailmachine verbonden is
+
 ## [6.2.8] - 2026-08-10
 ### Toegevoegd
 - GET/POST/DELETE /api/system/cocktail-machine: lokale opslag van gekoppelde Cocktailmachine (Pi 5)

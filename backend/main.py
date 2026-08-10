@@ -1239,7 +1239,16 @@ async def loadcell_ws(websocket: WebSocket):
         async for raw in websocket.iter_text():
             try:
                 msg = json.loads(raw)
-                if msg.get("tare"):
+                if msg.get("hello"):
+                    # Cocktailmachine meldt zich aan — sla ID + versie op voor cloud heartbeat
+                    serial = str(msg.get("serial_number", "")).strip()
+                    ver    = str(msg.get("version", "")).strip()
+                    if serial:
+                        _db_set("cocktail_machine_id", serial)
+                    if ver:
+                        _db_set("cocktail_machine_version", ver)
+                    log.info("Cocktailmachine hello: serial=%s version=%s", serial, ver)
+                elif msg.get("tare"):
                     loadcell.tare()
                 else:
                     loadcell.network_update(float(msg.get("weight_g", 0)), transport=_ws_transport)
