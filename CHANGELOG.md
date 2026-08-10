@@ -1,3 +1,8 @@
+## [6.2.16] - 2026-08-10
+### Gewijzigd
+- HDMI monitor blijft aan bij uitschakelen — toont zwart standby-scherm in plaats van scherm uit te zetten
+- "Inschakelen" knop op monitor zet alleen standby-vlag terug, geen xset nodig
+
 ## [6.2.15] - 2026-08-10
 ### Gefixt
 - POST /api/system/display was dubbel gedefinieerd — de oude schaal-versie overschreef de xset aan/uit versie waardoor standby-scherm en HDMI-uit nooit werkten

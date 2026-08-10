@@ -356,7 +356,6 @@ export default function MonitorDisplay() {
 
   async function wakeUp() {
     try { await fetch('/api/system/standby', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: false }) }) } catch {}
-    try { await fetch('/api/system/display', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ on: true }) }) } catch {}
     setStandby(false)
   }
 
