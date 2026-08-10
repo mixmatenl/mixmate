@@ -72,12 +72,5 @@ fi
 NEW_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\([0-9]*\).*/\1/' || echo "0")
 FULL_VERSION=$(grep '"version"' "$APP_DIR/frontend/package.json" 2>/dev/null | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
 
-log "Update klaar (v$FULL_VERSION)"
-
-# Bij een major versiesprong: vlag aanmaken zodat de service na opstarten herstart
-if [ "$NEW_VERSION" != "$OLD_VERSION" ] && [ "$OLD_VERSION" != "0" ]; then
-    log "Major versiesprong gedetecteerd ($OLD_VERSION → $NEW_VERSION) — machine herstart na opstarten"
-    touch /tmp/mixmate_major_update
-fi
-
-exit 0
+log "Update klaar (v$FULL_VERSION) — machine herstart om update te activeren"
+sudo reboot
