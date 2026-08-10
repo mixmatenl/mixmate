@@ -1,3 +1,13 @@
+## [6.2.13] - 2026-08-10
+### Gewijzigd
+- Monitor: "Hotspot" → "Verbonden" / "Verbinding verbroken" voor Cocktailmachine status
+- Monitor: "Online" → "Gekoppeld" / "Niet gekoppeld" voor Portaal status
+- Monitor: koppelcode groot weergegeven wanneer portaal nog niet gekoppeld is
+- Monitor: polling intervals verlaagd naar 1s (loadcell, cloud, pairstatus) voor snellere updates
+- Tablet "Uitschakelen": schakelt ook HDMI-monitor uit via xset dpms force off
+- Monitor: "Inschakelen" wekt ook HDMI-scherm op via xset dpms force on
+- Backend: POST /api/system/display — zet HDMI scherm aan of uit
+
 ## [6.2.12] - 2026-08-10
 ### Toegevoegd
 - GET/POST /api/system/standby-state — in-memory standby vlag

@@ -341,6 +341,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
         <button onClick={async () => {
           try { await fetch('/api/sessions/end', { method: 'POST' }) } catch {}
           try { await fetch('/api/system/standby', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: true }) }) } catch {}
+          try { await fetch('/api/system/display', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ on: false }) }) } catch {}
           onStandby()
         }} style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 9,

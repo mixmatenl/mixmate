@@ -33,20 +33,18 @@ function Dot({ ok }) {
 
 /* ── Verbindingen ────────────────────────────────────────────────────────── */
 function ConnectionDashboard() {
-  const network  = useApi('/api/system/network-info')
-  const loadcell = useApi('/api/loadcell/status', 1500)
-  const cloud    = useApi('/api/cloud/status')
+  const network  = useApi('/api/system/network-info', 2000)
+  const loadcell = useApi('/api/loadcell/status', 1000)
+  const cloud    = useApi('/api/cloud/status', 1000)
+  const pair     = useApi('/api/cloud/pair-code', 1000)
   const flushSt  = useApi('/api/pumps/flush-status', 1000)
 
-  const ethOk   = network?.ethernet?.connected === true
-  const lcOk    = loadcell?.connected === true
-  const lcVia   = loadcell?.connection_type
-  const cloudOk = cloud?.connected === true
+  const ethOk    = network?.ethernet?.connected === true
+  const lcOk     = loadcell?.connected === true
+  const paired   = pair?.paired === true
+  const cloudOk  = cloud?.connected === true
+  const pairCode = pair?.code
   const flushing = flushSt?.active === true
-
-  const lcLabel = lcOk
-    ? (lcVia === 'bluetooth' ? 'Bluetooth' : 'Hotspot')
-    : 'Niet verbonden'
 
   const rows = [
     {
@@ -57,14 +55,14 @@ function ConnectionDashboard() {
     },
     {
       label: 'Cocktailmachine',
-      sub: lcLabel,
+      sub: lcOk ? 'Verbonden' : 'Verbinding verbroken',
       ok: lcOk,
       icon: '🍹',
     },
     {
       label: 'Portaal',
-      sub: cloudOk ? 'Online' : 'Geen verbinding',
-      ok: cloudOk,
+      sub: paired ? 'Gekoppeld' : cloudOk ? 'Niet gekoppeld' : 'Niet verbonden',
+      ok: paired,
       icon: '☁️',
     },
   ]
@@ -80,16 +78,29 @@ function ConnectionDashboard() {
             background: 'rgba(255,255,255,0.04)',
             border: `1px solid ${r.ok ? 'rgba(48,209,88,0.15)' : 'rgba(255,255,255,0.07)'}`,
             borderRadius: 14, padding: '14px 18px',
+            transition: 'border-color 0.4s',
           }}>
             <span style={{ fontSize: 20 }}>{r.icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ color: '#fff', fontWeight: 600, fontSize: 15 }}>{r.label}</div>
-              <div style={{ color: r.ok ? '#30d158' : 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2 }}>{r.sub}</div>
+              <div style={{ color: r.ok ? '#30d158' : 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 2, transition: 'color 0.4s' }}>{r.sub}</div>
             </div>
             <Dot ok={r.ok} />
           </div>
         ))}
       </div>
+
+      {/* Koppelcode als portaal nog niet gekoppeld is */}
+      {!paired && pairCode && (
+        <div style={{
+          background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.25)',
+          borderRadius: 14, padding: '18px 20px',
+        }}>
+          <div style={{ color: 'rgba(0,122,255,0.8)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>Koppelcode portaal</div>
+          <div style={{ color: '#fff', fontWeight: 800, fontSize: 36, letterSpacing: 6, fontFamily: 'monospace' }}>{pairCode}</div>
+          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginTop: 8 }}>Voer deze code in op mixmate.nl/koppelen</div>
+        </div>
+      )}
 
       {flushing && (
         <div style={{
@@ -339,6 +350,7 @@ export default function MonitorDisplay() {
 
   async function wakeUp() {
     try { await fetch('/api/system/standby', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: false }) }) } catch {}
+    try { await fetch('/api/system/display', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ on: true }) }) } catch {}
     setStandby(false)
   }
 

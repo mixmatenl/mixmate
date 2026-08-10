@@ -2563,6 +2563,19 @@ async def reboot_system():
     subprocess.Popen(["sudo", "reboot"])
     return {"ok": True, "message": "Pi herstart over enkele seconden…"}
 
+@app.post("/api/system/display")
+async def set_display(body: dict):
+    """Zet het HDMI-scherm aan of uit via xset (vereist DISPLAY=:0)."""
+    import subprocess
+    on = bool(body.get("on", True))
+    env = {**os.environ, "DISPLAY": ":0"}
+    if on:
+        subprocess.Popen(["xset", "dpms", "force", "on"],  env=env)
+        subprocess.Popen(["xset", "s", "reset"],           env=env)
+    else:
+        subprocess.Popen(["xset", "dpms", "force", "off"], env=env)
+    return {"ok": True, "on": on}
+
 @app.post("/api/system/shutdown")
 async def shutdown_system():
     import subprocess
