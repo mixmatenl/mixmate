@@ -1,3 +1,9 @@
+## [6.2.17] - 2026-08-10
+### Gewijzigd
+- HDMI monitor toont exact hetzelfde standby-scherm als de tablet (StandbyScreen met animaties, koppelcode, power-knop)
+- Tablet pollt standby-state elke 2s — als HDMI monitor "Druk om te starten" wordt gedrukt gaat tablet ook automatisch aan
+- onWake op tablet zet standby-vlag terug in backend zodat beide schermen gesynchroniseerd blijven
+
 ## [6.2.16] - 2026-08-10
 ### Gewijzigd
 - HDMI monitor blijft aan bij uitschakelen — toont zwart standby-scherm in plaats van scherm uit te zetten

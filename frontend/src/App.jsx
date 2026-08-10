@@ -136,6 +136,21 @@ export default function App() {
     setStandby(true)
   }
 
+  // Poll standby-state — synchroniseer tablet met HDMI monitor
+  useEffect(() => {
+    let cancelled = false
+    async function poll() {
+      try {
+        const r = await fetch('/api/system/standby-state')
+        const d = await r.json()
+        if (!cancelled) setStandby(!!d.standby)
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 2000)
+    return () => { cancelled = true; clearInterval(iv) }
+  }, [])
+
   // Poll backend demo status — synchroniseer met portaal
   useEffect(() => {
     let cancelled = false
@@ -238,7 +253,10 @@ export default function App() {
   return (
     <DragScrollProvider>
       {appContent}
-      {standby && <StandbyScreen onWake={() => setStandby(false)} />}
+      {standby && <StandbyScreen onWake={async () => {
+        try { await fetch('/api/system/standby', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: false }) }) } catch {}
+        setStandby(false)
+      }} />}
       {demo && !standby && <DemoMode onExit={exitDemo} slideIndex={demoSlideIndex} />}
       <BlockedOverlay />
       <FlushOverlay />

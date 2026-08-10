@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import StandbyScreen from './StandbyScreen'
 
 const POLL = 2000
 
@@ -284,50 +285,6 @@ function AdminNotificationBanner() {
   )
 }
 
-/* ── Uitgeschakeld scherm ────────────────────────────────────────────────── */
-function StandbyOverlay({ onWake }) {
-  const [time, setTime] = useState(new Date())
-  useEffect(() => {
-    const iv = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(iv)
-  }, [])
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: '#000',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-    }}>
-      <div style={{ color: '#fff', fontWeight: 900, fontSize: 48, letterSpacing: -1, marginBottom: 6 }}>MIXMATE</div>
-      <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 15, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 60 }}>Pompmodule</div>
-
-      <div style={{ color: 'rgba(255,255,255,0.15)', fontSize: 80, fontWeight: 100, letterSpacing: -4, lineHeight: 1, marginBottom: 8 }}>
-        {time.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-      </div>
-      <div style={{ color: 'rgba(255,255,255,0.1)', fontSize: 14, marginBottom: 80 }}>
-        {time.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
-      </div>
-
-      <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13, marginBottom: 24 }}>Machine uitgeschakeld</div>
-
-      <button onClick={onWake} style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: 20, padding: '16px 36px', cursor: 'pointer',
-        color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 600,
-        fontFamily: 'inherit', transition: 'all 0.2s',
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-          <path d="M12 2v6"/><path d="M6.8 5.8A8 8 0 1 0 17.2 5.8"/>
-        </svg>
-        Inschakelen
-      </button>
-    </div>
-  )
-}
 
 /* ── Hoofdscherm ─────────────────────────────────────────────────────────── */
 export default function MonitorDisplay() {
@@ -359,7 +316,7 @@ export default function MonitorDisplay() {
     setStandby(false)
   }
 
-  if (standby) return <StandbyOverlay onWake={wakeUp} />
+  if (standby) return <StandbyScreen onWake={wakeUp} />
 
   const dateStr = time.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })
   const timeStr = time.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
