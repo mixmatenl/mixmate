@@ -127,13 +127,19 @@ function PumpenStatus() {
   const [saving, setSaving]           = useState(null)
 
   useEffect(() => {
-    fetch('/api/pumps').then(r => r.json()).then(d => {
-      const list = Array.isArray(d) ? d : (d.pumps || [])
-      setPumps(list.sort((a, b) => a.slot - b.slot))
-    }).catch(() => {})
-    fetch('/api/ingredients').then(r => r.json()).then(d => {
-      setIngredients(Array.isArray(d) ? d : (d.ingredients || []))
-    }).catch(() => {})
+    async function poll() {
+      try {
+        const [pd, id] = await Promise.all([
+          fetch('/api/pumps').then(r => r.json()),
+          fetch('/api/ingredients').then(r => r.json()),
+        ])
+        setPumps((Array.isArray(pd) ? pd : (pd.pumps || [])).sort((a, b) => a.slot - b.slot))
+        setIngredients(Array.isArray(id) ? id : (id.ingredients || []))
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 5000)
+    return () => clearInterval(iv)
   }, [])
 
   async function saveIngredient(pumpId, ingredientId) {

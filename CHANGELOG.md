@@ -1,3 +1,7 @@
+## [6.2.14] - 2026-08-10
+### Gewijzigd
+- Monitor: pompen en ingrediënten worden elke 5s opnieuw opgehaald — nieuwe ingrediënten verschijnen direct in de lijsten
+
 ## [6.2.13] - 2026-08-10
 ### Gewijzigd
 - Monitor: "Hotspot" → "Verbonden" / "Verbinding verbroken" voor Cocktailmachine status
