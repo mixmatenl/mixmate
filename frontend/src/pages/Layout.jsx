@@ -340,6 +340,7 @@ export function Sidebar({ categories, active, onSelect, onLogout, onStandby }) {
       <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', padding: '10px 8px 16px' }}>
         <button onClick={async () => {
           try { await fetch('/api/sessions/end', { method: 'POST' }) } catch {}
+          try { await fetch('/api/system/standby', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active: true }) }) } catch {}
           onStandby()
         }} style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 9,

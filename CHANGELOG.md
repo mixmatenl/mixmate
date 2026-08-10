@@ -1,3 +1,9 @@
+## [6.2.12] - 2026-08-10
+### Toegevoegd
+- GET/POST /api/system/standby-state — in-memory standby vlag
+- Monitor: toont "Machine uitgeschakeld" overlay met MIXMATE logo, klok en aan-knop als standby actief is
+- Tablet "Uitschakelen" stuurt standby-signaal naar Pompmodule zodat monitor direct reageert
+
 ## [6.2.11] - 2026-08-10
 ### Gewijzigd
 - loadcell status: connected = False als data stale is (>2s geen meting) — Pi 5 uitval direct zichtbaar

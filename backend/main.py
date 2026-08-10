@@ -1176,6 +1176,18 @@ def get_current_session(session: Session = Depends(get_session)):
     count = session.exec(select(func.count(Pour.id)).where(Pour.session_id == _current_session_id)).one()
     return {"id": s.id, "started_at": s.started_at, "ended_at": s.ended_at, "pour_count": count}
 
+_machine_standby = False  # True als tablet "uitgeschakeld" heeft gedrukt
+
+@app.get("/api/system/standby-state")
+def get_standby_state():
+    return {"standby": _machine_standby}
+
+@app.post("/api/system/standby")
+def set_standby(body: dict = {}):
+    global _machine_standby
+    _machine_standby = bool(body.get("active", True))
+    return {"standby": _machine_standby}
+
 @app.post("/api/sessions/end")
 def end_session(session: Session = Depends(get_session)):
     global _current_session_id
