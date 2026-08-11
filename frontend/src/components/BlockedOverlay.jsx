@@ -1,20 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react'
 
 export default function BlockedOverlay() {
-  const [blocked, setBlocked] = useState(false)
+  const [state, setState] = useState({ blocked: false, reason: '' })
   const timerRef = useRef(null)
 
   useEffect(() => {
     function poll() {
       fetch('/api/machine/blocked')
         .then(r => r.json())
-        .then(d => setBlocked(d.blocked))
+        .then(d => setState({ blocked: !!d.blocked, reason: d.reason || '' }))
         .catch(() => {})
-        .finally(() => { timerRef.current = setTimeout(poll, 1000) })
+        .finally(() => { timerRef.current = setTimeout(poll, 2000) })
     }
     poll()
     return () => clearTimeout(timerRef.current)
   }, [])
+
+  const { blocked, reason } = state
 
   if (!blocked) return null
 
@@ -52,8 +54,14 @@ export default function BlockedOverlay() {
           Machine geblokkeerd
         </div>
         <div style={{ fontSize: 14, color: '#8e8e93', lineHeight: 1.5 }}>
-          Vraag een medewerker om<br />de machine te deblokkeren.
+          {reason || 'Vraag een medewerker om de machine te deblokkeren.'}
         </div>
+        {reason && (
+          <div style={{ fontSize: 13, color: '#aeaeb2', marginTop: 8 }}>
+            Neem contact op via{' '}
+            <span style={{ color: '#007aff' }}>info@mixmate.nl</span>
+          </div>
+        )}
       </div>
     </div>
   )

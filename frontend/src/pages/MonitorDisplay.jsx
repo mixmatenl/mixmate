@@ -158,69 +158,89 @@ function PumpenStatus() {
     setEditing(null)
   }
 
+  // Aantal kolommen schalen op aantal pompen
+  const cols = pumps.length > 16 ? 4 : pumps.length > 8 ? 3 : 2
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>Pompen</h2>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {pumps.length === 0 && (
-          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 14, margin: 0 }}>Geen pompen geconfigureerd</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>Pompen</h2>
+        {pumps.length > 0 && (
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>
+            {pumps.filter(p => ingredients.find(i => i.id === p.ingredient_id)).length}/{pumps.length} gevuld
+          </span>
         )}
+      </div>
+
+      {pumps.length === 0 && (
+        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 14, margin: 0 }}>Geen pompen geconfigureerd</p>
+      )}
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: 8,
+      }}>
         {pumps.map(p => {
           const ing = ingredients.find(i => i.id === p.ingredient_id)
           const isEditing = editing === p.id
           return (
-            <div key={p.id} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 14, padding: '14px 18px',
-            }}>
-              {/* Slot nummer */}
-              <div style={{
-                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: 'rgba(255,255,255,0.08)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'rgba(255,255,255,0.5)', fontWeight: 700, fontSize: 13,
-              }}>
-                {p.slot}
-              </div>
-
-              {/* Ingredient naam */}
-              <div style={{ flex: 1 }}>
-                {isEditing ? (
-                  <select
-                    autoFocus
-                    defaultValue={p.ingredient_id || ''}
-                    onChange={e => saveIngredient(p.id, e.target.value)}
-                    disabled={saving === p.id}
-                    onBlur={() => setEditing(null)}
-                    style={{
-                      background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
-                      borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: 14, width: '100%',
-                    }}
-                  >
-                    <option value=''>— Leeg —</option>
-                    {ingredients.map(i => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div
-                    onClick={() => setEditing(p.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div style={{ color: ing ? '#fff' : 'rgba(255,255,255,0.25)', fontWeight: 600, fontSize: 15 }}>
-                      {ing ? ing.name : 'Leeg'}
-                    </div>
-                    <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, marginTop: 2 }}>
-                      Tik om te wijzigen
-                    </div>
+            <div
+              key={p.id}
+              onClick={() => !isEditing && setEditing(p.id)}
+              style={{
+                background: ing ? 'rgba(48,209,88,0.07)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${ing ? 'rgba(48,209,88,0.18)' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: 12, padding: '10px 12px', cursor: 'pointer',
+                transition: 'border-color 0.3s, background 0.3s',
+                position: 'relative',
+              }}
+            >
+              {isEditing ? (
+                <select
+                  autoFocus
+                  defaultValue={p.ingredient_id || ''}
+                  onChange={e => saveIngredient(p.id, e.target.value)}
+                  disabled={saving === p.id}
+                  onBlur={() => setEditing(null)}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
+                    borderRadius: 8, padding: '4px 6px', color: '#fff', fontSize: 12,
+                    width: '100%', position: 'relative', zIndex: 1,
+                  }}
+                >
+                  <option value=''>— Leeg —</option>
+                  {ingredients.map(i => (
+                    <option key={i.id} value={i.id}>{i.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  {/* Slot badge */}
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)',
+                    letterSpacing: 0.5, marginBottom: 4,
+                  }}>
+                    #{p.slot}
                   </div>
-                )}
-              </div>
-
-              {/* Status bolletje */}
-              <Dot ok={!!ing} />
+                  {/* Naam */}
+                  <div style={{
+                    fontSize: 12, fontWeight: 600, lineHeight: 1.3,
+                    color: ing ? '#fff' : 'rgba(255,255,255,0.2)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {ing ? ing.name : 'Leeg'}
+                  </div>
+                  {/* Status dot rechtsonder */}
+                  <div style={{
+                    position: 'absolute', bottom: 8, right: 8,
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: ing ? '#30d158' : 'rgba(255,255,255,0.12)',
+                    boxShadow: ing ? '0 0 6px rgba(48,209,88,0.5)' : 'none',
+                  }} />
+                </>
+              )}
             </div>
           )
         })}
@@ -352,8 +372,8 @@ export default function MonitorDisplay() {
       {/* Admin notificatie */}
       <AdminNotificationBanner />
 
-      {/* Content grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, flex: 1 }}>
+      {/* Content grid — verbindingen links (smal), pompen rechts (breed) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 40, flex: 1, minHeight: 0 }}>
         <ConnectionDashboard />
         <PumpenStatus />
       </div>
