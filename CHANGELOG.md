@@ -1,3 +1,7 @@
+## [6.2.22] - 2026-08-11
+### Gewijzigd
+- MIXCARE prijzen voor MATE.1 + CO2 toegevoegd in garantie-instellingen
+
 ## [6.2.21] - 2026-08-11
 ### Gewijzigd
 - MIXCARE prijzen alleen zichtbaar op MATE.1, niet op MATE.1 + CO2 of MATE.1 PRO

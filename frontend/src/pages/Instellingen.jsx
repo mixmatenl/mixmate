@@ -597,22 +597,33 @@ export default function Instellingen() {
 }
 
 // ── Garantie subpagina ────────────────────────────────────────────────────────
-// Prijstabel MATE.1 BASIS (eenmalig, per aantal leidingen)
 const MIXCARE_PRIJZEN = {
-  4:  { 3: 59,  4: 89,  5: 119 },
-  6:  { 3: 74,  4: 109, 5: 144 },
-  8:  { 3: 89,  4: 129, 5: 169 },
-  10: { 3: 104, 4: 149, 5: 194 },
-  12: { 3: 119, 4: 169, 5: 219 },
-  14: { 3: 134, 4: 189, 5: 244 },
-  16: { 3: 149, 4: 209, 5: 269 },
+  'MATE.1': {
+    4:  { 3: 59,  4: 89,  5: 119 },
+    6:  { 3: 74,  4: 109, 5: 144 },
+    8:  { 3: 89,  4: 129, 5: 169 },
+    10: { 3: 104, 4: 149, 5: 194 },
+    12: { 3: 119, 4: 169, 5: 219 },
+    14: { 3: 134, 4: 189, 5: 244 },
+    16: { 3: 149, 4: 209, 5: 269 },
+  },
+  'MATE.1 + CO2': {
+    4:  { 3: 74.99,  4: 109.99, 5: 149.99 },
+    6:  { 3: 94.99,  4: 134.99, 5: 179.99 },
+    8:  { 3: 109.99, 4: 159.99, 5: 209.99 },
+    10: { 3: 129.99, 4: 184.99, 5: 239.99 },
+    12: { 3: 149.99, 4: 209.99, 5: 274.99 },
+    14: { 3: 169.99, 4: 234.99, 5: 304.99 },
+    16: { 3: 184.99, 4: 259.99, 5: 334.99 },
+  },
 }
 
-function getMixcarePrice(aantalPompen, jaren) {
+function getMixcarePrice(model, aantalPompen, jaren) {
+  const tabel = MIXCARE_PRIJZEN[model]
+  if (!tabel || !aantalPompen) return null
   const stappen = [4, 6, 8, 10, 12, 14, 16]
   const sleutel = stappen.find(s => s >= aantalPompen) || 16
-  const rij = MIXCARE_PRIJZEN[sleutel]
-  return rij ? (rij[jaren] ?? null) : null
+  return tabel[sleutel]?.[jaren] ?? null
 }
 
 function GarantieInfo({ onClose }) {
@@ -674,8 +685,8 @@ function GarantieInfo({ onClose }) {
   )
 
   const typeLabel = info.warranty_type === 'mixcare' ? `MIXCARE (${info.warranty_years} jaar)` : `Fabrieksgarantie (${info.warranty_years} jaar)`
-  const toonPrijzen = model === 'MATE.1'
-  const prijs = toonPrijzen && aantalPompen ? getMixcarePrice(aantalPompen, mixcareYears) : null
+  const toonPrijzen = model in MIXCARE_PRIJZEN
+  const prijs = toonPrijzen ? getMixcarePrice(model, aantalPompen, mixcareYears) : null
 
   const showMixcareForm = (info.mixcare_eligible || info.mixcare_pending) && (editing || !info.mixcare_pending)
 
@@ -748,7 +759,7 @@ function GarantieInfo({ onClose }) {
           {/* Jaar-keuze met prijzen */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
             {[3, 4, 5].map(y => {
-              const p = toonPrijzen && aantalPompen ? getMixcarePrice(aantalPompen, y) : null
+              const p = toonPrijzen ? getMixcarePrice(model, aantalPompen, y) : null
               return (
                 <button key={y} onClick={() => setMixcareYears(y)} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -766,7 +777,7 @@ function GarantieInfo({ onClose }) {
 
           {toonPrijzen && prijs && (
             <div style={{ fontSize: 12, color: '#6e6e73', marginBottom: 14 }}>
-              Eenmalige kosten voor MATE.1 met {aantalPompen} leidingen. Wij bevestigen de prijs bij contact.
+              Eenmalige kosten voor {model} met {aantalPompen} leidingen. Wij bevestigen de prijs bij contact.
             </div>
           )}
 
