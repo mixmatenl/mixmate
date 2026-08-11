@@ -112,6 +112,11 @@ export default function AdminPumps() {
   const [calibrating, setCalibrating] = useState(null)
   const [form, setForm] = useState({ slot: 1, gpio_pin: 4, pump_type: 'peristaltic', ml_per_second: 1.0, ingredient_id: '' })
 
+  function nextSlot() {
+    if (pumps.length === 0) return 1
+    return Math.max(...pumps.map(p => p.slot)) + 1
+  }
+
   function load() {
     Promise.all([api.getPumps(), api.getIngredients()]).then(([p, i]) => { setPumps(p); setIngredients(i) })
   }
@@ -129,7 +134,7 @@ export default function AdminPumps() {
 
       <div className="flex justify-between items-center">
         <p className="text-gray-400 text-sm">{pumps.length} pomp{pumps.length !== 1 ? 'en' : ''}</p>
-        <button onClick={() => setAdding(!adding)} className="text-sm bg-[#111] text-white font-semibold rounded-xl px-4 py-2 hover:bg-[#333] transition-all">
+        <button onClick={() => { setForm(f => ({ ...f, slot: nextSlot() })); setAdding(!adding) }} className="text-sm bg-[#111] text-white font-semibold rounded-xl px-4 py-2 hover:bg-[#333] transition-all">
           + Pomp toevoegen
         </button>
       </div>

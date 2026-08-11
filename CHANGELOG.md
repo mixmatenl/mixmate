@@ -1,3 +1,7 @@
+## [6.2.26] - 2026-08-11
+### Opgelost
+- Pomp toevoegen: slotnummer loopt nu automatisch op (was altijd 1)
+
 ## [6.2.25] - 2026-08-11
 ### Opgelost
 - Fix: prijzen werden niet getoond omdat model werd opgehaald via verkeerd endpoint (/api/system/model → /api/system/machine)
