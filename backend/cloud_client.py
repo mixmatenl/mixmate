@@ -515,10 +515,14 @@ async def cloud_loop():
                     async with httpx.AsyncClient(verify=False) as c:
                         v = await c.get(f"{LOCAL}/api/system/version", timeout=3)
                         m = await c.get(f"{LOCAL}/api/system/machine", timeout=3)
+                        p = await c.get(f"{LOCAL}/api/pumps", timeout=3)
                     version = v.json().get("version", "")
                     model   = m.json().get("model", "")
+                    pumps   = p.json()
+                    pump_count = len(pumps) if isinstance(pumps, list) else len(pumps.get("pumps", []))
                 except Exception:
                     version = model = ""
+                    pump_count = 0
 
                 # Stuur het hardware-serienummer mee zodat de cloud het kan opslaan en vergrendelen
                 raw_serial = machine_id.replace("pi-", "").upper() if machine_id.startswith("pi-") else machine_id
@@ -543,6 +547,7 @@ async def cloud_loop():
                     "local_port": int(os.getenv("MIXMATE_PORT", "8000")),
                     "ssl": os.path.exists("/home/pi/mixmate/certs/cert.pem"),
                     "pairing_mode": True,
+                    "pump_count": pump_count,
                     **({"cocktail_machine_id": cocktail_id} if cocktail_id else {}),
                     **({"cocktail_machine_version": cocktail_ver} if cocktail_ver else {}),
                 }))

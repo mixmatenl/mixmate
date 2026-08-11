@@ -1,3 +1,7 @@
+## [6.2.24] - 2026-08-11
+### Gewijzigd
+- Pompcount wordt nu meegestuurd in heartbeat naar cloud (voor MIXCARE prijsbepaling)
+
 ## [6.2.23] - 2026-08-11
 ### Gewijzigd
 - MIXCARE prijzen voor MATE.1 PRO toegevoegd (16–32 leidingen)
