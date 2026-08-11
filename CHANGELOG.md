@@ -1,3 +1,8 @@
+## [6.2.19] - 2026-08-11
+### Gefixt
+- Cocktailmachine stale-detectie werkte niet als hx711-library geïnstalleerd is op Pi 4 — is_network_stale() controleerde ten onrechte is_network_mode ipv _network_connected
+- WebSocket /ws/loadcell stuurt nu elke 3s een ping — dode TCP-verbinding (Pi 5 uit stekker) wordt binnen 3s gedetecteerd i.p.v. pas na minuten
+
 ## [6.2.18] - 2026-08-10
 ### Gefixt
 - Chromium op HDMI laadde oude gecachede JS — disk cache uitgeschakeld (--disk-cache-size=0)

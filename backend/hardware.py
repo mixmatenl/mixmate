@@ -102,10 +102,8 @@ class LoadCell:
     def is_network_stale(self) -> bool:
         """True als netwerkmeting te oud is (verbinding weg) — pompen moeten stoppen."""
         import time
-        if not self.is_network_mode:
-            return False
         if not self._network_connected:
-            return True
+            return False  # nooit verbonden geweest, geen stale
         return (time.monotonic() - self._network_last_update) > self.NETWORK_TIMEOUT_S
 
     def get_pins(self) -> dict:

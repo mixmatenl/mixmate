@@ -1247,18 +1247,15 @@ async def loadcell_ws(websocket: WebSocket):
     _client_ip = websocket.client.host if websocket.client else ""
     _ws_transport = "hotspot" if _client_ip.startswith("10.42.0.") else "wifi"
     log.info("Cocktailmachine-Pi verbonden via /ws/loadcell (IP=%s transport=%s)", _client_ip, _ws_transport)
-    try:
+    async def _recv_loop():
         async for raw in websocket.iter_text():
             try:
                 msg = json.loads(raw)
                 if msg.get("hello"):
-                    # Cocktailmachine meldt zich aan — sla ID + versie op voor cloud heartbeat
                     serial = str(msg.get("serial_number", "")).strip()
                     ver    = str(msg.get("version", "")).strip()
-                    if serial:
-                        _db_set("cocktail_machine_id", serial)
-                    if ver:
-                        _db_set("cocktail_machine_version", ver)
+                    if serial: _db_set("cocktail_machine_id", serial)
+                    if ver:    _db_set("cocktail_machine_version", ver)
                     log.info("Cocktailmachine hello: serial=%s version=%s", serial, ver)
                 elif msg.get("tare"):
                     loadcell.tare()
@@ -1266,6 +1263,15 @@ async def loadcell_ws(websocket: WebSocket):
                     loadcell.network_update(float(msg.get("weight_g", 0)), transport=_ws_transport)
             except Exception:
                 pass
+
+    async def _ping_loop():
+        """Stuur elke 3s een ping — als cocktailmachine dood is gooit dit een exception."""
+        while True:
+            await asyncio.sleep(3)
+            await websocket.send_text('{"ping":true}')
+
+    try:
+        await asyncio.gather(_recv_loop(), _ping_loop())
     except Exception:
         pass
     finally:
