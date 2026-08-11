@@ -617,6 +617,7 @@ function GarantieInfo({ onClose }) {
   const [info, setInfo]           = useState(null)
   const [loading, setLoading]     = useState(true)
   const [aantalPompen, setAantalPompen] = useState(null)
+  const [model, setModel]         = useState('')
   const [requesting, setRequesting] = useState(false)
   const [mixcareYears, setMixcareYears] = useState(3)
   const [editing, setEditing]     = useState(false)
@@ -633,6 +634,9 @@ function GarantieInfo({ onClose }) {
     load()
     fetch('/api/pumps').then(r => r.json())
       .then(d => setAantalPompen((Array.isArray(d) ? d : d.pumps || []).length))
+      .catch(() => {})
+    fetch('/api/system/model').then(r => r.json())
+      .then(d => setModel(d.model || ''))
       .catch(() => {})
   }, [])
 
@@ -668,8 +672,8 @@ function GarantieInfo({ onClose }) {
   )
 
   const typeLabel = info.warranty_type === 'mixcare' ? `MIXCARE (${info.warranty_years} jaar)` : `Fabrieksgarantie (${info.warranty_years} jaar)`
-  const prijs = aantalPompen ? getMixcarePrice(aantalPompen, mixcareYears) : null
-  const jrPrijs = prijs ? Math.round(prijs / mixcareYears * 100) / 100 : null
+  const toonPrijzen = model === 'MATE.1'
+  const prijs = toonPrijzen && aantalPompen ? getMixcarePrice(aantalPompen, mixcareYears) : null
 
   const showMixcareForm = (info.mixcare_eligible || info.mixcare_pending) && (editing || !info.mixcare_pending)
 
@@ -742,8 +746,7 @@ function GarantieInfo({ onClose }) {
           {/* Jaar-keuze met prijzen */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
             {[3, 4, 5].map(y => {
-              const p = aantalPompen ? getMixcarePrice(aantalPompen, y) : null
-              const jr = p ? `~€ ${(p / y).toFixed(0)}/jr` : ''
+              const p = toonPrijzen && aantalPompen ? getMixcarePrice(aantalPompen, y) : null
               return (
                 <button key={y} onClick={() => setMixcareYears(y)} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -752,17 +755,14 @@ function GarantieInfo({ onClose }) {
                   background: mixcareYears === y ? '#f0f7ff' : '#fff',
                   cursor: 'pointer', textAlign: 'left',
                 }}>
-                  <div>
-                    <span style={{ fontWeight: 700, color: '#1d1d1f', fontSize: 14 }}>{y} jaar MIXCARE</span>
-                    {jr && <span style={{ marginLeft: 8, fontSize: 12, color: '#6e6e73' }}>{jr}</span>}
-                  </div>
+                  <span style={{ fontWeight: 700, color: '#1d1d1f', fontSize: 14 }}>{y} jaar MIXCARE</span>
                   {p && <span style={{ fontWeight: 700, fontSize: 15, color: mixcareYears === y ? '#007aff' : '#1d1d1f' }}>€ {p},-</span>}
                 </button>
               )
             })}
           </div>
 
-          {prijs && (
+          {toonPrijzen && prijs && (
             <div style={{ fontSize: 12, color: '#6e6e73', marginBottom: 14 }}>
               Eenmalige kosten voor MATE.1 met {aantalPompen} leidingen. Wij bevestigen de prijs bij contact.
             </div>

@@ -1,3 +1,8 @@
+## [6.2.21] - 2026-08-11
+### Gewijzigd
+- MIXCARE prijzen alleen zichtbaar op MATE.1, niet op MATE.1 + CO2 of MATE.1 PRO
+- Prijs per jaar weggehaald — alleen eenmalige prijs zichtbaar
+
 ## [6.2.20] - 2026-08-11
 ### Toegevoegd
 - Garantiepagina machine: toont of MIXCARE al is aangevraagd en voor hoeveel jaar ("In behandeling")
