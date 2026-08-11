@@ -282,6 +282,7 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
 
             elif msg_type == "block_machine":
                 r = await c.post(f"{LOCAL}/api/machine/block", json={
+                    "blocked_by": message.get("blocked_by", ""),
                     "reason": message.get("reason", ""),
                     "amount": message.get("amount", 0),
                 }, timeout=3)
@@ -631,6 +632,7 @@ async def cloud_loop():
                                 try:
                                     async with httpx.AsyncClient(verify=False) as c:
                                         await c.post(f"{LOCAL}/api/machine/block", json={
+                                            "blocked_by": message.get("blocked_by", ""),
                                             "reason": message.get("reason", ""),
                                             "amount": message.get("amount", 0),
                                         }, timeout=3)

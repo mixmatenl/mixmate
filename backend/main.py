@@ -691,6 +691,7 @@ def _load_cooldown_state():
 _prime_state: dict   = {"active": False}
 _prime_control: dict = {"pause": False, "stop": False}
 _machine_blocked: bool = False
+_machine_blocked_by: str = ""   # "admin" | "customer" | ""
 _machine_blocked_reason: str = ""
 _machine_blocked_amount: float = 0.0
 _demo_mode_active: bool = False
@@ -901,8 +902,9 @@ def prime_stop(slot: int):
 
 @app.post("/api/machine/block")
 def block_machine(body: dict = {}):
-    global _machine_blocked, _machine_blocked_reason, _machine_blocked_amount
+    global _machine_blocked, _machine_blocked_by, _machine_blocked_reason, _machine_blocked_amount
     _machine_blocked = True
+    _machine_blocked_by = body.get("blocked_by", "")
     _machine_blocked_reason = body.get("reason", "")
     _machine_blocked_amount = float(body.get("amount", 0) or 0)
     return {"blocked": True}
@@ -910,8 +912,9 @@ def block_machine(body: dict = {}):
 
 @app.post("/api/machine/unblock")
 def unblock_machine():
-    global _machine_blocked, _machine_blocked_reason, _machine_blocked_amount
+    global _machine_blocked, _machine_blocked_by, _machine_blocked_reason, _machine_blocked_amount
     _machine_blocked = False
+    _machine_blocked_by = ""
     _machine_blocked_reason = ""
     _machine_blocked_amount = 0.0
     return {"blocked": False}
@@ -919,7 +922,7 @@ def unblock_machine():
 
 @app.get("/api/machine/blocked")
 def get_blocked():
-    return {"blocked": _machine_blocked, "reason": _machine_blocked_reason, "amount": _machine_blocked_amount}
+    return {"blocked": _machine_blocked, "blocked_by": _machine_blocked_by, "reason": _machine_blocked_reason, "amount": _machine_blocked_amount}
 
 
 @app.get("/api/pumps/flush-debug")
