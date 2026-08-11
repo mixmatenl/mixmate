@@ -1702,6 +1702,16 @@ async def system_restart():
     asyncio.create_task(_reboot())
     return {"ok": True, "message": "Machine herstart over 2 seconden..."}
 
+@app.post("/api/system/restart-app")
+async def system_restart_app():
+    """Herstart alleen de MIXMATE app (sneller dan volledige reboot)."""
+    async def _restart():
+        await asyncio.sleep(1)
+        import subprocess
+        subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+    asyncio.create_task(_restart())
+    return {"ok": True, "message": "App herstart over 1 seconde..."}
+
 async def _ethernet_status() -> dict:
     """Detecteer actieve ethernet verbinding via nmcli."""
     try:

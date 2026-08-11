@@ -389,6 +389,14 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 _asyncio.create_task(_reboot())
                 return {"req_id": req_id, "ok": True}
 
+            elif msg_type == "restart_app":
+                import subprocess, asyncio as _asyncio
+                async def _restart_app():
+                    await _asyncio.sleep(1)
+                    subprocess.Popen(["sudo", "systemctl", "restart", "mixmate"])
+                _asyncio.create_task(_restart_app())
+                return {"req_id": req_id, "ok": True}
+
             elif msg_type == "unpaired":
                 # Portaal heeft machine ontkoppeld — wis lokale koppeling
                 r = await c.post(f"{LOCAL}/api/cloud/unpair", timeout=5)

@@ -1,3 +1,7 @@
+## [6.2.27] - 2026-08-11
+### Toegevoegd
+- Knop "App opnieuw opstarten" in instellingen (herstart alleen de software, ~5 sec)
+
 ## [6.2.26] - 2026-08-11
 ### Opgelost
 - Pomp toevoegen: slotnummer loopt nu automatisch op (was altijd 1)

@@ -334,26 +334,26 @@ function ConfirmDialog({ title, message, confirmLabel, onConfirm, onCancel, load
 
 // ── Herstart animatiescherm ───────────────────────────────────────────────────
 
-function RestartScreen({ onReady }) {
+function RestartScreen({ onReady, fast }) {
   const [phase, setPhase] = useState('announcing') // 'announcing' | 'restarting'
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Fase 1: toon 2.5s aankondiging, dan stuur restart
     const t1 = setTimeout(() => {
       setPhase('restarting')
       onReady()
     }, 2500)
 
-    // Zodra backend weer reageert: navigeer naar dashboard
     let retryIv
+    // App-herstart is snel: begin al na 3s te pollen; volledige reboot pas na 8s
+    const pollDelay = fast ? 3000 : 8000
     const t2 = setTimeout(() => {
       retryIv = setInterval(() => {
         fetch('/api/system/info')
           .then(() => { clearInterval(retryIv); navigate('/') })
           .catch(() => {})
       }, 2000)
-    }, 8000) // begin pas na 8s te pollen (Pi heeft tijd nodig om neer te gaan)
+    }, pollDelay)
 
     return () => { clearTimeout(t1); clearTimeout(t2); clearInterval(retryIv) }
   }, [])
@@ -380,12 +380,10 @@ function RestartScreen({ onReady }) {
       />
 
       <div style={{ color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 10, letterSpacing: -0.4 }}>
-        Machine herstarten
+        {fast ? 'App opnieuw opstarten' : 'Machine herstarten'}
       </div>
       <div style={{ color: '#555', fontSize: 14, textAlign: 'center', maxWidth: 260, lineHeight: 1.7 }}>
-        {phase === 'announcing'
-          ? 'De machine wordt opnieuw opgestart.'
-          : 'De machine wordt opnieuw opgestart.'}
+        {fast ? 'De software wordt opnieuw opgestart.' : 'De machine wordt opnieuw opgestart.'}
       </div>
 
       {/* Spinner */}
@@ -418,11 +416,18 @@ function SettingsHome() {
   const [confirm,          setConfirm]          = useState(null)
   const [actionBusy,       setActionBusy]       = useState(false)
   const [restarting,       setRestarting]       = useState(false)
+  const [restartingApp,    setRestartingApp]    = useState(false)
   const [factoryResetting, setFactoryResetting] = useState(false)
 
   function doRestart() {
     setConfirm(null)
     setRestarting(true)
+  }
+
+  async function doRestartApp() {
+    setConfirm(null)
+    setRestartingApp(true)
+    await fetch('/api/system/restart-app', { method: 'POST' }).catch(() => {})
   }
 
   async function doFactoryReset() {
@@ -432,6 +437,7 @@ function SettingsHome() {
   }
 
   if (restarting)       return <RestartScreen onReady={() => fetch('/api/system/restart', { method: 'POST' }).catch(() => {})} />
+  if (restartingApp)    return <RestartScreen fast onReady={() => fetch('/api/system/restart-app', { method: 'POST' }).catch(() => {})} />
   if (factoryResetting) return <FactoryResetScreen />
 
   return (
@@ -457,9 +463,21 @@ function SettingsHome() {
         <SettingsRow icon={<IconUpdate />}  label="Software update"   sublabel="Controleer op nieuwe versie"           onClick={() => navigate('/instellingen/update')} />
         <SettingsRow icon={<IconInfo />}    label="Over deze machine" sublabel="Serienummer, netwerk en hardware"       onClick={() => navigate('/instellingen/info')} />
         <SettingsRow icon={<IconShield />}  label="Garantie"          sublabel="Garantiestatus en MIXCARE"              onClick={() => navigate('/instellingen/garantie')} />
-        <SettingsRow icon={<IconRestart />} label="Machine herstarten" sublabel="Duurt ongeveer 30 seconden"           onClick={() => setConfirm('restart')} />
+        <SettingsRow icon={<IconRestart />} label="App opnieuw opstarten" sublabel="Herstart alleen de software (~5 sec)" onClick={() => setConfirm('restart-app')} />
+        <SettingsRow icon={<IconRestart />} label="Machine herstarten"   sublabel="Volledige herstart (~30 seconden)"  onClick={() => setConfirm('restart')} />
         <SettingsRow icon={<IconFactory />} label="Fabrieksinstellingen" sublabel="Wist content, behoudt garantie"    onClick={() => setConfirm('factory')} danger last />
       </Section>
+
+      {confirm === 'restart-app' && (
+        <ConfirmDialog
+          title="App opnieuw opstarten"
+          message="Alleen de MIXMATE software herstart. Dit duurt ongeveer 5 seconden."
+          confirmLabel="Opstarten"
+          loading={actionBusy}
+          onConfirm={doRestartApp}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
 
       {confirm === 'restart' && (
         <ConfirmDialog
