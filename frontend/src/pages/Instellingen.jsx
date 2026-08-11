@@ -655,7 +655,7 @@ function GarantieInfo({ onClose }) {
     fetch('/api/pumps').then(r => r.json())
       .then(d => setAantalPompen((Array.isArray(d) ? d : d.pumps || []).length))
       .catch(() => {})
-    fetch('/api/system/model').then(r => r.json())
+    fetch('/api/system/machine').then(r => r.json())
       .then(d => setModel(d.model || ''))
       .catch(() => {})
   }, [])

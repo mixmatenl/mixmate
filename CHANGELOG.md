@@ -1,3 +1,7 @@
+## [6.2.25] - 2026-08-11
+### Opgelost
+- Fix: prijzen werden niet getoond omdat model werd opgehaald via verkeerd endpoint (/api/system/model → /api/system/machine)
+
 ## [6.2.24] - 2026-08-11
 ### Gewijzigd
 - Pompcount wordt nu meegestuurd in heartbeat naar cloud (voor MIXCARE prijsbepaling)
