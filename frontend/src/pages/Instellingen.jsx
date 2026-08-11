@@ -609,8 +609,10 @@ const MIXCARE_PRIJZEN = {
 }
 
 function getMixcarePrice(aantalPompen, jaren) {
-  const rij = MIXCARE_PRIJZEN[aantalPompen] || MIXCARE_PRIJZEN[4]
-  return rij[jaren] ?? null
+  const stappen = [4, 6, 8, 10, 12, 14, 16]
+  const sleutel = stappen.find(s => s >= aantalPompen) || 16
+  const rij = MIXCARE_PRIJZEN[sleutel]
+  return rij ? (rij[jaren] ?? null) : null
 }
 
 function GarantieInfo({ onClose }) {
