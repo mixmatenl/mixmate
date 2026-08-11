@@ -281,8 +281,10 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 return {"req_id": req_id, "items": result} if isinstance(result, list) else {"req_id": req_id, **result}
 
             elif msg_type == "block_machine":
-                reason = message.get("reason", "")
-                r = await c.post(f"{LOCAL}/api/machine/block", json={"reason": reason}, timeout=3)
+                r = await c.post(f"{LOCAL}/api/machine/block", json={
+                    "reason": message.get("reason", ""),
+                    "amount": message.get("amount", 0),
+                }, timeout=3)
                 return {"req_id": req_id, **r.json()}
 
             elif msg_type == "unblock_machine":
@@ -628,9 +630,10 @@ async def cloud_loop():
                             if message.get("block"):
                                 try:
                                     async with httpx.AsyncClient(verify=False) as c:
-                                        await c.post(f"{LOCAL}/api/machine/block",
-                                                     json={"reason": message.get("reason", "")},
-                                                     timeout=3)
+                                        await c.post(f"{LOCAL}/api/machine/block", json={
+                                            "reason": message.get("reason", ""),
+                                            "amount": message.get("amount", 0),
+                                        }, timeout=3)
                                 except Exception:
                                     pass
                             continue
