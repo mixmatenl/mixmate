@@ -616,12 +616,19 @@ const MIXCARE_PRIJZEN = {
     14: { 3: 169.99, 4: 234.99, 5: 304.99 },
     16: { 3: 184.99, 4: 259.99, 5: 334.99 },
   },
+  'MATE.1 PRO': {
+    16: { 3: 319.99, 4: 449.99, 5: 599.99 },
+    20: { 3: 389.99, 4: 539.99, 5: 699.99 },
+    24: { 3: 459.99, 4: 629.99, 5: 799.99 },
+    28: { 3: 529.99, 4: 719.99, 5: 899.99 },
+    32: { 3: 599.99, 4: 799.99, 5: 999.99 },
+  },
 }
 
 function getMixcarePrice(model, aantalPompen, jaren) {
   const tabel = MIXCARE_PRIJZEN[model]
   if (!tabel || !aantalPompen) return null
-  const stappen = [4, 6, 8, 10, 12, 14, 16]
+  const stappen = model === 'MATE.1 PRO' ? [16, 20, 24, 28, 32] : [4, 6, 8, 10, 12, 14, 16]
   const sleutel = stappen.find(s => s >= aantalPompen) || 16
   return tabel[sleutel]?.[jaren] ?? null
 }

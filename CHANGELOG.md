@@ -1,3 +1,7 @@
+## [6.2.23] - 2026-08-11
+### Gewijzigd
+- MIXCARE prijzen voor MATE.1 PRO toegevoegd (16–32 leidingen)
+
 ## [6.2.22] - 2026-08-11
 ### Gewijzigd
 - MIXCARE prijzen voor MATE.1 + CO2 toegevoegd in garantie-instellingen
