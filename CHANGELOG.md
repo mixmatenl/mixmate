@@ -1,3 +1,9 @@
+## [6.2.20] - 2026-08-11
+### Toegevoegd
+- Garantiepagina machine: toont of MIXCARE al is aangevraagd en voor hoeveel jaar ("In behandeling")
+- Knop "Wijzigen" als aanvraag nog open staat — duur aanpasbaar binnen de 30-dagentermijn
+- Prijstabel MATE.1 BASIS per aantal leidingen en looptijd zichtbaar bij jaarkeuze
+
 ## [6.2.19] - 2026-08-11
 ### Gefixt
 - Cocktailmachine stale-detectie werkte niet als hx711-library geïnstalleerd is op Pi 4 — is_network_stale() controleerde ten onrechte is_network_mode ipv _network_connected

@@ -597,23 +597,47 @@ export default function Instellingen() {
 }
 
 // ── Garantie subpagina ────────────────────────────────────────────────────────
+// Prijstabel MATE.1 BASIS (eenmalig, per aantal leidingen)
+const MIXCARE_PRIJZEN = {
+  4:  { 3: 59,  4: 89,  5: 119 },
+  6:  { 3: 74,  4: 109, 5: 144 },
+  8:  { 3: 89,  4: 129, 5: 169 },
+  10: { 3: 104, 4: 149, 5: 194 },
+  12: { 3: 119, 4: 169, 5: 219 },
+  14: { 3: 134, 4: 189, 5: 244 },
+  16: { 3: 149, 4: 209, 5: 269 },
+}
+
+function getMixcarePrice(aantalPompen, jaren) {
+  const rij = MIXCARE_PRIJZEN[aantalPompen] || MIXCARE_PRIJZEN[4]
+  return rij[jaren] ?? null
+}
+
 function GarantieInfo({ onClose }) {
-  const [info, setInfo] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [info, setInfo]           = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [aantalPompen, setAantalPompen] = useState(null)
   const [requesting, setRequesting] = useState(false)
   const [mixcareYears, setMixcareYears] = useState(3)
-  const [msg, setMsg] = useState(null)
+  const [editing, setEditing]     = useState(false)
+  const [msg, setMsg]             = useState(null)
 
-  useEffect(() => {
+  function load() {
     fetch('/api/system/warranty-info')
       .then(r => r.json())
       .then(d => { setInfo(d); setLoading(false) })
       .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
+    fetch('/api/pumps').then(r => r.json())
+      .then(d => setAantalPompen((Array.isArray(d) ? d : d.pumps || []).length))
+      .catch(() => {})
   }, [])
 
   async function requestMixcare() {
-    setRequesting(true)
-    setMsg(null)
+    setRequesting(true); setMsg(null)
     try {
       const r = await fetch('/api/system/request-mixcare', {
         method: 'POST',
@@ -622,8 +646,9 @@ function GarantieInfo({ onClose }) {
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.detail || 'Mislukt')
-      setMsg({ ok: true, text: `MIXCARE ${mixcareYears} jaar aangevraagd!` })
-      setInfo(d.warranty)
+      setMsg({ ok: true, text: `MIXCARE ${mixcareYears} jaar aangevraagd. Wij nemen binnenkort contact met u op.` })
+      setEditing(false)
+      load()
     } catch (e) {
       setMsg({ ok: false, text: e.message })
     }
@@ -643,7 +668,10 @@ function GarantieInfo({ onClose }) {
   )
 
   const typeLabel = info.warranty_type === 'mixcare' ? `MIXCARE (${info.warranty_years} jaar)` : `Fabrieksgarantie (${info.warranty_years} jaar)`
-  const daysLeft = info.days_left
+  const prijs = aantalPompen ? getMixcarePrice(aantalPompen, mixcareYears) : null
+  const jrPrijs = prijs ? Math.round(prijs / mixcareYears * 100) / 100 : null
+
+  const showMixcareForm = (info.mixcare_eligible || info.mixcare_pending) && (editing || !info.mixcare_pending)
 
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', padding: '32px 24px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
@@ -663,48 +691,89 @@ function GarantieInfo({ onClose }) {
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1d1d1f' }}>{typeLabel}</div>
             <div style={{ fontSize: 13, color: info.active ? '#1a7a3a' : '#cc2200', fontWeight: 600 }}>
-              {info.active ? `Actief — nog ${daysLeft} dagen` : 'Garantie verlopen'}
+              {info.active ? `Actief — nog ${info.days_left} dagen` : 'Garantie verlopen'}
             </div>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '6px 12px', fontSize: 14, color: '#3a3a3c' }}>
-          {info.installation_date && <>
-            <span style={{ color: '#6e6e73' }}>Installatiedatum</span>
-            <span>{info.installation_date}</span>
-          </>}
-          {info.warranty_start && <>
-            <span style={{ color: '#6e6e73' }}>Ingangsdatum</span>
-            <span>{info.warranty_start}</span>
-          </>}
-          {info.warranty_end && <>
-            <span style={{ color: '#6e6e73' }}>Einddatum</span>
-            <span style={{ fontWeight: 600 }}>{info.warranty_end}</span>
-          </>}
+          {info.installation_date && <><span style={{ color: '#6e6e73' }}>Installatiedatum</span><span>{info.installation_date}</span></>}
+          {info.warranty_start    && <><span style={{ color: '#6e6e73' }}>Ingangsdatum</span><span>{info.warranty_start}</span></>}
+          {info.warranty_end      && <><span style={{ color: '#6e6e73' }}>Einddatum</span><span style={{ fontWeight: 600 }}>{info.warranty_end}</span></>}
         </div>
       </div>
 
-      {/* MIXCARE aanvragen */}
-      {info.mixcare_eligible && (
+      {/* MIXCARE aangevraagd (pending) */}
+      {info.mixcare_pending && !editing && (
+        <div style={{ background: '#f5f3ff', border: '1px solid #dddaff', borderRadius: 16, padding: '20px 22px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#5856d6' }}>MIXCARE aangevraagd</div>
+              <div style={{ fontSize: 13, color: '#6e6e73', marginTop: 3 }}>
+                {info.mixcare_pending_years} jaar — wij nemen binnenkort contact met u op
+              </div>
+            </div>
+            <span style={{ background: '#ede9fe', color: '#5856d6', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, letterSpacing: 0.5 }}>In behandeling</span>
+          </div>
+          {info.mixcare_eligible && (
+            <button onClick={() => { setMixcareYears(info.mixcare_pending_years || 3); setEditing(true); setMsg(null) }}
+              style={{ background: 'none', border: '1px solid #c4b5fd', color: '#5856d6', borderRadius: 10, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Wijzigen
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* MIXCARE aanvragen / wijzigen form */}
+      {(info.mixcare_eligible && !info.mixcare_pending) || editing ? (
         <div style={{ background: '#f0f4ff', border: '1px solid #c0ccff', borderRadius: 16, padding: '20px 22px', marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', marginBottom: 6 }}>MIXCARE uitbreiden</div>
-          <div style={{ fontSize: 13, color: '#3a3a3c', marginBottom: 14, lineHeight: 1.6 }}>
-            Verleng uw garantie met MIXCARE. Nog <strong>{info.mixcare_days_remaining} dagen</strong> beschikbaar na installatie.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f' }}>
+              {editing ? 'MIXCARE wijzigen' : 'MIXCARE uitbreiden'}
+            </div>
+            {editing && (
+              <button onClick={() => { setEditing(false); setMsg(null) }}
+                style={{ background: 'none', border: 'none', color: '#6e6e73', fontSize: 13, cursor: 'pointer' }}>Annuleren</button>
+            )}
           </div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-            {[3, 4, 5].map(y => (
-              <button key={y} onClick={() => setMixcareYears(y)} style={{
-                padding: '10px 20px', borderRadius: 10, border: `2px solid ${mixcareYears === y ? '#007aff' : '#e5e5ea'}`,
-                background: mixcareYears === y ? '#007aff' : '#fff', color: mixcareYears === y ? '#fff' : '#1d1d1f',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}>{y} jaar</button>
-            ))}
+          <div style={{ fontSize: 13, color: '#3a3a3c', marginBottom: 16, lineHeight: 1.6 }}>
+            Verleng uw garantie met MIXCARE. Nog <strong>{info.mixcare_days_remaining} dagen</strong> beschikbaar.
           </div>
+
+          {/* Jaar-keuze met prijzen */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+            {[3, 4, 5].map(y => {
+              const p = aantalPompen ? getMixcarePrice(aantalPompen, y) : null
+              const jr = p ? `~€ ${(p / y).toFixed(0)}/jr` : ''
+              return (
+                <button key={y} onClick={() => setMixcareYears(y)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '12px 16px', borderRadius: 12,
+                  border: `2px solid ${mixcareYears === y ? '#007aff' : '#e5e5ea'}`,
+                  background: mixcareYears === y ? '#f0f7ff' : '#fff',
+                  cursor: 'pointer', textAlign: 'left',
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 700, color: '#1d1d1f', fontSize: 14 }}>{y} jaar MIXCARE</span>
+                    {jr && <span style={{ marginLeft: 8, fontSize: 12, color: '#6e6e73' }}>{jr}</span>}
+                  </div>
+                  {p && <span style={{ fontWeight: 700, fontSize: 15, color: mixcareYears === y ? '#007aff' : '#1d1d1f' }}>€ {p},-</span>}
+                </button>
+              )
+            })}
+          </div>
+
+          {prijs && (
+            <div style={{ fontSize: 12, color: '#6e6e73', marginBottom: 14 }}>
+              Eenmalige kosten voor MATE.1 met {aantalPompen} leidingen. Wij bevestigen de prijs bij contact.
+            </div>
+          )}
+
           <button onClick={requestMixcare} disabled={requesting} style={{
             width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
             background: requesting ? '#e5e5ea' : '#007aff', color: requesting ? '#6e6e73' : '#fff',
             fontSize: 15, fontWeight: 700, cursor: requesting ? 'default' : 'pointer',
           }}>
-            {requesting ? 'Aanvragen…' : `MIXCARE ${mixcareYears} jaar aanvragen`}
+            {requesting ? 'Aanvragen…' : editing ? `Wijzigen naar ${mixcareYears} jaar` : `MIXCARE ${mixcareYears} jaar aanvragen`}
           </button>
           {msg && (
             <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, fontSize: 13,
@@ -714,9 +783,9 @@ function GarantieInfo({ onClose }) {
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
-      {!info.mixcare_eligible && info.warranty_type === 'factory' && info.installation_date && (
+      {!info.mixcare_eligible && !info.mixcare_pending && info.warranty_type === 'factory' && info.installation_date && (
         <div style={{ background: '#f9f9fb', border: '1px solid #e5e5ea', borderRadius: 14, padding: '16px 20px', fontSize: 13, color: '#6e6e73' }}>
           MIXCARE kon alleen worden aangevraagd binnen 30 dagen na installatie. Neem contact op met MIXMATE voor meer informatie.
         </div>
