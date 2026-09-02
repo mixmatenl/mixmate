@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Cursor verbergen op kiosk touchscreen */
-*, *::before, *::after { cursor: none !important; }
+/* *, *::before, *::after { cursor: none !important; } */
 
 /* ── Kleurenpalet — licht, premium, Apple-stijl ─────────────────────── */
 :root {
