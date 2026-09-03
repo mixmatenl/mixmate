@@ -1209,6 +1209,72 @@ def end_session(session: Session = Depends(get_session)):
     _current_session_id = None
     return {"ok": True}
 
+@app.post("/api/demo/seed")
+def seed_demo_data(session: Session = Depends(get_session)):
+    """Tijdelijk endpoint: vult de database met realistische demo-geschiedenis."""
+    import random, sqlite3
+    from datetime import date as date_type
+
+    recipe_names = [
+        "Cosmopolitan", "Mojito", "Piña Colada", "Tequila Sunrise",
+        "Tom Collins", "Passion Fruit Spritz", "Sex on the Beach", "Gin Tonic",
+    ]
+    recipe_ids = {r: i+1 for i, r in enumerate(recipe_names)}
+    scales = [0.5, 1.0, 1.0, 1.0, 1.5]
+
+    # Verwijder bestaande demo-data (lege pours/sessies)
+    existing_sessions = session.exec(select(MachineSession)).all()
+    for s in existing_sessions:
+        session.delete(s)
+    existing_pours = session.exec(select(Pour)).all()
+    for p in existing_pours:
+        session.delete(p)
+    session.commit()
+
+    # Genereer 60 dagen geschiedenis
+    now = datetime.utcnow()
+    total_pours = 0
+    total_sessions = 0
+
+    for days_ago in range(60, 0, -1):
+        base_date = now - timedelta(days=days_ago)
+        weekday = base_date.weekday()
+        # Weekend meer sessies
+        num_sessions = random.randint(2, 5) if weekday >= 4 else random.randint(0, 2)
+        if days_ago > 45 and num_sessions > 0:
+            num_sessions = max(1, num_sessions - 1)
+
+        for _ in range(num_sessions):
+            hour = random.randint(17, 23)
+            minute = random.randint(0, 59)
+            session_start = base_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            duration_minutes = random.randint(30, 180)
+            session_end = session_start + timedelta(minutes=duration_minutes)
+            ms = MachineSession(started_at=session_start, ended_at=session_end)
+            session.add(ms); session.commit(); session.refresh(ms)
+            total_sessions += 1
+
+            num_pours = random.randint(2, 12)
+            pour_time = session_start + timedelta(minutes=random.randint(5, 15))
+            for _ in range(num_pours):
+                name = random.choice(recipe_names)
+                pour = Pour(
+                    recipe_id=recipe_ids[name],
+                    recipe_name=name,
+                    scale=random.choice(scales),
+                    session_id=ms.id,
+                )
+                session.add(pour); session.flush()
+                # Zet de timestamp direct via SQL
+                session.exec(
+                    __import__('sqlmodel').text(f"UPDATE pour SET poured_at = '{pour_time.strftime('%Y-%m-%d %H:%M:%S')}' WHERE id = {pour.id}")
+                )
+                pour_time += timedelta(minutes=random.randint(3, 20))
+                total_pours += 1
+            session.commit()
+
+    return {"ok": True, "sessions": total_sessions, "pours": total_pours}
+
 @app.get("/api/sessions/{session_id}/pours", response_model=List[PourRead])
 def get_session_pours(session_id: int, session: Session = Depends(get_session)):
     return session.exec(
