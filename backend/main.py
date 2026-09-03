@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -1067,23 +1068,36 @@ def delete_recipe(recipe_id: int, session: Session = Depends(get_session)):
 async def upload_recipe_image(recipe_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
     recipe = session.get(Recipe, recipe_id)
     if not recipe: raise HTTPException(404)
-    uploads_dir = Path(__file__).parent.parent / "uploads"
-    uploads_dir.mkdir(exist_ok=True)
-    suffix = Path(file.filename).suffix.lower() if file.filename else ".jpg"
-    if suffix not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
-        suffix = ".jpg"
-    filename = f"recipe_{recipe_id}{suffix}"
-    dest = uploads_dir / filename
     content = await file.read()
-    if len(content) > 8_000_000:  # max 8MB
+    if len(content) > 8_000_000:
         raise HTTPException(413, "Bestand te groot (max 8MB)")
-    dest.write_bytes(content)
-    recipe.image_url = f"/uploads/{filename}"
+    suffix = Path(file.filename).suffix.lower() if file.filename else ".jpg"
+    ext = suffix.lstrip(".") or "jpeg"
+    recipe.image_url = f"data:image/{ext};base64," + base64.b64encode(content).decode()
     session.add(recipe); session.commit()
     return {"image_url": recipe.image_url}
 
 
 # ── Favorites ─────────────────────────────────────────────────────────────────
+
+@app.post("/api/demo/migrate-images")
+def migrate_recipe_images(session: Session = Depends(get_session)):
+    """Converteert /uploads/... image_url naar base64 data-URL in de database."""
+    recipes = session.exec(select(Recipe)).all()
+    updated = 0
+    uploads_dir = Path(__file__).parent.parent / "uploads"
+    for recipe in recipes:
+        if recipe.image_url and recipe.image_url.startswith("/uploads/"):
+            filename = recipe.image_url.lstrip("/uploads/")
+            path = uploads_dir / filename
+            if path.exists():
+                data = path.read_bytes()
+                ext = path.suffix.lstrip(".") or "jpeg"
+                recipe.image_url = f"data:image/{ext};base64," + base64.b64encode(data).decode()
+                session.add(recipe)
+                updated += 1
+    session.commit()
+    return {"ok": True, "updated": updated}
 
 @app.get("/api/favorites")
 def list_favorites(session: Session = Depends(get_session)):
