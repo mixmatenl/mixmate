@@ -1263,12 +1263,9 @@ def seed_demo_data(session: Session = Depends(get_session)):
                     recipe_name=name,
                     scale=random.choice(scales),
                     session_id=ms.id,
+                    poured_at=pour_time,
                 )
-                session.add(pour); session.flush()
-                # Zet de timestamp direct via SQL
-                session.exec(
-                    __import__('sqlmodel').text(f"UPDATE pour SET poured_at = '{pour_time.strftime('%Y-%m-%d %H:%M:%S')}' WHERE id = {pour.id}")
-                )
+                session.add(pour)
                 pour_time += timedelta(minutes=random.randint(3, 20))
                 total_pours += 1
             session.commit()
