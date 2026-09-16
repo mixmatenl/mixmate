@@ -1,4 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react'
+import QRCode from 'qrcode'
+
+// Prefix zodat de iOS-app willekeurige QR-codes kan negeren en alleen
+// koppelcodes van een MIXMATE-machine als geldige koppelpoging herkent.
+const PAIR_QR_PREFIX = 'MIXMATEPAIR:'
+
+function PairCodeQR({ code, size = 96 }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current && code) {
+      QRCode.toCanvas(ref.current, PAIR_QR_PREFIX + code, {
+        width: size,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+    }
+  }, [code, size])
+  return <canvas ref={ref} style={{ borderRadius: 8, display: 'block' }} />
+}
 
 const P = { ENTRY: 0, LOGO_IN: 1, STANDBY: 2, WAKING: 3, REVEALING: 4 }
 
@@ -280,17 +299,25 @@ export default function StandbyScreen({ onWake }) {
         {pairCode && !paired && phase === P.STANDBY && (
           <div style={{
             position: 'absolute', top: '32px', right: '32px',
-            textAlign: 'center',
+            textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
           }}>
             <div style={{
-              color: `rgba(${fg},0.4)`, fontSize: '10px',
-              letterSpacing: '2px', textTransform: 'uppercase',
-              marginBottom: '6px', fontFamily: 'system-ui, sans-serif',
-            }}>Koppelcode</div>
-            <div style={{
-              color: `rgba(${fg},0.9)`, fontSize: '28px',
-              fontFamily: 'monospace', letterSpacing: '6px', fontWeight: '600',
-            }}>{pairCode}</div>
+              background: '#fff', borderRadius: '10px', padding: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+            }}>
+              <PairCodeQR code={pairCode} />
+            </div>
+            <div>
+              <div style={{
+                color: `rgba(${fg},0.4)`, fontSize: '10px',
+                letterSpacing: '2px', textTransform: 'uppercase',
+                marginBottom: '6px', fontFamily: 'system-ui, sans-serif',
+              }}>Koppelcode</div>
+              <div style={{
+                color: `rgba(${fg},0.9)`, fontSize: '28px',
+                fontFamily: 'monospace', letterSpacing: '6px', fontWeight: '600',
+              }}>{pairCode}</div>
+            </div>
           </div>
         )}
 

@@ -1,3 +1,7 @@
+## [6.2.28] - 2026-09-16
+### Toegevoegd
+- QR-code naast de koppelcode op het standby-scherm — machines kunnen nu ook gekoppeld worden door de QR-code te scannen in de MIXMATE iOS-app, naast de bestaande handmatige code-invoer via portaal.mixmate.nl
+
 ## [6.2.27] - 2026-08-11
 ### Toegevoegd
 - Knop "App opnieuw opstarten" in instellingen (herstart alleen de software, ~5 sec)
