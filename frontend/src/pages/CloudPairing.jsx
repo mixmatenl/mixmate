@@ -1,4 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import QRCode from 'qrcode'
+
+// Zelfde prefix als op het standby-scherm (StandbyScreen.jsx), zodat de iOS-app
+// koppel-QR's herkent en onderscheidt van andere QR-codes (bijv. watch-login).
+const PAIR_QR_PREFIX = 'MIXMATEPAIR:'
+
+function PairCodeQR({ code, size = 120 }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current && code) {
+      QRCode.toCanvas(ref.current, PAIR_QR_PREFIX + code, {
+        width: size,
+        margin: 1,
+        color: { dark: '#1d1d1f', light: '#ffffff' },
+      })
+    }
+  }, [code, size])
+  return <canvas ref={ref} style={{ borderRadius: 10, display: 'block' }} />
+}
 
 export default function CloudPairing({ onClose }) {
   const [data,      setData]      = useState(null)
@@ -162,6 +181,15 @@ export default function CloudPairing({ onClose }) {
 
       <div style={{ fontSize: 12, fontWeight: 700, color: '#aeaeb2', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Koppelcode</div>
 
+      {/* QR-code */}
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: 14, marginBottom: 20,
+        boxShadow: '0 1px 3px rgba(0,0,0,.06)',
+      }}>
+        <PairCodeQR code={data.code} />
+      </div>
+      <div style={{ fontSize: 12, color: '#aeaeb2', marginBottom: 24 }}>Scan met de MIXMATE-app, of vul de code hieronder in</div>
+
       {/* Code blokken */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
         {data.code.split('').map((d, i) => (
@@ -179,6 +207,7 @@ export default function CloudPairing({ onClose }) {
       <div style={{ background: '#fff', borderRadius: 16, padding: '16px 20px', maxWidth: 300, width: '100%', boxShadow: '0 1px 3px rgba(0,0,0,.04)' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', marginBottom: 10 }}>Hoe koppelen:</div>
         <ol style={{ margin: 0, padding: '0 0 0 16px', fontSize: 13, color: '#6e6e73', lineHeight: 1.9 }}>
+          <li>Scan de QR-code met de MIXMATE-app, of:</li>
           <li>Ga naar <strong style={{ color: '#1d1d1f' }}>portaal.mixmate.nl</strong></li>
           <li>Log in of maak een account aan</li>
           <li>Ga naar <strong style={{ color: '#1d1d1f' }}>Mijn machines</strong> → <strong style={{ color: '#1d1d1f' }}>Machine koppelen</strong></li>

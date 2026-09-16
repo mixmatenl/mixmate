@@ -1,3 +1,7 @@
+## [6.2.29] - 2026-09-16
+### Toegevoegd
+- Koppel-QR-code ook zichtbaar in de instellingenpagina voor cloudkoppeling (niet alleen op het standby-scherm)
+
 ## [6.2.28] - 2026-09-16
 ### Toegevoegd
 - QR-code naast de koppelcode op het standby-scherm — machines kunnen nu ook gekoppeld worden door de QR-code te scannen in de MIXMATE iOS-app, naast de bestaande handmatige code-invoer via portaal.mixmate.nl
