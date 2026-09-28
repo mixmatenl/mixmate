@@ -1,3 +1,7 @@
+## [6.2.30] - 2026-09-28
+### Toegevoegd
+- Pompen kunnen op afstand worden aangemaakt en verwijderd via het portaal (alleen voor beheerders)
+
 ## [6.2.29] - 2026-09-16
 ### Toegevoegd
 - Koppel-QR-code ook zichtbaar in de instellingenpagina voor cloudkoppeling (niet alleen op het standby-scherm)
