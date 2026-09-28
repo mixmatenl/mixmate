@@ -247,6 +247,10 @@ async def handle_message(message: dict, cloud_ws=None) -> dict | None:
                 r = await c.get(f"{LOCAL}/api/pumps/simple")
                 return {"req_id": req_id, "items": r.json()}
 
+            elif msg_type == "get_pumps_full":
+                r = await c.get(f"{LOCAL}/api/pumps")
+                return {"req_id": req_id, "items": r.json() if r.status_code == 200 else []}
+
             elif msg_type == "create_pump":
                 r = await c.post(f"{LOCAL}/api/pumps", json=message.get("data", {}))
                 return {"req_id": req_id, **r.json()}

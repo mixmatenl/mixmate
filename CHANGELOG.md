@@ -1,3 +1,7 @@
+## [6.2.31] - 2026-09-28
+### Toegevoegd
+- Pompbeheer voor beheerders in het portaal toont nu ook gpio-pin en snelheid per pomp
+
 ## [6.2.30] - 2026-09-28
 ### Toegevoegd
 - Pompen kunnen op afstand worden aangemaakt en verwijderd via het portaal (alleen voor beheerders)
